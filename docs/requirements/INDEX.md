@@ -30,6 +30,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-082 | job | should | done | A requirement is approved before any branch or worktree exists |
 | REQ-085 | job | should | done | Maintainers run the xaden project commands on the scaffold itself |
 | REQ-091 | job | should | done | Maintainers use the feature, requirements, release and persona commands on the scaffold |
+| REQ-110 | job | must | approved | A human owns and merges every change an assistant prepares |
 
 ## Project setup (`project-setup`)
 
