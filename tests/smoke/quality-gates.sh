@@ -434,6 +434,17 @@ test_smoke_area_list() {
 }
 
 test_quiet_output
+# shellcheck disable=SC2016 # the bash -c script reads its file as $1
+# REQ-105 a project made by xaden create runs the audits itself, so it never reports them as not covered
+test_classic_runs_what_adopted_lacks() {
+  local out="$WORKDIR/classic-not-covered.out"
+  printf '[project]\nname = "probe"\n' >"$PROJECT/pyproject.toml"
+  (cd "$PROJECT" && scripts/check.sh >"$out" 2>&1) || true
+  rm -f "$PROJECT/pyproject.toml"
+  assert "REQ-105 the classic full run names no check as not covered" bash -c '! grep -q "NOT COVERED" "$1"' _ "$out"
+  assert "REQ-105 the classic Python stack runs bandit and pip-audit" grep -q 'python: bandit' "$PROJECT/scripts/stacks/python.sh"
+}
+
 test_generated_project
 test_commit_bypasses
 test_missing_tools
@@ -445,4 +456,5 @@ test_optional_tools
 test_ci_credentials
 test_maintainer_hooks
 test_nested_run_guard
+test_classic_runs_what_adopted_lacks
 test_smoke_area_list

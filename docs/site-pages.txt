@@ -1,6 +1,7 @@
 docs/guide/developer/add-xaden-to-a-repository.md
 docs/guide/developer/build-features.md
 docs/guide/developer/check-modes-and-baselines.md
+docs/guide/developer/what-xaden-checks.md
 docs/guide/developer/create-a-project.md
 docs/guide/developer/join-a-project.md
 docs/guide/developer/kick-off-with-your-assistant.md
