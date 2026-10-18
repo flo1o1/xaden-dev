@@ -24,7 +24,7 @@ Run `xaden prompt feature` and follow it. Feature: <what users can do afterwards
 
 The assistant links the work to a requirement, plans, writes the test first, implements, runs `xaden check`, and runs a security
 review when the change touches input, logins, data, files, the network or dependencies. It updates your documentation and changelog
-and commits with a `Refs: REQ-nnn` trailer that names the requirement.
+and commits with a `Refs: REQ-nnn` trailer that names the requirement. It opens the pull request and stops: you review and merge the pull request, once CI is green. An assistant never merges its own work unless you tell it to for that one pull request.
 
 You see:
 

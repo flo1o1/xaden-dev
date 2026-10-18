@@ -122,6 +122,24 @@ test_claude_permissions() {
   fi
 }
 
+# REQ-110 a human owns and merges every change an assistant prepares
+# shellcheck disable=SC2016 # the bash -c scripts read their file as $1
+test_human_merges() {
+  local rules="$PROJECT/AGENTS.md"
+  assert "REQ-110 the rules say the assistant never merges its own pull request" bash -c 'tr "\n" " " <"$1" | grep -q "never merges it"' _ "$rules"
+  assert "REQ-110 the rules let the person tell it to merge one named pull request" bash -c 'tr "\n" " " <"$1" | grep -q "tells it to in that session"' _ "$rules"
+  assert "REQ-110 an assistant trailer discloses and does not replace the author" bash -c 'tr "\n" " " <"$1" | grep -q "Co-Authored-By.*does not replace the author"' _ "$rules"
+  assert "REQ-110 Signed-off-by is optional" bash -c 'tr "\n" " " <"$1" | grep -q "Signed-off-by.* optional"' _ "$rules"
+  assert "REQ-110 gh pr merge needs a confirmation in Claude Code" bash -c "tr -d ' \n' <'$PROJECT/.claude/settings.json' | grep -q '\"ask\":\\[\"Bash(ghprmerge:\*)\"\\]'"
+  assert "REQ-110 CLAUDE.md says the ask rule is a convenience guard" bash -c 'tr "\n" " " <"$1" | grep -q "ask. rule makes Claude Code ask before .gh pr merge"' _ "$PROJECT/CLAUDE.md"
+  if need_tool python3 "settings.json ask rule"; then
+    assert "REQ-110 the ask entry is valid JSON" python3 -c 'import json,sys; assert "Bash(gh pr merge:*)" in json.load(open(sys.argv[1]))["permissions"]["ask"]' "$PROJECT/.claude/settings.json"
+  fi
+  assert "REQ-110 the landing section lets the maintainer merge" bash -c 'tr "\n" " " <"$1" | grep -qi "the maintainer merges"' _ "$SCAFFOLD_ROOT/AGENTS.md"
+  assert "REQ-110 the landing section no longer hands the merge to the assistant" bash -c '! grep -q "# when both checks are green" "$1"' _ "$SCAFFOLD_ROOT/AGENTS.md"
+  assert "REQ-110 the guide says the person merges" bash -c 'tr "\n" " " <"$1" | grep -q "you review and merge the pull request"' _ "$SCAFFOLD_ROOT/docs/guide/developer/build-features.md"
+}
+
 # REQ-035 one workflow and approval model across prompts
 test_prompt_workflow() {
   local prompts="$PROJECT/prompts" name
@@ -307,6 +325,7 @@ test_assistant_trust_rules
 test_add_on_rule_sets
 test_model_routing_option
 test_claude_permissions
+test_human_merges
 test_prompt_workflow
 test_branch_rule
 test_approve_before_branch
