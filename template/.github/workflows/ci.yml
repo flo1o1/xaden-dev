@@ -52,6 +52,10 @@ jobs:
         if: hashFiles('package.json') != ''
         run: npm ci
       - name: Static analysis (full run, missing tools fail)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
         run: scripts/check.sh --strict
       # The registry rules are not pinned on purpose: new rules catch new vulnerability patterns,
       # so a finding can appear without a code change (docs/security.md, Static analysis).

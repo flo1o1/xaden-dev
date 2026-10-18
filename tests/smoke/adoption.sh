@@ -43,7 +43,7 @@ x_in() {
   local dir=$1
   shift
   XRC=0
-  (cd "$dir" && "$XADEN" "$@") >"$XOUT" 2>&1 || XRC=$?
+  (cd "$dir" && env -u CI "$XADEN" "$@") >"$XOUT" 2>&1 || XRC=$? # CI=true would make the scope of a check unknown (REQ-102)
 }
 
 # x_answers <answer> <dir> <args...>: like x_in, with a test answer for every question.
@@ -1038,6 +1038,66 @@ test_exit_status_of_checks() {
   assert "a status that is no number is refused" grep -q 'not a comma separated list' "$XOUT"
 }
 
+# REQ-102 an unknown scope of a check is never an empty one
+test_scope_of_changed_files() {
+  local worktree="$WORKDIR/repos/scope-adopt-xaden" repo="$WORKDIR/repos/scope" conf before_violation tip orphan
+  make_repo "$repo" shop
+  mkdir -p "$repo/tools"
+  # reports a violation in scripts/build.sh once tools/violate exists
+  printf '#!/bin/sh\n[ ! -f "$(dirname "$0")/violate" ] || echo "scripts/build.sh:9:1: note: new finding"\n[ ! -f "$(dirname "$0")/violate" ] || exit 1\n' >"$repo/tools/stub.sh"
+  git -C "$repo" add -A && git -C "$repo" commit -q -m "chore: stub"
+  x_in "$repo" adopt --yes --skip-ci --check "stub=sh tools/stub.sh"
+  conf="$worktree/xaden/xaden.conf"
+  printf 'findings-status.stub = 1\n' >>"$conf"
+  edit_file "$conf" 's/^mode = .*/mode = changed-files/'
+  git -C "$worktree" add -A && git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "chore: settings"
+  before_violation="$(git -C "$worktree" rev-parse HEAD)"
+  : >"$worktree/tools/violate"
+  printf '# changed\n' >>"$worktree/scripts/build.sh"
+  git -C "$worktree" add -A && git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "fix: the violation"
+  printf 'more\n' >>"$worktree/docs/guide.md"
+  git -C "$worktree" add -A && git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "docs: unrelated"
+  tip="$(git -C "$worktree" rev-parse HEAD)"
+  orphan="$(git -C "$worktree" commit-tree -m orphan "$(git -C "$worktree" rev-parse 'HEAD^{tree}')")"
+  git -C "$worktree" update-ref refs/remotes/origin/release "$before_violation"
+
+  # scope_run <variable=value>...: the check with exactly these CI variables, XRC and XOUT as x_in leaves them
+  scope_run() {
+    XRC=0
+    (cd "$worktree" && env -u CI -u EVENT_NAME -u BASE_REF -u BEFORE_SHA "$@" "$XADEN" check) >"$XOUT" 2>&1 || XRC=$?
+  }
+  scope_run EVENT_NAME=push BEFORE_SHA="$before_violation"
+  assert "push: a violation in the first commit of the push fails" test "$XRC" -ne 0
+  assert "push: the violation is named" grep -q 'build.sh: note: new finding' "$XOUT"
+  scope_run EVENT_NAME=push BEFORE_SHA="$(git -C "$worktree" rev-parse HEAD~1)"
+  assert "push: a violation outside the pushed commits does not fail" test "$XRC" -eq 0
+  scope_run EVENT_NAME=push BEFORE_SHA="$tip"
+  assert "push: a verified empty change set passes without fallback" test "$XRC" -eq 0
+  ! grep -q 'cannot tell' "$XOUT" || die "FAILED: an empty change set must not fall back"
+  scope_run EVENT_NAME=push BEFORE_SHA=0000000000000000000000000000000000000000
+  assert "push: a first push (all-zero previous tip) checks everything" test "$XRC" -ne 0
+  assert "the fallback is explained" grep -q 'cannot tell which files this run changes' "$XOUT"
+  scope_run EVENT_NAME=push BEFORE_SHA="$orphan"
+  assert "push: a previous tip that is not an ancestor checks everything" test "$XRC" -ne 0
+  scope_run EVENT_NAME=push BEFORE_SHA=1111111111111111111111111111111111111111
+  assert "push: a previous tip missing in the checkout checks everything" grep -q 'cannot tell' "$XOUT"
+  scope_run EVENT_NAME=pull_request BASE_REF=release
+  assert "pull request: the diff to the actual target branch is used" test "$XRC" -ne 0
+  ! grep -q 'cannot tell' "$XOUT" || die "FAILED: a known target branch must not fall back"
+  scope_run EVENT_NAME=pull_request BASE_REF=gone
+  assert "pull request: an unknown target branch checks everything" grep -q 'cannot tell' "$XOUT"
+  scope_run EVENT_NAME=pull_request BASE_REF='bad ref;'
+  assert "pull request: an invalid BASE_REF checks everything" grep -q 'cannot tell' "$XOUT"
+  scope_run CI=true
+  assert "CI without an event checks everything" grep -q 'cannot tell' "$XOUT"
+  assert "the mode in xaden.conf is untouched by the fallback" grep -q '^mode = changed-files$' "$conf"
+  # the step that runs the checks, not another one, receives the event
+  assert "the generated workflows hand the event to the check step" bash -c '
+    for f in "$1/scripts/adopt/ci.yml" "$1/template/.github/workflows/ci.yml"; do
+      awk "/name: (Xaden checks|Static analysis) \\(full run/ { step = 1 } step && /EVENT_NAME:/ { e = 1 } step && /BASE_REF:/ { b = 1 } step && /BEFORE_SHA:/ { s = 1 } step && /run:/ { exit !(e && b && s) }" "$f" || exit 1
+    done' _ "$SCAFFOLD_ROOT"
+}
+
 test_messages
 test_scan_and_plan
 test_adopt_and_remove
@@ -1049,6 +1109,7 @@ test_versions_and_downloads
 test_self_upgrade
 test_modes_and_baselines
 test_exit_status_of_checks
+test_scope_of_changed_files
 test_prompts_and_ignore_list
 test_autopilot
 test_migration
