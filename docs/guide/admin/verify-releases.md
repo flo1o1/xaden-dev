@@ -43,11 +43,12 @@ Then, for that project:
 - Xaden runs for the project only when the installed files are exactly what the maintainer signed and what the project pins. Xaden keeps
   the signed checksum of every verified install in `<versions folder>/<version>.signed`, next to the version, not inside it. A copy with
   no record (installed before you set the option) is verified once: `xaden fetch <version>` downloads the
-  signed checksum after your yes, compares it with the installed files, and records the result. A git clone of Xaden is never accepted.
-- Any value other than `true` or `false` stops every `xaden` command in the project, so a typo cannot switch the control off.
+  signed checksum after your yes, compares it with the installed files, and records the result. A git clone or worktree of Xaden is never accepted, whatever its committed files hold.
+- Any value other than `true` or `false`, an empty one included, stops every `xaden` command in the project, so a typo cannot switch the control off. Only a missing line means `false`.
 - Setting it back to `false`, or removing it, weakens a control: do it in a pull request your team reviews.
 - **CI** does not verify signatures itself. The workflow `xaden adopt` writes installs the version and checksum pinned in
-  `xaden/xaden.conf` and refuses a download that differs. Under the setting `xaden pin` writes only a signed checksum, so the pin your team
+  `xaden/xaden.conf` and refuses a download that differs; it then records that pin as the checksum to run, so the signed-only check passes
+  for exactly that tree and no other. It does not verify a signature itself. Under the setting `xaden pin` writes only a signed checksum, so the pin your team
   reviewed is the trust anchor for CI.
 
 The setting proves that the checksum was signed by a key listed in `release-signers`. Who holds that key, how it is rotated and what
