@@ -39,7 +39,7 @@ check.lint = my-linter --all
 findings-status.lint = 1,3
 ```
 
-`xaden adopt` writes the line for you when the command exited non-zero while it recorded the baseline. The check `test` never has one:
+`xaden adopt` writes `findings-status.<name> = 1` for you when the command exited with status 1 while it recorded the baseline (review the line in the adoption pull request). Any other status is not written, because a tool that crashes after printing findings would be accepted for good; the output tells you the line to add if that status does mean "violations found". The check `test` never has one:
 a failing test is always a failure. A command without the line fails on every non-zero status.
 
 **Upgrading from an earlier version:** a mapped command that exits non-zero with only baselined output used to pass. It now fails until
