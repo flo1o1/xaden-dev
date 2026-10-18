@@ -140,6 +140,16 @@ test_human_merges() {
   assert "REQ-110 the guide says the person merges" bash -c 'tr "\n" " " <"$1" | grep -q "you review and merge the pull request"' _ "$SCAFFOLD_ROOT/docs/guide/developer/build-features.md"
 }
 
+# REQ-112 merge and site-follow-up rules live in the scaffold's own rule file
+# shellcheck disable=SC2016 # the bash -c scripts read their file as $1
+test_merge_rules_in_repo() {
+  local rules="$SCAFFOLD_ROOT/AGENTS.md"
+  assert "REQ-112 no merge request before both checks are green" bash -c 'tr "\n" " " <"$1" | grep -q "Never ask for a merge before both CI checks are green"' _ "$rules"
+  assert "REQ-112 several pull requests merge in dependency order" bash -c 'tr "\n" " " <"$1" | grep -q "dependency order.*mergeable"' _ "$rules"
+  assert "REQ-112 a failed merge never uses --admin" bash -c 'tr "\n" " " <"$1" | grep -q "never use .--admin"' _ "$rules"
+  assert "REQ-112 a documentation change needs a site follow-up" bash -c 'tr "\n" " " <"$1" | grep -q "needs a site follow-up"' _ "$rules"
+}
+
 # REQ-111 the assistant explains what it did and says what it cannot judge
 # shellcheck disable=SC2016 # the bash -c scripts read their file as $1
 test_judgment_stays_human() {
@@ -342,6 +352,7 @@ test_add_on_rule_sets
 test_model_routing_option
 test_claude_permissions
 test_human_merges
+test_merge_rules_in_repo
 test_judgment_stays_human
 test_prompt_workflow
 test_branch_rule

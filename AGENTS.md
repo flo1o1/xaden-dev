@@ -47,7 +47,10 @@ gh pr merge --merge --delete-branch      # the maintainer, when both checks are 
 ```
 
 The maintainer merges (REQ-110): the assistant opens the pull request and stops, unless the person tells it in that
-session to merge that one. Before opening the pull request run the checks "Before the pull request" names above (REQ-093); CI runs the
+session to merge that one (REQ-112). Never ask for a merge before both CI checks are green. With several named
+pull requests, merge in dependency order and re-check `gh pr view <n> --json mergeable` before each; if an earlier
+merge makes the next one conflict, merge `main` into that branch, push, wait for CI and ask again. A failed merge
+(conflicts, red CI) is fixed at its cause and reported; never use `--admin`. Before opening the pull request run the checks "Before the pull request" names above (REQ-093); CI runs the
 full suite. Pushing is an approval point. A release is a change like any other: run `scripts/release-scaffold.sh [--check] <part>`
 on a `release/v<version>` branch (`--check` runs the full check first; CI checks the pull request
 anyway), push the branch, open the pull request, merge it, then tag the merge commit
@@ -70,7 +73,8 @@ The website builds from the archive of a release tag `vX.Y.Z`, never from untagg
 the files listed in `docs/site-pages.txt` (paths relative to the repository root). The site has the same
 version as the release it describes: after the scaffold tag is pushed, the site repository releases
 `X.Y.Z` (its `scripts/release-site.sh`) and publishes from its own tag `vX.Y.Z`; a site fix in between gets
-`vX.Y.Z-0001`, `-0002` and so on. Keep those paths
+`vX.Y.Z-0001`, `-0002` and so on. A change that affects the documentation needs a site follow-up after the
+release (REQ-112). Keep those paths
 stable: renaming or removing one needs a change on the site first. `scripts/check-site-pages.sh`
 (part of `scripts/check-scaffold.sh`) fails when a listed file is missing or when a workflow uses a
 secret other than `GITHUB_TOKEN`: the scaffold holds no site credential and never pushes to the site.
