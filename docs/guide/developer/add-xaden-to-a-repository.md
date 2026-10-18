@@ -77,7 +77,9 @@ check existed gets the step through `xaden pin`, on the branch it prepares for t
 ## Your own tools keep running
 
 The scan maps the commands it finds (`npm test`, `make lint`, `pytest`, `ruff check .` and similar) to `check.test`, `check.lint` and
-`check.typecheck` in `xaden/xaden.conf`, and `xaden check` runs them. Xaden's own language presets stay unused.
+`check.typecheck` in `xaden/xaden.conf`, and `xaden check` runs them. A Makefile target or npm script named `audit` (and a Makefile
+target `security`) maps to `check.audit` and `check.security` the same way; without one, the new adoption expects both and reports a gap until you
+map them ([What Xaden checks](what-xaden-checks.md)). Xaden's own language presets stay unused.
 
 Existing findings never block your team. When the plan is applied, Xaden runs your check commands once and records what they
 report. How strict the checks are from then on is explained in [Check modes and baselines](check-modes-and-baselines.md).

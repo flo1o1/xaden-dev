@@ -1045,6 +1045,7 @@ test_exit_status_of_checks() {
   git -C "$repo" add -A && git -C "$repo" commit -q -m "chore: stub"
   x_in "$repo" adopt --yes --skip-ci --check "stub=sh tools/stub.sh"
   conf="$worktree/xaden/xaden.conf"
+  edit_file "$conf" 's/^expect = .*/expect = test,lint/' # this test is about exit statuses, not the audit kind (REQ-106)
   assert "adoption records the status the check exits with while printing violations" grep -q '^findings-status.stub = 1$' "$conf"
 
   # a tool that already crashes while adoption records the baseline: its status is not learned
@@ -1302,24 +1303,108 @@ test_commit_check_range() {
   assert "REQ-109 a shallow checkout fails under another convention too" test "$XRC" -ne 0
 }
 
+# REQ-106 the dependency audit and Bandit are check kinds of an adopted project
+# shellcheck disable=SC2016 # the bash -c scripts read their arguments as $1
+test_audit_kinds() {
+  local py="$WORKDIR/repos/audit-py" node="$WORKDIR/repos/audit-node" shop="$WORKDIR/repos/audit-shop" conf mode
+  # a new adoption expects the audits and reports them as gaps until they are mapped
+  make_repo "$py" bare-python
+  x_in "$py" adopt --scan
+  assert "REQ-106 the scan lists the audit and security gaps" grep -q 'gaps .*audit security' "$XOUT"
+  x_in "$py" adopt --yes --skip-ci --mode strict
+  conf="$py-adopt-xaden/xaden/xaden.conf"
+  assert "REQ-106 a new Python adoption expects audit and security" grep -q '^expect = test,lint,typecheck,audit,security$' "$conf"
+  assert "REQ-106 the pre-commit hook still runs lint only" grep -q '^hook-checks = lint$' "$conf"
+  x_in "$py-adopt-xaden" check
+  assert "REQ-106 strict: an unmapped expected audit is a gap and fails" test "$XRC" -ne 0
+  assert "REQ-106 the audit gap is named" grep -q "gap: no 'audit' check is configured" "$XOUT"
+  assert "REQ-106 the security gap is named" grep -q "gap: no 'security' check is configured" "$XOUT"
+  make_repo "$node" shop
+  x_in "$node" adopt --yes --skip-ci --mode advisory
+  assert "REQ-106 a new Node adoption expects audit but not security" grep -q '^expect = test,lint,audit$' "$node-adopt-xaden/xaden/xaden.conf"
+
+  # a preset maps the classic commands, with the exit status that means findings
+  x_in "$py-adopt-xaden" preset python
+  assert "REQ-106 the Python preset maps pip-audit" grep -q '^check.audit = pip-audit$' "$conf"
+  assert "REQ-106 the Python preset maps bandit like the classic project" grep -q '^check.security = bandit -q -r . -x ./.venv,./node_modules,./tests$' "$conf"
+  assert "REQ-106 the Python preset declares exit status 1 as findings" bash -c 'grep -q "^findings-status.audit = 1$" "$1" && grep -q "^findings-status.security = 1$" "$1"' _ "$conf"
+  x_in "$node-adopt-xaden" preset node
+  assert "REQ-106 the Node preset maps npm audit" grep -q '^check.audit = npm audit --audit-level=high$' "$node-adopt-xaden/xaden/xaden.conf"
+  assert "REQ-106 the Node preset declares exit status 1 as findings" grep -q '^findings-status.audit = 1$' "$node-adopt-xaden/xaden/xaden.conf"
+
+  # an existing target is detected like test and lint
+  make_repo "$shop" shop
+  printf 'audit:\n\techo audit\n' >>"$shop/Makefile"
+  git -C "$shop" add -A && git -C "$shop" commit -q -m "build: audit target"
+  x_in "$shop" adopt --scan
+  assert "REQ-106 the scan finds a Makefile audit target" grep -q 'dependency audit .*make audit' "$XOUT"
+
+  # an adoption from before: no gap, a TIP and the NOT COVERED line, and expect is not touched
+  make_repo "$WORKDIR/repos/audit-old" bare-python
+  x_in "$WORKDIR/repos/audit-old" adopt --yes --skip-ci --mode strict
+  edit_file "$WORKDIR/repos/audit-old-adopt-xaden/xaden/xaden.conf" 's/^expect = .*/expect = test,lint,typecheck/'
+  x_in "$WORKDIR/repos/audit-old-adopt-xaden" check
+  assert "REQ-106 an older adoption gets the NOT COVERED line" grep -q '^NOT COVERED: pip-audit' "$XOUT"
+  assert "REQ-106 an older adoption gets a TIP" grep -q "^TIP: name them in 'expect'" "$XOUT"
+  assert "REQ-106 an older adoption has no audit gap" bash -c '! grep -q "gap: no .audit. check" "$1"' _ "$XOUT"
+  x_in "$WORKDIR/repos/audit-old-adopt-xaden" pin
+  assert "REQ-106 xaden pin leaves expect alone" grep -q '^expect = test,lint,typecheck$' "$WORKDIR/repos/audit-old-adopt-xaden/xaden/xaden.conf"
+
+  # a stub audit: findings name no file, so they cannot be baselined
+  make_repo "$WORKDIR/repos/audit-stub" shop
+  mkdir -p "$WORKDIR/repos/audit-stub/tools"
+  printf '#!/bin/sh\necho "left-pad 1.0.0 has a known vulnerability"\nexit "$(cat "$(dirname "$0")/status")"\n' >"$WORKDIR/repos/audit-stub/tools/audit.sh"
+  printf '0\n' >"$WORKDIR/repos/audit-stub/tools/status"
+  git -C "$WORKDIR/repos/audit-stub" add -A && git -C "$WORKDIR/repos/audit-stub" commit -q -m "build: audit stub"
+  x_in "$WORKDIR/repos/audit-stub" adopt --yes --skip-ci --mode strict --check "audit=sh tools/audit.sh"
+  conf="$WORKDIR/repos/audit-stub-adopt-xaden/xaden/xaden.conf"
+  printf 'findings-status.audit = 1\n' >>"$conf"
+  printf '1\n' >"$WORKDIR/repos/audit-stub-adopt-xaden/tools/status"
+  for mode in strict changed-files advisory; do
+    edit_file "$conf" "s/^mode = .*/mode = $mode/"
+    x_in "$WORKDIR/repos/audit-stub-adopt-xaden" check
+    if [ "$mode" = advisory ]; then
+      assert "REQ-106 advisory: an audit finding without a file name only warns" grep -q 'check: audit (needs the network) failed (advisory mode: not blocking)' "$XOUT"
+    else
+      assert "REQ-106 $mode: an audit finding without a file name fails" grep -q 'check: audit (needs the network) failed (exit status 1)' "$XOUT"
+    fi
+  done
+  edit_file "$conf" 's/^mode = .*/mode = strict/'
+  printf '2\n' >"$WORKDIR/repos/audit-stub-adopt-xaden/tools/status"
+  x_in "$WORKDIR/repos/audit-stub-adopt-xaden" check
+  assert "REQ-106 an exit status that is no finding fails the run, never passes it" test "$XRC" -ne 0
+  assert "REQ-106 the run says the audit needs the network" grep -q 'check: audit (needs the network)' "$XOUT"
+  edit_file "$conf" 's/^expect = .*/expect = test,lint/'
+  edit_file "$conf" '/^check.audit = /d'
+  x_in "$WORKDIR/repos/audit-stub-adopt-xaden" check
+  assert "REQ-106 no gap when expect leaves the audit out" bash -c '! grep -q "gap: no .audit. check" "$1"' _ "$XOUT"
+
+  # CI installs the pinned tools, and the pins match the preset's
+  assert "REQ-106 the generated CI installs the audit tools of a Python project" grep -q 'pip install "bandit==$BANDIT_VERSION" "pip-audit==$PIP_AUDIT_VERSION"' "$SCAFFOLD_ROOT/scripts/adopt/ci.yml"
+  assert "REQ-106 the CI pin of bandit equals the preset's" grep -q "BANDIT_VERSION: \"$(sed -n 's/^bandit==//p' "$SCAFFOLD_ROOT/template/presets/python/requirements-dev.txt")\"" "$SCAFFOLD_ROOT/scripts/adopt/ci.yml"
+  assert "REQ-106 the CI pin of pip-audit equals the preset's" grep -q "PIP_AUDIT_VERSION: \"$(sed -n 's/^pip-audit==//p' "$SCAFFOLD_ROOT/template/presets/python/requirements-dev.txt")\"" "$SCAFFOLD_ROOT/scripts/adopt/ci.yml"
+}
+
 # REQ-105 the full run says what an adopted project does not check, and the guide page matches it
 # shellcheck disable=SC2016 # the bash -c scripts read their arguments as $1
 test_not_covered() {
   local page="$SCAFFOLD_ROOT/docs/guide/developer/what-xaden-checks.md" py="$WORKDIR/repos/not-covered-py" node="$WORKDIR/repos/not-covered-node" listed said tool
   make_repo "$py" bare-python
   x_in "$py" adopt --yes --skip-ci --mode strict
+  edit_file "$py-adopt-xaden/xaden/xaden.conf" 's/^expect = .*/expect = test,lint,typecheck/' # an adoption from before REQ-106
   x_in "$py-adopt-xaden" check
   assert "REQ-105 a Python repository is told that pip-audit is not covered" grep -q '^NOT COVERED: pip-audit; .*check.audit in xaden/xaden.conf' "$XOUT"
   assert "REQ-105 a Python repository is told that bandit is not covered" grep -q '^NOT COVERED: bandit; .*check.security in xaden/xaden.conf' "$XOUT"
   said="$(grep '^NOT COVERED:' "$XOUT" | sed 's/^NOT COVERED: \([^;]*\);.*/\1/')"
   make_repo "$node" shop
   x_in "$node" adopt --yes --skip-ci --mode strict
+  edit_file "$node-adopt-xaden/xaden/xaden.conf" 's/^expect = .*/expect = test,lint/'
   x_in "$node-adopt-xaden" check
   assert "REQ-105 a Node repository is told that npm audit is not covered" grep -q '^NOT COVERED: npm audit; .*check.audit in xaden/xaden.conf' "$XOUT"
   said="$said
 $(grep '^NOT COVERED:' "$XOUT" | sed 's/^NOT COVERED: \([^;]*\);.*/\1/')"
-  listed="$(grep -F '**not run**' "$page" | sed 's/^| `\([^`]*\)`.*/\1/')"
-  assert "REQ-105 the page lists as not run exactly what the full run reports" test "$(printf '%s\n' "$said" | sort -u)" = "$(printf '%s\n' "$listed" | sed 's/ (.*//' | sort -u)"
+  listed="$(grep -F '**unless mapped**' "$page" | sed 's/^| `\([^`]*\)`.*/\1/')"
+  assert "REQ-105 the page lists as unmapped exactly what the full run reports" test "$(printf '%s\n' "$said" | sort -u)" = "$(printf '%s\n' "$listed" | sed 's/ (.*//' | sort -u)"
 
   # an expected kind is a gap, reported once
   edit_file "$py-adopt-xaden/xaden/xaden.conf" 's/^expect = .*/expect = test,lint,typecheck,audit/'
@@ -1360,3 +1445,4 @@ test_migration
 test_new_project_layout
 test_update_check
 test_not_covered
+test_audit_kinds

@@ -278,7 +278,8 @@ preset_main() {
   source "$SCAFFOLD_ROOT/scripts/adopt-scan.sh"
   # shellcheck source=SCRIPTDIR/adopt-lib.sh
   source "$SCAFFOLD_ROOT/scripts/adopt-lib.sh"
-  SCAN_GAPS="test lint typecheck"
+  SCAN_GAPS="test lint typecheck audit"
+  [ "$stack" != python ] || SCAN_GAPS="$SCAN_GAPS security"
   apply_preset "$root" "$stack"
   ok "the $stack preset is in place; review it with git diff, then install its tools yourself:"
   echo "  $(preset_install_command "$stack")"

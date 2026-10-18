@@ -140,4 +140,4 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-057 | job | should | done | Expired security exceptions fail the checks |
 | REQ-072 | job | must | done | Xaden downloads nothing without the person's explicit confirmation |
 | REQ-077 | job | should | done | Releases are signed so a pinned checksum comes from the maintainer |
-| REQ-106 | job | must | approved | An adopted project audits its dependencies and runs Bandit like a new one |
+| REQ-106 | job | must | done | An adopted project audits its dependencies and runs Bandit like a new one |
