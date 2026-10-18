@@ -86,6 +86,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-092 | job | could | done | A maintainer re-checks only the smoke area a change touched |
 | REQ-093 | job | should | done | A maintainer waits for CI once, not for the same suite twice |
 | REQ-101 | job | must | done | A check that fails to run to completion never counts as passed |
+| REQ-102 | job | must | approved | An unknown scope of a check never counts as an empty one |
 
 ## Releases and documentation (`release-and-docs`)
 
