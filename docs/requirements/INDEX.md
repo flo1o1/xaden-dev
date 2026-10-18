@@ -87,6 +87,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-093 | job | should | done | A maintainer waits for CI once, not for the same suite twice |
 | REQ-101 | job | must | done | A check that fails to run to completion never counts as passed |
 | REQ-102 | job | must | done | An unknown scope of a check never counts as an empty one |
+| REQ-107 | job | must | approved | An adopted project's CI rejects commits whose references are wrong, even when the hooks were skipped |
 
 ## Releases and documentation (`release-and-docs`)
 
