@@ -70,7 +70,7 @@ check_findings_status_config() {
     fi
     printf '%s' "$value" | grep -Eq '^[0-9]{1,3}(,[0-9]{1,3})*$' || die "xaden.conf: $key = '$value' is not a comma separated list of exit statuses from 1 to 255"
     for status in ${value//,/ }; do
-      [ $((10#$status)) -ge 1 ] && [ $((10#$status)) -le 255 ] || die "xaden.conf: $key lists $status; exit statuses run from 1 to 255"
+      if [ $((10#$status)) -lt 1 ] || [ $((10#$status)) -gt 255 ]; then die "xaden.conf: $key lists $status; exit statuses run from 1 to 255"; fi
     done
   done < <(conf_keys "$conf" "findings-status.")
 }
