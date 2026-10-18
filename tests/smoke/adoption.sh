@@ -162,6 +162,7 @@ test_adopt_and_remove() {
   assert "RULES.md has no path of the copied layout" bash -c '! grep -nE "scripts/[a-z-]+\.sh|docs/(requirements|personas|threat-model|security)" "$1"' _ "$worktree/xaden/RULES.md"
   assert "RULES.md makes a mode change an approval point" grep -q 'Approval point' "$worktree/xaden/RULES.md"
   assert "REQ-110 RULES.md says the assistant never merges its own pull request" bash -c 'tr "\n" " " <"$1" | grep -q "never merges it"' _ "$worktree/xaden/RULES.md"
+  assert "REQ-111 RULES.md holds the judgment section" grep -q '^### Judgment stays with the human' "$worktree/xaden/RULES.md"
   assert "RULES.md starts a change sparse on the team's requirements only (REQ-082)" \
     grep -qF 'sparse-checkout set --cone xaden/requirements`' "$worktree/xaden/RULES.md"
   assert "the version and checksum are pinned" grep -Eq '^checksum = [0-9a-f]{64}$' "$worktree/xaden/xaden.conf"

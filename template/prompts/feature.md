@@ -2,7 +2,7 @@
 title: Build a feature
 type: prompt
 status: stable
-version: 1.4.0
+version: 1.5.0
 works-with: [claude-code, chatgpt, local-llm]
 tags: [prompt, development]
 ---
@@ -49,3 +49,4 @@ Implement one capability, test-first, tracked in requirements.
 - [ ] `scripts/check.sh` passes
 - [ ] Requirements, changelog, docs, security review handled
 - [ ] Completion report given (AGENTS.md §5): checks run, checks skipped, unresolved findings, acceptance evidence
+- [ ] Explained and handed over as AGENTS.md §9 (Judgment stays with the human) says

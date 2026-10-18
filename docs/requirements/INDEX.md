@@ -31,6 +31,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-085 | job | should | done | Maintainers run the xaden project commands on the scaffold itself |
 | REQ-091 | job | should | done | Maintainers use the feature, requirements, release and persona commands on the scaffold |
 | REQ-110 | job | must | done | A human owns and merges every change an assistant prepares |
+| REQ-111 | job | must | done | The assistant explains what it did and says what it cannot judge |
 
 ## Project setup (`project-setup`)
 
