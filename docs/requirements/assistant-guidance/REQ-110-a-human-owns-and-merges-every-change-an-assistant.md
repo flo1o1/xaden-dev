@@ -3,7 +3,7 @@ id: REQ-110
 type: job
 epic: assistant-guidance
 priority: must
-status: approved
+status: done
 updated: 2026-10-18
 ---
 

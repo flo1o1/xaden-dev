@@ -17,7 +17,7 @@
 - The imports above load the rules and the requirements index into every session; read a single
   requirement with `scripts/req.sh show REQ-nnn`. `docs/clean-code.md` is not imported (it costs
   tokens in every session); the prompts that write or review code tell you when to read it.
-- `.claude/settings.json` is a convenience guard, not a security boundary. Its deny rules stop
+- `.claude/settings.json` is a convenience guard, not a security boundary. Its `ask` rule makes Claude Code ask before `gh pr merge`, so the person merges (AGENTS.md §7); other routes to a merge (the web page, `git merge` plus push) are not covered. Its deny rules stop
   the Read tool on `.env`, `.env.local`, `.env.*.local`, `.env.development`, `.env.test`,
   `.env.staging` and `.env.production` in the project root (`.env.example` stays readable), and
   Bash commands that *start with* `git push --force`, `git push --force-with-lease` or
