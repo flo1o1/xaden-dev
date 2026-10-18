@@ -358,7 +358,7 @@ self_upgrade_main() {
   if [ -e "$SCAFFOLD_ROOT/.git" ]; then die "this Xaden runs from a git clone; update it with: git -C $SCAFFOLD_ROOT pull"; fi
   case "$SCAFFOLD_ROOT" in
     "$(current_link)" | "$(versions_dir)"/*) ;;
-    *) die "this Xaden does not live in $(xaden_home); install it once with: curl -fsSL https://xaden.dev/install | bash (or run scripts/install.sh of a newer release zip), then use xaden upgrade" ;;
+    *) die "this Xaden does not live in $(xaden_home); install it once with: curl -fsSL https://xaden.dev/install | bash, then use xaden upgrade" ;;
   esac
   if [ ! -x "$(versions_dir)/$target/scripts/xaden.sh" ]; then
     confirm_download "$target" "" || { echo "Nothing was downloaded."; exit 1; }

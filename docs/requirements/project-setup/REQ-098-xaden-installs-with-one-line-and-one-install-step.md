@@ -21,4 +21,4 @@ When I want Xaden on a new machine, I want one command to get it, so I can skip 
 - Given the zip route (`scripts/install.sh` from an extracted zip) and the one-line route, then both use the same install step: copy the folder to `versions/<version>/`, switch `current`, link `xaden`.
 - Given an extracted zip folder that is deleted afterwards, then `xaden version` still works.
 - Given an older `xaden` link that points into a former extracted folder, then the install step names it and replaces it; a link or file that is not a Xaden link is left unchanged.
-- Given `docs/guide/admin/install-xaden.md`, then it shows the one-line route, the read-first route, the signed zip and upgrading with `xaden upgrade`.
+- Given `docs/guide/admin/install-xaden.md`, then it shows the one-line route, how to read the script first, and upgrading with `xaden upgrade`; the manual zip route is no part of the guides (REQ-104).

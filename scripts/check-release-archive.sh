@@ -14,7 +14,7 @@ source "$ROOT/template/scripts/lib.sh"
 # Every file of an archive matches one of these (extended regular expressions on the full path).
 SHIPPED_PATHS='^(CHANGELOG\.md|GETTING-STARTED\.md|LICENSE|README\.md|VERSION|release-signers)$
 ^docs/assets/[^/]+$
-^docs/guide/(admin|developer)/[^/]+\.md$
+^docs/guide/(admin|contributing|developer)/[^/]+\.md$
 ^template/
 ^scripts/(adopt-lib|adopt-scan|adopt|create|fetch|get-xaden|install|new-project|scaffold-lib|update-scaffold|xaden)\.sh$
 ^scripts/adopt/ci\.yml$'

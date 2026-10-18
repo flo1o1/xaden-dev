@@ -16,3 +16,8 @@ docs/guide/admin/verify-releases.md
 template/docs/security.md
 template/docs/optional-tools.md
 template/docs/local-llm.md
+docs/guide/contributing/install-with-git.md
+docs/guide/contributing/architecture.md
+docs/guide/contributing/work-on-xaden.md
+docs/guide/contributing/release-and-signing.md
+docs/guide/contributing/threat-model-and-requirements.md

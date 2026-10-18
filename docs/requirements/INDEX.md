@@ -99,11 +99,12 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-043 | job | should | done | Persisted data formats are versioned and migrated without data loss |
 | REQ-058 | job | should | done | Releases are blocked while security documents have unfilled markers |
 | REQ-064 | job | should | done | A scaffold release is published on the website under the same version |
-| REQ-065 | job | should | done | Getting started documents both ways to get Xaden: zip download and clone |
+| REQ-065 | job | should | done | Getting started documents how to get Xaden: one command, and a clone for contributors |
 | REQ-075 | job | could | done | Deployment artifacts can leave out the Xaden files |
 | REQ-089 | job | should | done | A release repeats the full check only when asked |
 | REQ-094 | job | should | done | Xaden installs from a signed release zip that holds no maintainer files |
 | REQ-103 | job | should | done | A team can require that every Xaden it runs came from a signed release |
+| REQ-104 | job | should | done | Contributors find working on Xaden in a Contributing section, apart from using it |
 
 ## Requirements (`requirements`)
 

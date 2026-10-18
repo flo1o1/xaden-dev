@@ -6,7 +6,7 @@ the pages on https://xaden.dev. Nothing here assumes a particular person's machi
 ## The short path
 
 1. [Check the requirements](docs/guide/admin/requirements-and-platforms.md): Linux or macOS with git and bash (Windows: WSL).
-2. [Install Xaden](docs/guide/admin/install-xaden.md): download the signed zip of a release, verify it, extract it and run its `scripts/install.sh`.
+2. [Install Xaden](docs/guide/admin/install-xaden.md): one command that asks first, checks the signature of the release and installs it.
 3. [Create a project](docs/guide/developer/create-a-project.md) with `xaden create my-app`, or [add Xaden to a repository](docs/guide/developer/add-xaden-to-a-repository.md) with `xaden adopt`.
 4. [Kick off with your assistant](docs/guide/developer/kick-off-with-your-assistant.md): `xaden prompt kickoff`.
 5. [Build features](docs/guide/developer/build-features.md) and [release a version](docs/guide/developer/release-a-version.md).
@@ -32,6 +32,16 @@ the pages on https://xaden.dev. Nothing here assumes a particular person's machi
 - [Optional tools and assistant plugins](template/docs/optional-tools.md)
 - [Update a classic project](docs/guide/admin/update-a-classic-project.md)
 - [Uninstall](docs/guide/admin/uninstall.md)
+
+## Contributing
+
+Working on Xaden itself, not just using it:
+
+- [Install with git](docs/guide/contributing/install-with-git.md)
+- [Architecture](docs/guide/contributing/architecture.md)
+- [Work on Xaden](docs/guide/contributing/work-on-xaden.md)
+- [Release and sign Xaden](docs/guide/contributing/release-and-signing.md)
+- [Threat model and requirements](docs/guide/contributing/threat-model-and-requirements.md)
 
 ## Security
 

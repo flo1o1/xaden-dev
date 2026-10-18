@@ -3,7 +3,7 @@
 Move the Xaden on your machine to a newer version. This changes your machine only. A project that pins its Xaden version is not
 affected until the team moves it with `xaden pin` ([Pin one Xaden version per project](pin-one-version-per-project.md)).
 
-## If you installed with the one command or the zip
+## Update with the command
 
 ```bash
 xaden upgrade
@@ -25,23 +25,7 @@ with [the one command](install-xaden.md), then use `xaden upgrade` from then on.
 
 ## If you installed with git
 
-```bash
-git -C ~/.xaden pull
-xaden version
-```
-
-- `git -C ~/.xaden pull`: fetches the newest Xaden into the folder. The `xaden` command keeps working. `xaden upgrade` refuses to touch a clone and names this command.
-- `xaden version`: prints the version you now have.
-
-To stay on a fixed release instead of the newest code:
-
-```bash
-git -C ~/.xaden tag -l
-git -C ~/.xaden checkout v<version>
-```
-
-- `git -C ~/.xaden tag -l`: lists the releases.
-- `git -C ~/.xaden checkout v<version>`: switches to the release you choose. Switch back with `git -C ~/.xaden checkout main` before the next `git pull`.
+A clone is updated with `git pull`: see [Install with git](../contributing/install-with-git.md). `xaden upgrade` refuses to touch a clone and names that command.
 
 ## Read what changed
 
