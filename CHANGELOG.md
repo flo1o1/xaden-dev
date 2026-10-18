@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-18
+
 ### Added
 - Xaden installs from a signed release zip (`xaden-<version>.zip` on the release page) that holds only what Xaden needs to run: no tests, scaffold requirements, signing documents or scripts, hooks or CI files. `docs/guide/admin/install-xaden.md` makes the zip the recommended way and shows how to verify its signature before extracting; cloning is described as the way for contributors. Maintainers: `scripts/sign-release.sh` also writes and signs the zip, `.gitattributes` lists the files left out, and `scripts/check-release-archive.sh` fails when one of them would reach an archive (REQ-094).
 - Projects made by `xaden create` have a `worktrees/` folder for change worktrees (`git worktree add worktrees/<slug> ...`); git ignores its contents and `AGENTS.md` §7 names it instead of `../<repo>-<slug>`. `xaden adopt` asks whether to add it as a separate commit (`--worktrees` / `--no-worktrees`); `xaden remove` takes it out again. Worktrees you already have stay where they are (REQ-090).
