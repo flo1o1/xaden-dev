@@ -89,6 +89,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-101 | job | must | done | A check that fails to run to completion never counts as passed |
 | REQ-102 | job | must | done | An unknown scope of a check never counts as an empty one |
 | REQ-107 | job | must | done | An adopted project's CI rejects commits whose references are wrong, even when the hooks were skipped |
+| REQ-109 | job | must | approved | The CI commit check reads a range it can trust, and judges only the commits since the adoption |
 
 ## Releases and documentation (`release-and-docs`)
 
