@@ -63,6 +63,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-098 | job | should | done | Xaden installs with one command and one install step |
 | REQ-099 | job | should | done | A project moves to another Xaden version with `xaden pin` |
 | REQ-100 | job | must | done | Files I edited are kept and the new version comes as `-dist` |
+| REQ-108 | job | should | done | Adopting Xaden never switches the reference rule off without telling the team |
 
 ## Quality gates (`quality-gates`)
 

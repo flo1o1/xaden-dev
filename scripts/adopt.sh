@@ -2,6 +2,7 @@
 # Adds Xaden to an existing repository, or takes it out again (REQ-066, REQ-067, REQ-069, REQ-070, REQ-073).
 # Usage: xaden adopt [--scan | --plan] [--yes] [--assistants <list>] [--mode <mode>]
 #                    [--check <kind>=<command>]... [--preset | --no-preset] [--worktrees | --no-worktrees] [--skip-hooks] [--skip-ci]
+#                    [--commit-convention <conventional|other>]
 #        xaden remove [--yes]
 #   --scan        read the repository and report what it has; changes nothing
 #   --plan        print the exact diff and the files a run would create or change; changes nothing
@@ -10,6 +11,7 @@
 #   --assistants  claude,copilot,vibe,codex  default: what the scan finds, confirmed by you
 #   --mode        advisory | changed-files | strict   default: changed-files
 #   --check       name a command the scan could not find, for example --check test="make verify"
+#   --commit-convention  conventional | other   default: what the scan finds in the history
 # The repository's own build, tests, docs and workflows are never changed: Xaden adds the folder
 # xaden/, a marked block in AGENTS.md, and for Claude Code users the line @AGENTS.md in CLAUDE.md
 # and one slash command file in .claude/commands/ for each prompt (existing files stay).
@@ -41,7 +43,7 @@ WORKTREES_CHOICE=ask   # ask, yes, no
 EXIT_UNSUPPORTED=4     # an unsupported hook manager or CI system (a manual step is printed)
 
 usage() {
-  sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 # parse_arguments <args...>: sets the choices.
@@ -60,6 +62,9 @@ parse_arguments() {
       --mode)
         shift
         case " $CHECK_MODES " in *" ${1:-} "*) ADOPT_MODE=$1 ;; *) die "--mode must be one of: $CHECK_MODES" ;; esac ;;
+      --commit-convention)
+        shift
+        case "${1:-}" in conventional | other) ADOPT_CONVENTION=$1 ;; *) die "--commit-convention must be conventional or other" ;; esac ;;
       --assistants)
         shift
         printf '%s' "${1:-}" | grep -Eq '^[a-z0-9]+(,[a-z0-9]+)*$' || die "--assistants takes a comma separated list such as claude,codex"
@@ -311,6 +316,9 @@ adopt_main() {
   fi
   ADOPT_DEFAULT_BRANCH="$(default_branch)"
   scan_repository "$ADOPT_REPO"
+  if [ -n "$ADOPT_CONVENTION" ]; then
+    SCAN_CONVENTION=$ADOPT_CONVENTION SCAN_CONVENTION_EVIDENCE="chosen with --commit-convention"
+  fi
   if [ "$CLASSIC" = 1 ]; then
     [ "$SCAN_HOOKS" != "unsupported: core.hooksPath = scripts/hooks" ] || SCAN_HOOKS=plain # the copied hooks go with the copy
     if [ -d "$ADOPT_REPO/.claude" ] || [ -f "$ADOPT_REPO/CLAUDE.md" ]; then SCAN_CLAUDE=1; fi
