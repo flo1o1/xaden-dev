@@ -17,6 +17,7 @@ ADOPT_BRANCH="chore/adopt-xaden"
 
 # Choices, set by adopt.sh from the command line, the scan and the answers.
 ADOPT_MODE="changed-files"
+ADOPT_CONVENTION=""    # --commit-convention: overrides what the scan finds (REQ-108)
 ADOPT_ASSISTANTS=""
 ADOPT_CHECKS=""        # newline separated "kind=command" the person named (--check)
 ADOPT_PRESET=""        # stack whose preset the person accepted, or empty

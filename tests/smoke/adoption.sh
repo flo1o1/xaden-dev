@@ -1198,6 +1198,49 @@ test_signed_only_in_generated_ci() {
   assert "CI: a changed tree is refused" grep -q 'requires signed releases' "$XOUT"
 }
 
+# REQ-108 the commit convention comes from evidence and is shown with its consequence
+test_convention_from_evidence() {
+  local repo="$WORKDIR/repos/convention" subject worktree
+  history_of() {
+    make_repo "$repo" empty
+    for subject in "$@"; do git -C "$repo" commit -q --allow-empty -m "$subject"; done
+  }
+  make_repo "$repo" empty
+  x_in "$repo" adopt --scan
+  assert "REQ-108 no history: conventional" grep -q 'commit convention .*conventional (no history)' "$XOUT"
+  history_of "feat: a" "fix: b" "docs: c"
+  x_in "$repo" adopt --scan
+  assert "REQ-108 three conventional subjects: conventional, with the evidence" grep -q 'commit convention .*conventional (3 of 3 subjects)' "$XOUT"
+  assert "REQ-108 conventional: no advice sentence" bash -c '! grep -q "only advise" "$1"' _ "$XOUT"
+  history_of "feat: a" "wip" "fix: b"
+  x_in "$repo" adopt --scan
+  assert "REQ-108 one subject off the pattern in three: other, with the evidence" grep -q 'commit convention .*other (2 of 3 subjects)' "$XOUT"
+  assert "REQ-108 other: the sentence names the setting and the approval point" grep -q "Refs: checks only advise.*commit-convention = conventional.*Approval point" "$XOUT"
+  history_of "feat: a" "b" "c" "d" "e" "fix: f"
+  x_in "$repo" adopt --scan
+  assert "REQ-108 six mixed subjects: other, the 60 percent rule is unchanged" grep -q 'commit convention .*other (2 of 6 subjects)' "$XOUT"
+  history_of "feat: a" "fix: b" "c" "docs: d" "test: e" "chore: f"
+  x_in "$repo" adopt --scan
+  assert "REQ-108 five or more: 60 percent conventional is enough" grep -q 'commit convention .*conventional (5 of 6 subjects)' "$XOUT"
+
+  history_of "feat: a" "wip" "fix: b"
+  x_in "$repo" adopt --scan --commit-convention conventional
+  assert "REQ-108 the flag overrides the scan and says so" grep -q 'commit convention .*conventional (chosen with --commit-convention)' "$XOUT"
+  x_in "$repo" adopt --scan --commit-convention loose
+  assert "REQ-108 an unknown value is rejected" test "$XRC" -ne 0
+  assert "REQ-108 the error names the allowed values" grep -q 'conventional or other' "$XOUT"
+  x_in "$repo" adopt --yes --assistants claude --skip-ci --commit-convention conventional
+  worktree="$repo-adopt-xaden"
+  assert "REQ-108 the conf holds the value alone, without the evidence" grep -qx 'commit-convention = conventional' "$worktree/xaden/xaden.conf"
+
+  worktree="$(adopted_copy convention-tip)"
+  x_in "$worktree" check
+  assert "REQ-108 other: the full run prints one TIP naming the setting" test "$(grep -c '^TIP: .*commit-convention' "$XOUT")" -eq 1
+  edit_file "$worktree/xaden/xaden.conf" 's/^commit-convention = .*/commit-convention = conventional/'
+  x_in "$worktree" check
+  assert "REQ-108 conventional: no such TIP" bash -c '! grep -q "^TIP: .*commit-convention" "$1"' _ "$XOUT"
+}
+
 # REQ-107 the commit rules hold in CI, where a skipped hook cannot hide a commit
 test_commit_check_in_ci() {
   local worktree workflow before ci_uses unknown="REQ-""999" # split: traceability rejects a test that cites an unknown ID
@@ -1233,6 +1276,7 @@ test_commit_check_in_ci() {
 
 test_messages
 test_scan_and_plan
+test_convention_from_evidence
 test_adopt_and_remove
 test_claude_commands
 test_command_prefix_migration

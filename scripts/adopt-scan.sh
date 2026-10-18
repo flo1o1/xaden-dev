@@ -13,6 +13,7 @@ SCAN_GAPS=""          # kinds that are missing: test lint typecheck
 SCAN_HOOKS=""         # husky pre-commit lefthook plain, or "unsupported: <name>"
 SCAN_CI=""            # github-actions none, or "unsupported: <name>"
 SCAN_CONVENTION=""    # conventional or other
+SCAN_CONVENTION_EVIDENCE=""  # why: "3 of 3 subjects", "no history" or "chosen with --commit-convention"
 SCAN_AGENTS=0
 SCAN_CLAUDE=0
 SCAN_CLAUDE_DIR=0
@@ -176,13 +177,18 @@ scan_ci() {
 }
 
 # scan_convention <repo>: conventional when at least 60 % of the last 30 commit subjects follow
-# Conventional Commits (and there are at least 5); with no history at all, conventional.
+# Conventional Commits; with fewer than 5 subjects the share says too little, so every one of them
+# must follow it (REQ-108); with no history at all, conventional.
 scan_convention() {
   local total matching
   total="$( (git -C "$1" log -n 30 --format=%s 2>/dev/null || true) | wc -l | tr -d ' ')"
-  if [ "$total" -eq 0 ]; then SCAN_CONVENTION=conventional; return 0; fi
+  if [ "$total" -eq 0 ]; then SCAN_CONVENTION=conventional SCAN_CONVENTION_EVIDENCE="no history"; return 0; fi
   matching="$(git -C "$1" log -n 30 --format=%s 2>/dev/null | grep -Ec "$CONVENTIONAL_PATTERN" || true)"
-  if [ "$total" -ge 5 ] && [ $((matching * 100)) -ge $((total * 60)) ]; then SCAN_CONVENTION=conventional; else SCAN_CONVENTION=other; fi
+  SCAN_CONVENTION_EVIDENCE="$matching of $total subjects"
+  if [ "$total" -ge 5 ] && [ $((matching * 100)) -ge $((total * 60)) ]; then SCAN_CONVENTION=conventional
+  elif [ "$total" -lt 5 ] && [ "$matching" -eq "$total" ]; then SCAN_CONVENTION=conventional
+  else SCAN_CONVENTION=other
+  fi
 }
 
 # Rules that an existing AGENTS.md or CLAUDE.md might contradict (REQ-067). Two groups: phrases
@@ -246,7 +252,10 @@ print_scan() {
   printf '  %-18s %s\n' "type checker" "$(show_or_none "$SCAN_TYPECHECK")"
   printf '  %-18s %s\n' "CI" "$(show_or_none "$SCAN_CI")"
   printf '  %-18s %s\n' "hook manager" "$SCAN_HOOKS"
-  printf '  %-18s %s\n' "commit convention" "$SCAN_CONVENTION"
+  printf '  %-18s %s\n' "commit convention" "$SCAN_CONVENTION ($SCAN_CONVENTION_EVIDENCE)"
+  if [ "$SCAN_CONVENTION" = other ]; then
+    printf '  %-18s %s\n' "" "note: the Refs: checks only advise; set commit-convention = conventional in xaden/xaden.conf to enforce them (tightens a gate: an Approval point, REQ-044)"
+  fi
   mapped=""
   [ "$SCAN_AGENTS" = 1 ] && mapped="AGENTS.md"
   [ "$SCAN_CLAUDE" = 1 ] && mapped="$mapped${mapped:+, }CLAUDE.md"
