@@ -82,6 +82,8 @@ xaden preset python
 
 - `xaden preset python`: writes the preset's configuration at the repository root where its tools expect it, maps the check commands in `xaden/xaden.conf`, and prints the command that installs the tools. You run that command yourself. A file you already have is never overwritten; Xaden shows the difference and asks before it saves its version next to yours as `<file>.xaden-new`.
 
+Which checks each layout runs, and which an adopted project does not: [What Xaden checks](what-xaden-checks.md).
+
 ## Next
 
 [Kick off with your assistant](kick-off-with-your-assistant.md).

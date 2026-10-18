@@ -16,6 +16,7 @@ the pages on https://xaden.dev. Nothing here assumes a particular person's machi
 - [Create a project](docs/guide/developer/create-a-project.md)
 - [Add Xaden to a repository](docs/guide/developer/add-xaden-to-a-repository.md)
 - [Check modes and baselines](docs/guide/developer/check-modes-and-baselines.md)
+- [What Xaden checks](docs/guide/developer/what-xaden-checks.md)
 - [Kick off with your assistant](docs/guide/developer/kick-off-with-your-assistant.md)
 - [Build features](docs/guide/developer/build-features.md)
 - [Release a version](docs/guide/developer/release-a-version.md)
