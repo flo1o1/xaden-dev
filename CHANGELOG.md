@@ -13,6 +13,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 - **Breaking:** moving a project to another Xaden version is `xaden pin [--check] [version]` now. `xaden upgrade <version>` inside a project still does it, with a warning; `xaden upgrade` without a version, or outside a project, updates the tool (REQ-099). `xaden doctor` names `xaden pin <version>` when a newer Xaden is installed than the one the project pins.
 - Maintainers: the REQ-072 test also allows `scripts/get-xaden.sh` to reach the network, after a yes.
 
+### Fixed
+- **Breaking:** a check that exits with a status it does not declare as "violations found" fails, even when everything it printed was already in the baseline; before, a tool that crashed after printing a baselined finding counted as passed. Built-in checks and the presets declare their statuses; a mapped command declares them with `findings-status.<name> = 1` in `xaden/xaden.conf` (`xaden adopt` records it, `test` never has one), otherwise any non-zero exit fails. A mapped command that exits non-zero with baselined output needs that line after upgrading (REQ-101).
+
 ## [0.5.0] - 2026-10-18
 
 ### Added

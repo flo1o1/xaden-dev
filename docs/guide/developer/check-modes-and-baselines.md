@@ -26,6 +26,25 @@ the check in the mode you chose. Letting a baseline grow is an approval point.
 
 A failure that names no file, such as a failing test, cannot be baselined. In `advisory` it warns; in the other modes it fails.
 
+## A check that crashes is a failure
+
+A tool that finds violations exits with a known status (ruff, eslint, mypy and shellcheck use 1). Only that status sends its output
+through the baseline and the mode. Any other non-zero status means the tool did not run to the end, so the check fails in `changed-files`
+and `strict` and warns in `advisory`, even when everything it printed was in the baseline. Xaden shows the output and the status.
+
+Built-in checks and Xaden's presets know their tool's status. For a command you mapped yourself, name it in `xaden/xaden.conf`:
+
+```
+check.lint = my-linter --all
+findings-status.lint = 1,3
+```
+
+`xaden adopt` writes the line for you when the command exited non-zero while it recorded the baseline. The check `test` never has one:
+a failing test is always a failure. A command without the line fails on every non-zero status.
+
+**Upgrading from an earlier version:** a mapped command that exits non-zero with only baselined output used to pass. It now fails until
+you add its `findings-status.<name>` line. Weakening or removing such a line is an approval point, like changing the mode.
+
 ## Commit convention
 
 If your repository does not use Conventional Commits, the `Refs:` checks only advise. Set `commit-convention = conventional` in

@@ -973,6 +973,71 @@ test_command_prefix_migration() {
   assert "a command of the same old name that Xaden did not create stays" test "$(cat "$dir/.claude/commands/review.md")" = "my own review command"
 }
 
+# REQ-101 a check that did not run to the end never counts as passed
+test_exit_status_of_checks() {
+  local worktree="$WORKDIR/repos/exit-status-adopt-xaden" repo="$WORKDIR/repos/exit-status" conf mode
+  make_repo "$repo" shop
+  mkdir -p "$repo/tools"
+  # prints one violation (baselined below), then exits with the status in tools/status
+  printf '#!/bin/sh\necho "scripts/build.sh:3:1: note: old finding"\n[ -z "$STUB_NEW" ] || echo "scripts/build.sh:9:1: note: new finding"\nexit "$(cat "$(dirname "$0")/status")"\n' >"$repo/tools/stub.sh"
+  printf '1\n' >"$repo/tools/status"
+  git -C "$repo" add -A && git -C "$repo" commit -q -m "chore: stub"
+  x_in "$repo" adopt --yes --skip-ci --check "stub=sh tools/stub.sh"
+  conf="$worktree/xaden/xaden.conf"
+  assert "adoption records the status the check exits with while printing violations" grep -q '^findings-status.stub = 1$' "$conf"
+
+  # checks_in <mode>: the check run under that mode, XRC and XOUT as x_in leaves them
+  checks_in() {
+    edit_file "$conf" "s/^mode = .*/mode = $1/"
+    x_in "$worktree" check
+  }
+  for mode in changed-files strict; do
+    checks_in "$mode"
+    assert "$mode: the declared status with only baselined violations passes" test "$XRC" -eq 0
+  done
+  printf '2\n' >"$worktree/tools/status"
+  for mode in changed-files strict; do
+    checks_in "$mode"
+    assert "$mode: a crash after baselined output fails" test "$XRC" -ne 0
+    assert "$mode: the failure names the status" grep -q 'check: stub failed (exit status 2)' "$XOUT"
+  done
+  checks_in advisory
+  assert "advisory: a crash only warns" test "$XRC" -eq 0
+  assert "advisory says it is not blocking" grep -q 'check: stub failed (advisory mode: not blocking)' "$XOUT"
+
+  # a new violation and a fatal error together: fails, and both lines are shown
+  checks_in strict
+  (cd "$worktree" && STUB_NEW=1 "$XADEN" check) >"$XOUT" 2>&1 && XRC=0 || XRC=$?
+  assert "strict: new violation plus fatal error fails" test "$XRC" -ne 0
+  assert "the output is shown" grep -q 'new finding' "$XOUT"
+
+  # an undeclared custom check fails on any non-zero status
+  printf '1\n' >"$worktree/tools/status"
+  edit_file "$conf" '/^findings-status.stub/d'
+  checks_in strict
+  assert "undeclared status: the check fails even with only baselined output" test "$XRC" -ne 0
+
+  # failing assertions are never findings
+  edit_file "$conf" 's#^check.test = .*#check.test = sh tools/stub.sh#'
+  printf 'findings-status.stub = 1\n' >>"$conf"
+  checks_in strict
+  assert "the test check fails on a failing exit status" grep -q 'check: test failed (exit status 1)' "$XOUT"
+  printf 'findings-status.test = 1\n' >>"$conf"
+  checks_in strict
+  assert "findings-status.test is refused" grep -q 'findings-status.test is not allowed' "$XOUT"
+  edit_file "$conf" '/^findings-status.test/d'
+  printf 'findings-status.nothing = 1\n' >>"$conf"
+  checks_in strict
+  assert "a status for an unmapped check is refused" grep -q 'findings-status.nothing names no check' "$XOUT"
+  edit_file "$conf" '/^findings-status.nothing/d'
+  edit_file "$conf" 's/^findings-status.stub = .*/findings-status.stub = 0,300/'
+  checks_in strict
+  assert "a status outside 1 to 255 is refused" test "$XRC" -ne 0
+  edit_file "$conf" 's/^findings-status.stub = .*/findings-status.stub = one/'
+  checks_in strict
+  assert "a status that is no number is refused" grep -q 'not a comma separated list' "$XOUT"
+}
+
 test_messages
 test_scan_and_plan
 test_adopt_and_remove
@@ -983,6 +1048,7 @@ test_reuse_of_existing_tooling
 test_versions_and_downloads
 test_self_upgrade
 test_modes_and_baselines
+test_exit_status_of_checks
 test_prompts_and_ignore_list
 test_autopilot
 test_migration

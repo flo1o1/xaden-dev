@@ -10,6 +10,11 @@
 # GitHub annotation "::warning file=path,line=12::message"); it is
 # recorded without the numbers, so moving code does not make it new. A failure without such lines
 # cannot be baselined (a failing test, for example): advisory warns, the other modes fail.
+# Only the exit statuses a check declares as "violations found" (REQ-101) go through that filtering:
+# a built-in check declares its own, a mapped one declares them as "findings-status.<name> = 1" in
+# xaden/xaden.conf (adoption records them). Any other non-zero status is a tool that did not run to
+# the end, whatever it printed, and fails like a failure without violation lines. The check named
+# "test" declares none: failing assertions are never baselined.
 
 BASELINE_DIR_NAME="baselines"
 
@@ -36,6 +41,29 @@ changed_files() {
     [ -z "$base" ] || git -C "$repo" diff --name-only "$base" HEAD
     git -C "$repo" diff --name-only HEAD
   } 2>/dev/null | LC_ALL=C sort -u
+}
+
+# gate_findings_status <name>: the exit statuses meaning "violations found", comma separated, or
+# nothing. The project's declaration wins over the built-in one.
+gate_findings_status() {
+  local declared
+  [ "$1" != "test" ] || return 0
+  declared="$(conf_get "$TEAM_DIR/$CONF_NAME" "findings-status.$1")"
+  if [ -n "$declared" ]; then printf '%s' "$declared"; return 0; fi
+  case "$1" in
+    shellcheck | semgrep | actionlint) printf '1' ;;
+    zizmor) printf '10,11,12,13,14' ;;
+  esac
+}
+
+# gate_is_findings_status <status> <name>: whether the check declares that exit status.
+gate_is_findings_status() { printf ',%s,' "$(gate_findings_status "$2")" | grep -q ",$1,"; }
+
+# gate_record_findings_status <status> <name>: adoption saw the check exit with <status> while
+# printing violations; unless it declares statuses already, that becomes its declaration.
+gate_record_findings_status() {
+  [ "$2" != "test" ] && [ -z "$(gate_findings_status "$2")" ] && [ -f "$TEAM_DIR/$CONF_NAME" ] || return 0
+  conf_set "$TEAM_DIR/$CONF_NAME" "findings-status.$2" "$1"
 }
 
 # gate_baseline_file <name>: where the baseline of one check lives.
@@ -79,6 +107,7 @@ gate_run() {
     if [ "$status" -ne 0 ] && [ ! -s "$keys" ]; then
       warn "$label fails today without naming files; that cannot be baselined, the mode decides (see xaden/xaden.conf)"
     else
+      [ "$status" -eq 0 ] || gate_record_findings_status "$status" "$name"
       info "baseline of '$name': $(wc -l <"$keys" | tr -d ' ') violation(s)"
     fi
     rm -f "$output" "$keys"
@@ -90,11 +119,13 @@ gate_run() {
     rm -f "$output" "$keys"
     return 0
   fi
-  if [ ! -s "$keys" ]; then # a failure without violation lines: nothing to baseline or filter
+  # no violation lines, or an exit status the check does not declare as "violations found" (a crash
+  # after some findings, a misconfiguration): nothing to baseline or filter
+  if [ ! -s "$keys" ] || ! gate_is_findings_status "$status" "$name"; then
     cat "$output" >&2
     rm -f "$output" "$keys"
     if [ "$mode" = "advisory" ]; then warn "$label failed (advisory mode: not blocking)"; return 0; fi
-    warn "$label failed"
+    warn "$label failed (exit status $status)"
     FAILURES=$((FAILURES + 1))
     return 0
   fi
