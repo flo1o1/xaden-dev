@@ -580,6 +580,50 @@ PY
     x_answers y "$signed_worktree" upgrade 9.9.9
     assert "a release without a signature is installed with a warning" test "$XRC" -eq 0
     assert "the warning names trust on first use" grep -q 'trust on first use' "$XOUT"
+    # REQ-103 require-signature = true: only releases the maintainer signed, on every path
+    local policy_worktree policy_pinned
+    policy_worktree="$(adopted_copy policy)"
+    printf 'require-signature = true\n' >>"$policy_worktree/xaden/xaden.conf"
+    git -C "$policy_worktree" add -A && git -C "$policy_worktree" -c core.hooksPath=/dev/null commit -q -n -m "chore: require signed releases"
+    policy_pinned="$policy_worktree-upgrade-xaden-9.9.9"
+    rm -rf "$home"
+    x_answers y "$policy_worktree" upgrade 9.9.9
+    assert "policy: a release without a published signature is refused with exit code 6" test "$XRC" -eq 6
+    assert "policy: the refusal names the setting" grep -q 'require-signature = true' "$XOUT"
+    assert "policy: nothing is installed without a signature" test ! -e "$home/versions/9.9.9"
+    printf '%s  xaden-9.9.9\n' "$extracted" >"$assets/xaden-9.9.9.checksum"
+    ssh-keygen -q -Y sign -f "$sign/other" -n xaden-release "$assets/xaden-9.9.9.checksum"
+    x_answers y "$policy_worktree" upgrade 9.9.9
+    assert "policy: a signature by an unknown key still fails with exit code 6" test "$XRC" -eq 6
+    rm -f "$assets/xaden-9.9.9.checksum.sig" && ssh-keygen -q -Y sign -f "$sign/key" -n xaden-release "$assets/xaden-9.9.9.checksum"
+    x_answers y "$policy_worktree" upgrade 9.9.9
+    assert "policy: the first download with a valid signature is installed" test "$XRC" -eq 0
+    assert "policy: the signed checksum is what gets pinned" grep -q "^checksum = $extracted\$" "$policy_pinned/xaden/xaden.conf"
+    assert "policy: the signed checksum is recorded outside the installed folder" test "$(tr -d '[:space:]' <"$home/versions/9.9.9.signed")" = "$extracted"
+    x_in "$policy_pinned" check
+    assert "policy: the authenticated copy runs for the project" grep -q 'check mode: full' "$XOUT"
+    rm -f "$home/versions/9.9.9.signed"
+    x_in "$policy_pinned" check
+    assert "policy: a copy with no signature on record is not run" test "$XRC" -ne 0
+    assert "policy: the message names the fix" grep -q 'xaden fetch 9.9.9' "$XOUT"
+    x_answers y "$policy_pinned" fetch 9.9.9
+    assert "policy: fetch re-verifies the installed copy against the signed checksum" test "$XRC" -eq 0
+    assert "policy: and records the result" test -f "$home/versions/9.9.9.signed"
+    printf 'changed\n' >>"$home/versions/9.9.9/README.md"
+    x_in "$policy_pinned" check
+    assert "policy: files that no longer match the signed checksum are not run" test "$XRC" -ne 0
+    x_answers y "$policy_pinned" fetch 9.9.9
+    assert "policy: fetch does not bless a changed copy" test "$XRC" -eq 6
+    rm -rf "$home"
+    x_answers n "$policy_worktree" upgrade 9.9.9
+    assert "policy: the download still needs a yes" test ! -e "$home/versions/9.9.9"
+    edit_file "$policy_pinned/xaden/xaden.conf" 's/^require-signature = true/require-signature = yes/'
+    for command in check doctor "fetch 9.9.9"; do
+      # shellcheck disable=SC2086 # "fetch 9.9.9" is two words on purpose
+      x_in "$policy_pinned" $command
+      assert "policy: an invalid value stops '$command'" grep -q 'require-signature must be true or false (got: yes)' "$XOUT"
+    done
+    assert "policy: CI installs only the pinned checksum" grep -q 'XADEN_CHECKSUM' "$SCAFFOLD_ROOT/scripts/adopt/ci.yml"
     unset XADEN_ASSETS_URL XADEN_SIGNERS_FILE
   fi
 

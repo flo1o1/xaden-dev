@@ -26,6 +26,33 @@ archive of the same release give the same value, because the release leaves out 
 Check which case applies to you: `grep -v '^#' ~/.xaden/release-signers` prints the trusted keys. No output means no key is published
 yet.
 
+## Require signed releases
+
+By default a release without a verifiable signature is installed after your yes, on trust. A team that wants no exceptions sets, in
+`xaden/xaden.conf`:
+
+```
+require-signature = true
+```
+
+Then, for that project:
+
+- `xaden fetch`, `xaden pin` and `xaden upgrade` install nothing and exit with code 6 when the key is missing from `release-signers`,
+  `ssh-keygen` is not installed, no signature is published, or the signature cannot be downloaded. A signature that does not verify
+  blocks with or without the setting. The first download of a version is covered too: the signed checksum is the one that gets pinned.
+- Xaden runs for the project only when the installed files are exactly what the maintainer signed and what the project pins. Xaden keeps
+  the signed checksum of every verified install in `<versions folder>/<version>.signed`, next to the version, not inside it. A copy with
+  no record (installed from the release zip, or before you set the option) is verified once: `xaden fetch <version>` downloads the
+  signed checksum after your yes, compares it with the installed files, and records the result. A git clone of Xaden is never accepted.
+- Any value other than `true` or `false` stops every `xaden` command in the project, so a typo cannot switch the control off.
+- Setting it back to `false`, or removing it, weakens a control: do it in a pull request your team reviews.
+- **CI** does not verify signatures itself. The workflow `xaden adopt` writes installs the version and checksum pinned in
+  `xaden/xaden.conf` and refuses a download that differs. Under the setting `xaden pin` writes only a signed checksum, so the pin your team
+  reviewed is the trust anchor for CI.
+
+The setting proves that the checksum was signed by a key listed in `release-signers`. Who holds that key, how it is rotated and what
+happens when it leaks stay with you and the maintainer.
+
 ## What signatures do not protect against
 
 A stolen signing key, or a maintainer who signs something malicious. Reading the scripts before you run them is still the final check:

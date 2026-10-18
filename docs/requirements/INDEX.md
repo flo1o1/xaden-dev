@@ -103,6 +103,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-075 | job | could | done | Deployment artifacts can leave out the Xaden files |
 | REQ-089 | job | should | done | A release repeats the full check only when asked |
 | REQ-094 | job | should | done | Xaden installs from a signed release zip that holds no maintainer files |
+| REQ-103 | job | should | done | A team can require that every Xaden it runs came from a signed release |
 
 ## Requirements (`requirements`)
 

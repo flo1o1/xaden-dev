@@ -137,6 +137,10 @@ install_release() {
     fi
     expected=$signed
     info "signature verified: the checksum of Xaden $version comes from the maintainer" >&2
+  elif [ "$SIGNATURE_REQUIRED" = 1 ]; then
+    rm -rf "${staging:?}"
+    warn "This project requires signed releases (require-signature = true), and Xaden $version has no signature that can be verified: no key in release-signers, no ssh-keygen, or no signature published. Nothing was installed." >&2
+    exit "$EXIT_SIGNATURE"
   elif [ -z "$expected" ]; then
     warn "No verifiable signature for Xaden $version: the checksum is taken from the download itself (trust on first use)." >&2
   fi
@@ -151,7 +155,47 @@ install_release() {
   mkdir -p "$(versions_dir)"
   rm -rf "${target:?}"
   mv "$staging" "$target"
+  if [ -n "$signed" ]; then printf '%s\n' "$signed" >"$(signed_record "$version")"; else rm -f "$(signed_record "$version")"; fi
   printf '%s' "$actual"
+}
+
+# project_signature_policy: reads require-signature from the project around the current directory,
+# if there is one. Outside a project, or in one without the setting, releases need no signature.
+project_signature_policy() {
+  local root
+  SIGNATURE_REQUIRED=0
+  root="$(git rev-parse --show-toplevel 2>/dev/null)" || return 0
+  [ -f "$root/xaden/xaden.conf" ] || return 0
+  load_signature_policy "$root/xaden/xaden.conf"
+}
+
+# ensure_authenticated <version> <dir> [pinned-checksum]: under require-signature, an installed copy
+# must match the checksum the maintainer signed. A copy without a record (installed from a zip, or
+# before the setting) is verified once against the signed checksum, after a yes, and recorded.
+ensure_authenticated() {
+  local version=$1 dir=$2 signed status=0
+  [ "$SIGNATURE_REQUIRED" = 1 ] || return 0
+  if installation_authenticated "$version" "$dir" "${3:-}"; then return 0; fi
+  info "This project requires signed releases; Xaden $version in $dir has no verified signature on record." >&2
+  has_terminal || { warn "No terminal, so nothing was verified. Run this yourself in a terminal: xaden fetch $version" >&2; exit "$EXIT_NO_TERMINAL"; }
+  ask "Download the signed checksum of Xaden $version from github.com and verify the installed copy against it?" ||
+    { echo "Nothing was verified." >&2; exit 1; }
+  signed="$(signed_checksum "$version")" || status=$?
+  if [ "$status" -ne 0 ]; then
+    warn "Xaden $version cannot be verified against a signature by a key in release-signers. It is not used." >&2
+    exit "$EXIT_SIGNATURE"
+  fi
+  if [ "$(tree_checksum "$dir")" != "$signed" ]; then
+    warn "The files of Xaden $version in $dir are not what the maintainer signed. It is not used." >&2
+    exit "$EXIT_SIGNATURE"
+  fi
+  if [ -n "${3:-}" ] && [ "$3" != "$signed" ]; then
+    warn "The checksum pinned in xaden/xaden.conf is not the one the maintainer signed for Xaden $version." >&2
+    exit "$EXIT_CHECKSUM"
+  fi
+  mkdir -p "$(versions_dir)"
+  printf '%s\n' "$signed" >"$(signed_record "$version")"
+  info "signature verified: Xaden $version in $dir is what the maintainer signed" >&2
 }
 
 # fetch_main <version>: installs the version the project pins.
@@ -163,7 +207,13 @@ fetch_main() {
   pinned="$(conf_get "$conf" version)"
   checksum="$(conf_get "$conf" checksum)"
   [ "$version" = "$pinned" ] || die "this project pins Xaden $pinned, not $version. To move it to $version: xaden pin $version"
-  if [ -x "$(versions_dir)/$version/scripts/xaden.sh" ] || [ "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")" = "$version" ]; then
+  if [ "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")" = "$version" ]; then
+    ensure_authenticated "$version" "$SCAFFOLD_ROOT" "$checksum"
+    ok "Xaden $version is installed already"
+    return 0
+  fi
+  if [ -x "$(versions_dir)/$version/scripts/xaden.sh" ]; then
+    ensure_authenticated "$version" "$(versions_dir)/$version" "$checksum"
     ok "Xaden $version is installed already"
     return 0
   fi
@@ -188,8 +238,16 @@ changelog_between() {
 # tools_for <version>: the folder of an installed Xaden of that version; downloads it after a yes.
 tools_for() {
   local version=$1 checksum
-  if [ "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")" = "$version" ]; then printf '%s' "$SCAFFOLD_ROOT"; return 0; fi
-  if [ -x "$(versions_dir)/$version/scripts/xaden.sh" ]; then printf '%s' "$(versions_dir)/$version"; return 0; fi
+  if [ "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")" = "$version" ]; then
+    ensure_authenticated "$version" "$SCAFFOLD_ROOT" >&2
+    printf '%s' "$SCAFFOLD_ROOT"
+    return 0
+  fi
+  if [ -x "$(versions_dir)/$version/scripts/xaden.sh" ]; then
+    ensure_authenticated "$version" "$(versions_dir)/$version" >&2
+    printf '%s' "$(versions_dir)/$version"
+    return 0
+  fi
   confirm_download "$version" "" >&2 || { echo "Nothing was downloaded." >&2; exit 1; }
   checksum="$(install_release "$version" "")" || exit $? # the subshell cannot stop this script by itself
   info "checksum of Xaden $version: $checksum (it goes into xaden/xaden.conf; your team reviews it in the pull request)" >&2
@@ -305,6 +363,8 @@ self_upgrade_main() {
   if [ ! -x "$(versions_dir)/$target/scripts/xaden.sh" ]; then
     confirm_download "$target" "" || { echo "Nothing was downloaded."; exit 1; }
     install_release "$target" "" >/dev/null
+  else
+    ensure_authenticated "$target" "$(versions_dir)/$target"
   fi
   switch_current "$target"
   ok "Xaden $target is active (was $installed); $installed stays in $(versions_dir) for projects that pin it"
@@ -379,6 +439,7 @@ update_check_main() {
 
 command_name=${1:-}
 [ "$#" -eq 0 ] || shift
+project_signature_policy
 case "$command_name" in
   fetch) fetch_main "$@" ;;
   upgrade) upgrade_main "$@" ;;
