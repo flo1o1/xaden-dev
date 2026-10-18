@@ -8,8 +8,10 @@ SCAN_STACKS=""        # node python go rust java make, space separated
 SCAN_TEST=""          # command that runs the tests, or empty
 SCAN_LINT=""          # command that runs the linters, or empty
 SCAN_TYPECHECK=""     # command that runs the type checker, or empty
+SCAN_AUDIT=""         # command that audits the dependencies, or empty
+SCAN_SECURITY=""      # command that runs the Python security linter, or empty
 SCAN_FOUND_TOOLS=""   # tools found without a command to run them: "eslint (no lint script)"
-SCAN_GAPS=""          # kinds that are missing: test lint typecheck
+SCAN_GAPS=""          # kinds that are missing: test lint typecheck audit security
 SCAN_HOOKS=""         # husky pre-commit lefthook plain, or "unsupported: <name>"
 SCAN_CI=""            # github-actions none, or "unsupported: <name>"
 SCAN_CONVENTION=""    # conventional or other
@@ -57,6 +59,8 @@ set_command() {
     test) [ -n "$SCAN_TEST" ] || SCAN_TEST=$2 ;;
     lint) [ -n "$SCAN_LINT" ] || SCAN_LINT=$2 ;;
     typecheck) [ -n "$SCAN_TYPECHECK" ] || SCAN_TYPECHECK=$2 ;;
+    audit) [ -n "$SCAN_AUDIT" ] || SCAN_AUDIT=$2 ;;
+    security) [ -n "$SCAN_SECURITY" ] || SCAN_SECURITY=$2 ;;
   esac
 }
 
@@ -70,6 +74,7 @@ scan_node() {
   package_script "$repo" test && set_command test "npm test"
   package_script "$repo" lint && set_command lint "npm run lint"
   if package_script "$repo" typecheck; then set_command typecheck "npm run typecheck"; fi
+  if package_script "$repo" audit; then set_command audit "npm run audit"; fi
   if [ -z "$SCAN_LINT" ] && { repo_has "$repo" eslint.config.js || repo_has "$repo" eslint.config.mjs || repo_has "$repo" .eslintrc.json || repo_has "$repo" .eslintrc.js; }; then
     found_tool "eslint (configured, but package.json has no lint script)"
   fi
@@ -98,6 +103,10 @@ scan_python() {
     set_command typecheck "mypy ."
   elif repo_has "$repo" pyrightconfig.json; then
     set_command typecheck "pyright"
+  fi
+  # shellcheck disable=SC2086
+  if repo_has "$repo" .bandit || repo_grep "$repo" '^\[tool\.bandit' $project_files; then
+    found_tool "Bandit (configured, but no command runs it; map one with check.security)"
   fi
 }
 
@@ -134,6 +143,8 @@ scan_make() {
   make_target "$repo" test && set_command test "make test"
   make_target "$repo" lint && set_command lint "make lint"
   make_target "$repo" typecheck && set_command typecheck "make typecheck"
+  make_target "$repo" audit && set_command audit "make audit"
+  make_target "$repo" security && set_command security "make security"
   return 0
 }
 
@@ -146,6 +157,11 @@ scan_gaps() {
     *" python "*) [ -n "$SCAN_TYPECHECK" ] || SCAN_GAPS="$SCAN_GAPS typecheck" ;;
     *" node "*) if [ -z "$SCAN_TYPECHECK" ] && repo_has "$1" tsconfig.json; then SCAN_GAPS="$SCAN_GAPS typecheck"; fi ;;
   esac
+  # REQ-106: the dependency audit applies to every stack Xaden has a command for; Bandit to Python only
+  case " $SCAN_STACKS " in
+    *" python "* | *" node "*) [ -n "$SCAN_AUDIT" ] || SCAN_GAPS="$SCAN_GAPS audit" ;;
+  esac
+  case " $SCAN_STACKS " in *" python "*) [ -n "$SCAN_SECURITY" ] || SCAN_GAPS="$SCAN_GAPS security" ;; esac
   SCAN_GAPS="${SCAN_GAPS# }"
 }
 
@@ -213,7 +229,7 @@ scan_contradictions() {
 # scan_repository <repo>: fills the SCAN_* variables. Writes nothing.
 scan_repository() {
   local repo=$1
-  SCAN_STACKS="" SCAN_TEST="" SCAN_LINT="" SCAN_TYPECHECK="" SCAN_FOUND_TOOLS="" SCAN_GAPS="" SCAN_UNRECOGNISED=""
+  SCAN_STACKS="" SCAN_TEST="" SCAN_LINT="" SCAN_TYPECHECK="" SCAN_AUDIT="" SCAN_SECURITY="" SCAN_FOUND_TOOLS="" SCAN_GAPS="" SCAN_UNRECOGNISED=""
   scan_node "$repo"
   scan_python "$repo"
   scan_go "$repo"
@@ -250,6 +266,8 @@ print_scan() {
   printf '  %-18s %s\n' "test runner" "$(show_or_none "$SCAN_TEST")"
   printf '  %-18s %s\n' "linters" "$(show_or_none "$SCAN_LINT")"
   printf '  %-18s %s\n' "type checker" "$(show_or_none "$SCAN_TYPECHECK")"
+  printf '  %-18s %s\n' "dependency audit" "$(show_or_none "$SCAN_AUDIT")"
+  printf '  %-18s %s\n' "security linter" "$(show_or_none "$SCAN_SECURITY")"
   printf '  %-18s %s\n' "CI" "$(show_or_none "$SCAN_CI")"
   printf '  %-18s %s\n' "hook manager" "$SCAN_HOOKS"
   printf '  %-18s %s\n' "commit convention" "$SCAN_CONVENTION ($SCAN_CONVENTION_EVIDENCE)"

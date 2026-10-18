@@ -80,7 +80,7 @@ check_findings_status_config() {
 # "hook-checks" (default: lint); the full run runs all. Expected kinds without a command are gaps:
 # a warning, an error in strict mode.
 check_mapped_commands() {
-  local conf="$TEAM_DIR/$CONF_NAME" key name kind hooked mode command_line binary expected
+  local conf="$TEAM_DIR/$CONF_NAME" key name kind hooked mode command_line binary expected network_note
   hooked="$(conf_get "$conf" hook-checks lint)"
   mode="$(project_mode "$ROOT")"
   check_findings_status_config
@@ -90,8 +90,11 @@ check_mapped_commands() {
     if [ "$MODE" = "staged" ] && ! printf ',%s,' "$hooked" | grep -q ",$name,"; then continue; fi
     command_line="$(conf_get "$conf" "$key")"
     binary="${command_line%% *}"
+    network_note=""
+    [ "$name" != audit ] || network_note=" (needs the network)"
     if ! has_command "$binary"; then record_missing_tool "check: $name" "$binary"; continue; fi
-    gate_run "$name" "check: $name" bash -c "$command_line"
+    # the audits ask a vulnerability database: without a network they fail with the tool's own message (REQ-106)
+    gate_run "$name" "check: $name${network_note}" bash -c "$command_line"
   done < <(conf_keys "$conf" "check.")
   [ "$MODE" = "full" ] || return 0
   if [ "$(conf_get "$conf" commit-convention conventional)" = other ]; then
@@ -125,13 +128,16 @@ classic_extra_checks() {
 # report_not_covered: a full run of an adopted project says which checks the classic layout would
 # run for this stack and nothing maps. An expected kind is already a gap (REQ-101), so it is skipped here.
 report_not_covered() {
-  local conf="$TEAM_DIR/$CONF_NAME" kind tool
+  local conf="$TEAM_DIR/$CONF_NAME" kind tool printed=""
   while read -r kind tool; do
     [ -n "$kind" ] || continue
     [ -z "$(conf_get "$conf" "check.$kind")" ] || continue
     if printf ',%s,' "$(conf_get "$conf" expect)" | grep -q ",$kind,"; then continue; fi
     printf 'NOT COVERED: %s; a project made by xaden create runs it. Map it with check.%s in xaden/xaden.conf (see "What Xaden checks")\n' "$tool" "$kind"
+    printed=1
   done < <(classic_extra_checks)
+  # a project adopted before REQ-106 keeps its expect line; nothing turns red by an upgrade
+  [ -z "$printed" ] || tip "name them in 'expect' once they are mapped (xaden preset <stack> maps the commands) so a missing mapping is a gap"
 }
 
 # check_stacks: each file in stacks/ defines stack_check <mode> for one language. An adopted

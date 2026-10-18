@@ -21,16 +21,22 @@ only the commands you map with `check.<kind>` in `xaden/xaden.conf`, plus Xaden'
 | `mypy` (Python types) | built in, required | only what `check.typecheck` maps | fails | no | no |
 | `pytest` (Python tests) | built in, required | only what `check.test` maps | fails | no | no |
 | `npm run` (Node lint, typecheck, test) | built in, required | only what the same three keys map | fails | no | lint only |
-| `bandit` (Python security) | yes | **not run** | skipped; fails with `--strict` and in CI | no | no |
-| `pip-audit` (Python dependencies) | yes | **not run** | skipped; fails with `--strict` and in CI | yes | no |
-| `npm audit` (Node dependencies) | yes | **not run** | skipped; fails with `--strict` and in CI | yes | no |
+| `bandit` (Python security) | yes | **unless mapped**: `check.security` | skipped; fails with `--strict` and in CI | no | no |
+| `pip-audit` (Python dependencies) | yes | **unless mapped**: `check.audit` | skipped; fails with `--strict` and in CI | yes | no |
+| `npm audit` (Node dependencies) | yes | **unless mapped**: `check.audit` | skipped; fails with `--strict` and in CI | yes | no |
 
-A skipped check makes the run INCOMPLETE, never a success. A row that is "not run" in the adopted layout is not a bug: nothing maps
-it yet.
+A skipped check makes the run INCOMPLETE, never a success. The three audit rows are check kinds of an adopted project like `test` and
+`lint`: `check.audit` (every stack) and `check.security` (Bandit, Python only). `xaden adopt` finds an existing command (a Makefile
+target `audit` or `security`, an npm script `audit`); `xaden preset python` maps `pip-audit` and `bandit -q -r . -x ./.venv,./node_modules,./tests`,
+`xaden preset node` maps `npm audit --audit-level=high`. The audits never run in the pre-commit hook (they need the network and are slow); the
+generated CI workflow installs the pinned tools before `xaden check --strict`. An audit finding names no file, so it cannot be baselined: it
+fails in `changed-files` and `strict` and warns in `advisory`.
 
 ## What an adopted project is told
 
-The full run of an adopted project prints a `NOT COVERED:` line for each check the classic layout runs for your stack and nothing
+A new adoption expects the audits: `expect` names `audit` (and `security` for Python), so an unmapped one is a gap until you map it. An
+adoption from before keeps its `expect` line; `xaden upgrade` and `xaden pin` never add to it, so no run turns red by an update. Its full run
+prints a `NOT COVERED:` line for each check the classic layout runs for your stack and nothing
 maps, and names the key that would map it:
 
 ```

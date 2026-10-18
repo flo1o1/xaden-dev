@@ -151,6 +151,10 @@ expected_kinds() {
     *" python "*) printf ' typecheck' ;;
     *" node "*) [ ! -f "${ADOPT_REPO:-.}/tsconfig.json" ] || printf ' typecheck' ;;
   esac
+  # REQ-106: a new adoption expects the audits too; an adoption from before is not changed on upgrade
+  case " $SCAN_STACKS " in *" python "* | *" node "*) printf ' audit' ;; esac
+  case " $SCAN_STACKS " in *" python "*) printf ' security' ;; esac
+  return 0
 }
 
 # render_conf <expect>: the content of xaden/xaden.conf.
@@ -175,6 +179,8 @@ EOF
   [ -z "$SCAN_TEST" ] || printf 'check.test = %s\n' "$SCAN_TEST"
   [ -z "$SCAN_LINT" ] || printf 'check.lint = %s\n' "$SCAN_LINT"
   [ -z "$SCAN_TYPECHECK" ] || printf 'check.typecheck = %s\n' "$SCAN_TYPECHECK"
+  [ -z "$SCAN_AUDIT" ] || printf 'check.audit = %s\n' "$SCAN_AUDIT"
+  [ -z "$SCAN_SECURITY" ] || printf 'check.security = %s\n' "$SCAN_SECURITY"
   if [ -n "$ADOPT_CHECKS" ]; then
     printf '%s\n' "$ADOPT_CHECKS" | while IFS= read -r line; do printf 'check.%s = %s\n' "${line%%=*}" "${line#*=}"; done
   fi
@@ -320,8 +326,8 @@ preset_files() {
 # preset_commands <stack>: "kind=command" for what the preset's tools run.
 preset_commands() {
   case "$1" in
-    python) printf 'lint=ruff check .\ntypecheck=mypy .\ntest=pytest -q\n' ;;
-    node) printf 'lint=npx eslint .\ntest=node --test\ntypecheck=npx tsc --noEmit\n' ;;
+    python) printf 'lint=ruff check .\ntypecheck=mypy .\ntest=pytest -q\naudit=pip-audit\nsecurity=bandit -q -r . -x ./.venv,./node_modules,./tests\n' ;;
+    node) printf 'lint=npx eslint .\ntest=node --test\ntypecheck=npx tsc --noEmit\naudit=npm audit --audit-level=high\n' ;;
   esac
 }
 
@@ -330,7 +336,7 @@ preset_commands() {
 preset_findings_status() {
   case "$1/$2" in
     node/typecheck) printf '1,2' ;; # tsc --noEmit: 1 or 2 depending on the version
-    */lint | */typecheck) printf '1' ;;
+    */lint | */typecheck | */audit | */security) printf '1' ;; # pip-audit, npm audit and bandit exit 1 on findings
   esac
 }
 

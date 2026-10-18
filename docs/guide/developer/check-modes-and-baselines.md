@@ -73,14 +73,14 @@ If the repository lacks tests, linters or a type checker for its stack, `xaden a
 
 You can close a gap in two ways:
 
-- Name your own command: add `check.test = <command>` (or `check.lint`, `check.typecheck`) to `xaden/xaden.conf`.
+- Name your own command: add `check.test = <command>` (or `check.lint`, `check.typecheck`, and for the security checks `check.audit` and, in Python, `check.security`) to `xaden/xaden.conf`. What each kind covers: [What Xaden checks](what-xaden-checks.md).
 - Use Xaden's preset for Python or Node: `xaden adopt --preset` while adopting, or later:
 
 ```bash
 xaden preset python
 ```
 
-- `xaden preset python`: writes the preset's configuration at the repository root where its tools expect it, maps the check commands in `xaden/xaden.conf`, and prints the command that installs the tools. You run that command yourself. A file you already have is never overwritten; Xaden shows the difference and asks before it saves its version next to yours as `<file>.xaden-new`.
+- `xaden preset python`: writes the preset's configuration at the repository root where its tools expect it, maps the check commands in `xaden/xaden.conf` (including `pip-audit` and Bandit for Python, `npm audit` for Node), and prints the command that installs the tools. You run that command yourself. A file you already have is never overwritten; Xaden shows the difference and asks before it saves its version next to yours as `<file>.xaden-new`.
 
 Which checks each layout runs, and which an adopted project does not: [What Xaden checks](what-xaden-checks.md).
 
