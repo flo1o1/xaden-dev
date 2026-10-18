@@ -43,10 +43,11 @@ a merge only when both CI checks passed:
 git push -u origin <type>/<slug>
 gh pr create --base main --head <type>/<slug>
 gh pr checks --watch                     # one run of each check per commit
-gh pr merge --merge --delete-branch      # when both checks are green
+gh pr merge --merge --delete-branch      # the maintainer, when both checks are green
 ```
 
-Before opening the pull request run the checks "Before the pull request" names above (REQ-093); CI runs the
+The maintainer merges (REQ-110): the assistant opens the pull request and stops, unless the person tells it in that
+session to merge that one. Before opening the pull request run the checks "Before the pull request" names above (REQ-093); CI runs the
 full suite. Pushing is an approval point. A release is a change like any other: run `scripts/release-scaffold.sh [--check] <part>`
 on a `release/v<version>` branch (`--check` runs the full check first; CI checks the pull request
 anyway), push the branch, open the pull request, merge it, then tag the merge commit

@@ -7,6 +7,9 @@
       "Bash(git diff:*)",
       "Bash(git log:*)"
     ],
+    "ask": [
+      "Bash(gh pr merge:*)"
+    ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.local)",

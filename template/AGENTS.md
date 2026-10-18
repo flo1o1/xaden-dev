@@ -155,6 +155,10 @@ Details and examples: `docs/clean-code.md` (same IDs).
 - Finish a change with the full `scripts/check.sh`, then push the branch and open a pull request
   (both send code out: **Approval point**). CI runs on the pull request; the user merges.
   After the merge: `git worktree remove worktrees/<slug>` and `git branch -d <type>/<slug>`.
+- A human owns every change (REQ-110). The assistant opens the pull request and never merges it, by `gh pr merge`
+  or any other route, unless the user tells it to in that session; that instruction covers the pull request named
+  and no later one. The commit's author stays the human: `Co-Authored-By` for an assistant discloses its part and
+  does not replace the author, and `Signed-off-by` (`git commit -s`) is optional, never required.
 - Commit each coherent step. Never force-push, never rewrite published history.
 
 ## 8. Documentation (mandatory)
