@@ -54,7 +54,7 @@ x_answers() {
 }
 
 # make_repo <dir> <kind>: a repository with history. Kinds: shop (npm test, make lint, CI, an
-# AGENTS.md that contradicts the rules), bare-python (no tests or linters), husky, empty.
+# AGENTS.md that contradicts the rules), bare-python (no tests or linters), unittest-python, husky, empty.
 make_repo() {
   local dir=$1 kind=$2
   rm -rf "$dir" && mkdir -p "$dir"
@@ -75,6 +75,12 @@ make_repo() {
       printf '[project]\nname = "bare"\n' >"$dir/pyproject.toml"
       printf 'print(1)\n' >"$dir/app.py"
       printf '# Bare\n' >"$dir/README.md" ;;
+    unittest-python)
+      mkdir -p "$dir/tests"
+      printf '[project]\nname = "ut"\n' >"$dir/pyproject.toml"
+      printf 'def one():\n    return 1\n' >"$dir/app.py"
+      printf 'import unittest\n\nimport app\n\n\nclass T(unittest.TestCase):\n    def test_one(self):\n        self.assertEqual(app.one(), 1)\n' >"$dir/tests/test_app.py"
+      printf '# Ut\n' >"$dir/README.md" ;;
     pre-commit | lefthook)
       printf '{ "name": "m", "scripts": { "test": "node --test", "lint": "echo lint" } }\n' >"$dir/package.json"
       if [ "$kind" = pre-commit ]; then printf 'repos: []\n' >"$dir/.pre-commit-config.yaml"; else printf 'pre-commit:\n  commands: {}\n' >"$dir/lefthook.yml"; fi
@@ -395,6 +401,19 @@ test_reuse_of_existing_tooling() {
   assert "the install command is printed, not run" grep -q 'pip install -r requirements-dev.txt' "$XOUT"
   assert "the preset maps its commands" grep -q '^check.typecheck = mypy \.$' "$worktree/xaden/xaden.conf"
   assert "the preset's commit has only preset files and the mapping" test -z "$(git -C "$worktree" show --name-only --format= HEAD | grep -Ev '^(mypy\.ini|requirements-dev\.txt|xaden/xaden\.conf|xaden/footprint\.txt)$' || true)"
+
+  # the scan finds unittest, conservatively: pytest wins, and the command runs from the root
+  local ut="$WORKDIR/repos/unittest"
+  make_repo "$ut" unittest-python
+  x_in "$ut" adopt --scan
+  assert "the scan finds unittest" grep -q 'test runner .*python3 -m unittest discover -s tests' "$XOUT"
+  assert "the found command runs the tests from the repository root" bash -c 'cd "$1" && python3 -m unittest discover -s tests >/dev/null 2>&1' _ "$ut"
+  printf '[pytest]\n' >"$ut/pytest.ini"
+  x_in "$ut" adopt --scan
+  assert "pytest wins over unittest" grep -q 'test runner  *pytest$' "$XOUT"
+  rm "$ut/pytest.ini" && printf 'print(1)\n' >"$ut/tests/test_app.py"
+  x_in "$ut" adopt --scan
+  assert "a test file without unittest is no unittest evidence" grep -q 'test runner  *none$' "$XOUT"
 
   # REQ-090 the worktrees/ folder is its own question and its own commit
   local plain="$WORKDIR/repos/plain-worktrees"
