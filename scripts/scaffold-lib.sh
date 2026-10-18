@@ -5,7 +5,7 @@
 # Files the scaffold owns in generated projects (prefix match when ending in "/").
 # Everything else (code, requirements, guides, README, CHANGELOG, VERSION, .gitignore,
 # .env.example) belongs to the project and is never updated. .claude/settings.json is managed
-# (REQ-059): a project that edited it keeps its file and gets <file>.scaffold-new to merge.
+# (REQ-059): a project that edited it keeps its file and gets <file>-dist to merge (REQ-100).
 MANAGED_PATHS="scripts/ prompts/ presets/ .claude/commands/ .claude/settings.json .semgrep/ .github/workflows/
 .github/copilot-instructions.md .continue/ .clinerules .aider.conf.yml .obsidian/app.json
 .obsidian/core-plugins.json .obsidian/templates.json AGENTS.md CLAUDE.md docs/clean-code.md
@@ -66,7 +66,7 @@ export_template() {
     [ -z "$(cd "$source" && find . -type l | head -n 1)" ] || die "template contains symbolic links; refusing to export"
     (cd "$source" && find . \( -name .git -o -name node_modules -o -name .venv -o -name __pycache__ \) -prune -o \
       -type f ! -name .DS_Store ! -name .env ! \( -name '.env.*' ! -name .env.example \) \
-      ! -name '*.scaffold-new' ! \( -path './inbox/*' ! -name README.md \) ! \( -path './worktrees/*' ! -name README.md ! -name .gitignore \) -print |
+      ! -name '*.scaffold-new' ! -name '*-dist' ! \( -path './inbox/*' ! -name README.md \) ! \( -path './worktrees/*' ! -name README.md ! -name .gitignore \) -print |
       tar cf - -T -) | (cd "$destination" && tar xf -)
   fi
 }
@@ -164,6 +164,25 @@ tree_checksum() {
 xaden_home() { printf '%s' "${XADEN_HOME:-${XDG_DATA_HOME:-${HOME:?HOME is not set}/.local/share}/xaden}"; }
 versions_dir() { printf '%s/versions' "$(xaden_home)"; }
 
+# The version that runs when you type `xaden`: a link to one folder of versions/ (REQ-097). The
+# `xaden` command links to current/scripts/xaden.sh, so an upgrade only moves this one link.
+current_link() { printf '%s/current' "$(xaden_home)"; }
+
+# switch_current <version>: points `current` at an installed version; nothing else changes, so a
+# failed download or check before this call leaves the old version active.
+# shortcut: ln -sfn replaces the link in two steps (not one rename), fine for a command nobody runs
+# in the same microsecond; upgrade to a rename if that ever bites.
+switch_current() {
+  [ -x "$(versions_dir)/$1/scripts/xaden.sh" ] || die "Xaden $1 is not installed in $(versions_dir)"
+  ln -sfn "versions/$1" "$(current_link)"
+}
+
+# is_xaden_link <path>: true for a symbolic link to some Xaden's scripts/xaden.sh (this layout or an older one).
+is_xaden_link() { [ -L "$1" ] && case "$(readlink "$1")" in */scripts/xaden.sh) true ;; *) false ;; esac; }
+
+# newest_version <version...>: the highest MAJOR.MINOR.PATCH of those given.
+newest_version() { printf '%s\n' "$@" | sort -t. -k1,1n -k2,2n -k3,3n | tail -n 1; }
+
 # --- what an adopted project records outside xaden/ (REQ-073, REQ-080) ---------------------
 
 FOOTPRINT_FILE="xaden/footprint.txt"
@@ -236,11 +255,13 @@ command_text() {
   esac
 }
 
-# sync_commands <dir> <tools-dir> <assistants>: makes the command files of those assistants match
-# the prompts of those tools (REQ-080, REQ-081). A file that exists already is never overwritten;
-# only the files the footprint lists as Xaden's own are removed when their prompt is gone.
+# sync_commands <dir> <tools-dir> <assistants> [old-tools-dir]: makes the command files of those
+# assistants match the prompts of those tools (REQ-080, REQ-081). A file Xaden wrote and the person did
+# not edit (it equals what the old tools would write) is brought up to date. An edited one stays as it
+# is and the new text goes next to it as <file>-dist (REQ-100). A file Xaden did not write is left alone.
+# Only the files the footprint lists as Xaden's own are removed when their prompt is gone.
 sync_commands() {
-  local dir=$1 tools=$2 assistants=$3 kind prompt name file wanted="" stale
+  local dir=$1 tools=$2 assistants=$3 old=${4:-} kind prompt name file wanted="" stale new_text old_text current
   for kind in $(command_kinds "$assistants"); do
     for prompt in "$tools"/prompts/*.md; do
       prompt="$(basename "$prompt" .md)"
@@ -248,12 +269,29 @@ sync_commands() {
       name="$(command_name "$prompt")"
       file="$(command_path "$kind" "$name")"
       wanted="$wanted $file"
+      new_text="$(command_text "$kind" "$name" "$prompt" "$(sed -n 's/^title: //p' "$tools/prompts/$prompt.md" | head -n 1)")"
       if [ -e "$dir/$file" ]; then
-        grep -qxF "file $file" "$dir/$FOOTPRINT_FILE" 2>/dev/null || info "skipped $file: it exists already and stays as it is"
+        if ! grep -qxF "file $file" "$dir/$FOOTPRINT_FILE" 2>/dev/null; then
+          info "skipped $file: it exists already and stays as it is"
+          continue
+        fi
+        current="$(cat "$dir/$file")"
+        [ "$current" != "$new_text" ] || continue
+        old_text=""
+        if [ -n "$old" ] && [ -f "$old/prompts/$prompt.md" ]; then
+          old_text="$(command_text "$kind" "$name" "$prompt" "$(sed -n 's/^title: //p' "$old/prompts/$prompt.md" | head -n 1)")"
+        fi
+        if [ "$current" = "$old_text" ]; then
+          printf '%s\n' "$new_text" >"$dir/$file"
+        else
+          printf '%s\n' "$new_text" >"$dir/$file-dist"
+          note_footprint "$dir" file "$file-dist"
+          info "kept $file, which you edited; the new version is in $file-dist"
+        fi
         continue
       fi
       mkdir -p "$dir/$(dirname "$file")"
-      command_text "$kind" "$name" "$prompt" "$(sed -n 's/^title: //p' "$tools/prompts/$prompt.md" | head -n 1)" >"$dir/$file"
+      printf '%s\n' "$new_text" >"$dir/$file"
       note_footprint "$dir" file "$file"
     done
   done

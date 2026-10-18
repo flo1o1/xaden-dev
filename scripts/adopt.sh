@@ -304,7 +304,7 @@ adopt_main() {
   parse_arguments "$@"
   has_command git || die "git is required"
   ADOPT_REPO="$(git rev-parse --show-toplevel 2>/dev/null)" || die "this is not a git repository; run 'git init' first"
-  [ ! -f "$ADOPT_REPO/xaden/xaden.conf" ] || die "Xaden is adopted here already (xaden/xaden.conf). Update it with: xaden upgrade"
+  [ ! -f "$ADOPT_REPO/xaden/xaden.conf" ] || die "Xaden is adopted here already (xaden/xaden.conf). Move it with: xaden pin"
   if [ -d "$ADOPT_REPO/.scaffold" ]; then
     CLASSIC=1
     ADOPT_MODE=strict # that project was strict already

@@ -46,7 +46,7 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
   branch (pre-commit branch guard); in CI `EVENT_NAME`, `BASE_REF`,
   `BEFORE_SHA`, `DEFAULT_BRANCH`, filled from GitHub event data.
 - Release archives of Xaden itself from GitHub (`fetch.sh`, only after a person's yes) and the release API
-  (`xaden upgrade --check`, same). The update check (REQ-084) asks the same API without a yes each time, but only when
+  (`xaden pin --check` and `xaden upgrade --check`, same). The update check (REQ-084) asks the same API without a yes each time, but only when
   the person set `update-check` in `xaden/xaden.conf` or `XADEN_UPDATE_CHECK` (off by default); it also runs `npm outdated` and
   `pip list --outdated` in the project. Its result is cached in `.git/xaden-update-check` and printed by `doctor` and
   `context-status.sh`, which an assistant reads: names are filtered to package-name characters before they are cached.
@@ -104,7 +104,7 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
 | Unstaged fix hides a staged problem | trust in the gates | checks run on an export of the git index | REQ-020, smoke `test_staged_snapshot` |
 | Commit cites invented requirements or slips past checks | trust in the gates | ID and trailer checks on every commit, re-run in CI | REQ-011, REQ-022, smoke `test_commit_bypasses` |
 | Malicious `BASE_REF` in CI | CI runner | value validated before use | REQ-022, smoke "CI rejects a malformed base ref" |
-| Update overwrites a project's own edits | project integrity | three-way comparison; conflicts written as `*.scaffold-new` | REQ-017, smoke `test_scaffold_update` |
+| Update overwrites a project's own edits | project integrity | three-way comparison; conflicts written as `*-dist` | REQ-017, smoke `test_scaffold_update` |
 | Symlink in a project redirects an update's writes outside the project | users' machines | writes refused when the path or a parent is a symlink (review 2026-10-11 #1) | REQ-017, smoke `test_update_safety` |
 | Edited manifest makes an update delete project-owned files | project integrity | manifest paths outside `MANAGED_PATHS` ignored (review #2) | REQ-017, smoke `test_update_safety` |
 | Crafted ID in an old requirements table makes the migration write outside `docs/requirements/` | users' machines | every ID must be `REQ-nnn` before anything is written (review 2026-10-11-audit-fixes #1) | REQ-048, smoke `test_requirements_migration` |
@@ -127,7 +127,7 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
 
 - `xaden check` and the hooks run the commands in `check.*` of `xaden/xaden.conf`, the same trust as running the
   repository's own test and lint scripts. A pull request that changes `xaden.conf` therefore needs the same
-  review as one that changes a build script. The adoption pull request and every `xaden upgrade` show it.
+  review as one that changes a build script. The adoption pull request and every `xaden pin` show it.
 - A release without a signature (or while `release-signers` holds no key) is pinned by the checksum of the
   archive just downloaded (trust on first use); the person sees the checksum and the team reviews it in the
   pull request. A stolen signing key or a maintainer who signs something malicious is not covered.

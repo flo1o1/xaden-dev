@@ -86,7 +86,7 @@ test_scaffold_update() {
   assert "unmodified prompt updated" grep -q 'Upstream improvement.' "$PROJECT/prompts/bugfix.md"
   assert "new prompt added" test -f "$PROJECT/prompts/new-prompt.md"
   assert "local tweak kept on conflict" grep -q 'My local tweak.' "$PROJECT/prompts/feature.md"
-  assert "conflict candidate written" grep -q 'Upstream change.' "$PROJECT/prompts/feature.md.scaffold-new"
+  assert "conflict candidate written" grep -q 'Upstream change.' "$PROJECT/prompts/feature.md-dist"
   assert "project requirements untouched" grep -q 'Project requirement edit.' "$PROJECT/docs/requirements/README.md"
   assert "version recorded" test "$(cat "$PROJECT/.scaffold/version")" = "9.9.9"
   git -C "$PROJECT" reset -q --hard HEAD~1 && git -C "$PROJECT" clean -qfdx
@@ -116,7 +116,7 @@ test_update_safety() {
   printf '\nlocal edit\n' >>"$PROJECT/.clinerules"
   grep -v "$(printf '\t').clinerules\$" "$PROJECT/.scaffold/manifest" >"$WORKDIR/manifest" &&
     cp "$WORKDIR/manifest" "$PROJECT/.scaffold/manifest"
-  ln -s "$outside" "$PROJECT/.clinerules.scaffold-new"
+  ln -s "$outside" "$PROJECT/.clinerules-dist"
   git -C "$PROJECT" add -A && git -C "$PROJECT" commit -qn -m "chore: symlinked conflict file"
   assert_fails_with "update refuses to write through a symlink" "symbolic link" \
     "$SCAFFOLD_ROOT/scripts/update-scaffold.sh" "$PROJECT" --apply
@@ -166,6 +166,10 @@ test_xaden_command() {
   mkdir -p "$WORKDIR/other-bin" && ln -s /bin/echo "$WORKDIR/other-bin/xaden"
   assert_fails "uninstall keeps a xaden link to something else" "$SCAFFOLD_ROOT/scripts/install.sh" --uninstall "$WORKDIR/other-bin"
   assert "foreign link left in place" test -L "$WORKDIR/other-bin/xaden"
+  printf 'x\n' >"$elsewhere/xaden-app/prompts/leftover.md-dist"
+  assert "doctor names a leftover -dist file (REQ-100)" \
+    bash -c "cd '$elsewhere/xaden-app' && '$xaden' doctor 2>&1 | grep -q 'prompts/leftover.md-dist'"
+  rm "$elsewhere/xaden-app/prompts/leftover.md-dist"
   assert "uninstall removes the link" "$SCAFFOLD_ROOT/scripts/install.sh" --uninstall "$bin"
   assert_fails "link gone after uninstall" test -L "$xaden"
 }
@@ -183,14 +187,14 @@ test_settings_update() {
   git -C "$PROJECT" commit -qn -am "chore: own permission"
   assert "update applies with an edited settings.json" "$newer/scripts/update-scaffold.sh" "$PROJECT" --apply
   assert "project's own permission kept" grep -q 'make test' "$settings"
-  assert "new settings offered for merging" grep -q 'git show' "$settings.scaffold-new"
+  assert "new settings offered for merging" grep -q 'git show' "$settings-dist"
   git -C "$PROJECT" reset -q --hard HEAD~1 && git -C "$PROJECT" clean -qfdx
 
   grep -v "$(printf '\t').claude/settings.json\$" "$PROJECT/.scaffold/manifest" >"$WORKDIR/manifest" &&
     cp "$WORKDIR/manifest" "$PROJECT/.scaffold/manifest"
   git -C "$PROJECT" commit -qn -am "chore: manifest from before settings.json was managed"
   assert "update applies for an older project" "$newer/scripts/update-scaffold.sh" "$PROJECT" --apply
-  assert "older project's settings offered for merging" test -f "$settings.scaffold-new"
+  assert "older project's settings offered for merging" test -f "$settings-dist"
   git -C "$PROJECT" reset -q --hard HEAD~1 && git -C "$PROJECT" clean -qfdx
 }
 
@@ -213,7 +217,29 @@ test_worktrees_folder() {
   git -C "$PROJECT" worktree remove --force worktrees/probe && git -C "$PROJECT" branch -D chore/probe-worktree >/dev/null
 }
 
+# REQ-100 command files: an unedited one follows the new prompts, an edited one stays and the new text is <file>-dist
+test_command_dist() {
+  local dir="$WORKDIR/dist-sync" old="$WORKDIR/dist-old" new="$WORKDIR/dist-new" newer="$WORKDIR/dist-newer" file
+  mkdir -p "$dir" "$old/prompts" "$new/prompts" "$newer/prompts"
+  printf -- '---\ntitle: Old title\n---\n' >"$old/prompts/feature.md"
+  printf -- '---\ntitle: New title\n---\n' >"$new/prompts/feature.md"
+  printf -- '---\ntitle: Newer title\n---\n' >"$newer/prompts/feature.md"
+  file=".claude/commands/xaden-feature.md"
+  sync_commands "$dir" "$old" claude
+  assert "a command file is written" grep -q 'Old title' "$dir/$file"
+  sync_commands "$dir" "$new" claude "$old"
+  assert "an unedited command file follows the new prompt" grep -q 'New title' "$dir/$file"
+  assert "an unedited command file leaves no -dist file" test ! -e "$dir/$file-dist"
+  printf 'My own wording.\n' >"$dir/$file"
+  sync_commands "$dir" "$newer" claude "$new"
+  assert "an edited command file stays as it is" grep -q 'My own wording.' "$dir/$file"
+  assert "the new command text comes as -dist" grep -q 'Newer title' "$dir/$file-dist"
+  assert "the -dist file is in the footprint, so remove takes it out" grep -qxF "file $file-dist" "$dir/$FOOTPRINT_FILE"
+  assert "the template ignores -dist files" grep -qxF '*-dist' "$SCAFFOLD_ROOT/template/.gitignore"
+}
+
 test_license
+test_command_dist
 test_generation_safety
 test_generation_ignores_project_root
 test_inbox

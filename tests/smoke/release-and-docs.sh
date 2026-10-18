@@ -94,12 +94,41 @@ test_release_failures() {
   git -C "$PROJECT" reset -q --hard "$head"
 }
 
+# REQ-098 the one-line installer: asks first, checks the signature of the zip, then installs
+test_get_xaden() {
+  local script="$SCAFFOLD_ROOT/scripts/get-xaden.sh" work="$WORKDIR/get" version bin="$WORKDIR/get-bin" line
+  need_tool ssh-keygen "installer tests" || return 0
+  need_tool unzip "installer tests" || return 0
+  version="$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
+  while IFS= read -r line; do
+    assert "the installer embeds the key of release-signers: ${line%% *}" grep -qxF "$line" "$script"
+  done < <(grep -Ev '^[[:space:]]*(#|$)' "$SCAFFOLD_ROOT/release-signers")
+  assert "the installer runs its function on the last line only" test "$(tail -n 1 "$script")" = 'get_xaden "$@"'
+  mkdir -p "$work/v$version"
+  ssh-keygen -q -t ed25519 -N '' -C test -f "$work/key"
+  printf 'release@xaden.dev namespaces="xaden-release" %s\n' "$(cat "$work/key.pub")" >"$work/signers"
+  git -C "$SCAFFOLD_ROOT" archive --format=zip --prefix="xaden-$version/" -o "$work/v$version/xaden-$version.zip" "$(git -C "$SCAFFOLD_ROOT" write-tree)"
+  ssh-keygen -q -Y sign -f "$work/key" -n xaden-release "$work/v$version/xaden-$version.zip"
+  export XADEN_ASSETS_URL="file://$work" XADEN_SIGNERS_FILE="$work/signers" XADEN_TEST_MODE=1 XADEN_VERSION="$version" XADEN_HOME="$work/home"
+
+  assert "a no downloads and installs nothing" bash -c "! XADEN_TEST_ANSWER=n bash '$script' '$bin' && test ! -e '$bin/xaden'"
+  assert "a yes installs from the signed zip" env XADEN_TEST_ANSWER=y bash "$script" "$bin"
+  assert "the installed command runs" test "$("$bin/xaden" version)" = "$version"
+  assert "the installer used the shared install step" test "$(readlink "$bin/xaden")" = "$work/home/current/scripts/xaden.sh"
+
+  printf 'tampered\n' >>"$work/v$version/xaden-$version.zip"
+  rm -rf "${work:?}/home" "${bin:?}"
+  assert "a changed zip fails the signature check with exit code 6" bash -c "XADEN_TEST_ANSWER=y bash '$script' '$bin'; test \$? -eq 6"
+  assert "a failed signature installs nothing" test ! -e "$bin/xaden" -a ! -e "$work/home/versions"
+  unset XADEN_ASSETS_URL XADEN_SIGNERS_FILE XADEN_TEST_MODE XADEN_VERSION XADEN_HOME
+}
+
 # REQ-065: the guide documents both ways to get Xaden, and both ways work as written.
 test_install_ways() {
   local install="$SCAFFOLD_ROOT/docs/guide/admin/install-xaden.md" platforms="$SCAFFOLD_ROOT/docs/guide/admin/requirements-and-platforms.md"
   local update="$SCAFFOLD_ROOT/docs/guide/admin/update-xaden.md"
   local extracted="$WORKDIR/extracted-zip" clone="$WORKDIR/cloned-xaden" heading version
-  for heading in '## Install from a signed zip \(recommended\)' '## Install with git \(contributors\)' '## When to choose which' '## Verify what you downloaded'; do
+  for heading in '## Install with one command \(recommended\)' '## Install from a signed zip' '## Install with git \(contributors\)' '## When to choose which' '## Verify what you downloaded'; do
     assert "install guide has the heading $heading" grep -qE "^$heading\$" "$install"
   done
   for heading in '## Linux' '## macOS' '## Windows'; do
@@ -109,7 +138,7 @@ test_install_ways() {
   assert "guide says native PowerShell is not supported" grep -qi 'native PowerShell is not supported' "$platforms"
   assert "guide says the maintainer signs the checksum of every release" grep -q 'signs the checksum of every release' "$install"
   assert "guide verifies the zip signature before extracting" grep -q 'ssh-keygen -Y verify .* xaden-<version>.zip.sig' "$install"
-  assert "guide explains the zip update" grep -q 'Download the new release' "$update"
+  assert "guide explains xaden upgrade" grep -q '^xaden upgrade$' "$update"
   assert "guide explains the clone update" grep -q 'git -C ~/.xaden pull' "$update"
   assert "guide explains picking a release tag" grep -q 'git -C ~/.xaden checkout v' "$update"
 
@@ -118,15 +147,28 @@ test_install_ways() {
   mkdir -p "$extracted"
   git -C "$SCAFFOLD_ROOT" archive HEAD | tar -x -C "$extracted"
   assert "extracted archive has no git history" test ! -e "$extracted/.git"
+  export XADEN_HOME="$WORKDIR/zip-home"
   assert "extracted archive installs the xaden command" "$extracted/scripts/install.sh" "$WORKDIR/zip-bin"
+  assert "the command links through current (REQ-098)" test "$(readlink "$WORKDIR/zip-bin/xaden")" = "$XADEN_HOME/current/scripts/xaden.sh"
+  assert "the release sits in versions/" test -x "$XADEN_HOME/versions/$version/scripts/xaden.sh"
+  mv "$extracted" "$extracted-moved"
+  assert "xaden still runs after the extracted folder is gone" test "$("$WORKDIR/zip-bin/xaden" version)" = "$version"
+  mv "$extracted-moved" "$extracted"
   assert "xaden from the archive prints the version" test "$("$WORKDIR/zip-bin/xaden" version)" = "$version"
   assert "xaden from the archive creates a project" bash -c "cd '$WORKDIR' && '$WORKDIR/zip-bin/xaden' create zip-app"
-  # The documented zip update: a second extraction replaces the link only after the first is uninstalled.
-  mkdir -p "$extracted-next"
+  # A second extraction installs over the first; an older link into a former folder is replaced (REQ-098).
+  mkdir -p "$extracted-next" "$WORKDIR/old-style-bin"
   git -C "$SCAFFOLD_ROOT" archive HEAD | tar -x -C "$extracted-next"
-  assert_fails "a newer extraction does not replace the old link" "$extracted-next/scripts/install.sh" "$WORKDIR/zip-bin"
-  assert "the old extraction removes its own link" "$extracted/scripts/install.sh" --uninstall "$WORKDIR/zip-bin"
+  assert "a second extraction installs again" "$extracted-next/scripts/install.sh" "$WORKDIR/zip-bin"
+  ln -s "$extracted/scripts/xaden.sh" "$WORKDIR/old-style-bin/xaden"
+  assert "an older link into a former folder is replaced" "$extracted-next/scripts/install.sh" "$WORKDIR/old-style-bin"
+  assert "the replaced link goes through current" test "$(readlink "$WORKDIR/old-style-bin/xaden")" = "$XADEN_HOME/current/scripts/xaden.sh"
+  ln -sf /bin/echo "$WORKDIR/old-style-bin/xaden"
+  assert_fails "a link to something else is not replaced" "$extracted-next/scripts/install.sh" "$WORKDIR/old-style-bin"
+  assert "uninstall removes the link and keeps the versions" "$extracted/scripts/install.sh" --uninstall "$WORKDIR/zip-bin"
+  assert "the versions stay after uninstall" test -x "$XADEN_HOME/versions/$version/scripts/xaden.sh"
   assert "the newer extraction installs afterwards" "$extracted-next/scripts/install.sh" "$WORKDIR/zip-bin"
+  unset XADEN_HOME
 
   # The clone way: a release tag can be checked out and git pull follows the branch.
   git clone -q "$SCAFFOLD_ROOT" "$clone"
@@ -237,7 +279,7 @@ test_release_archive() {
   for path in template/AGENTS.md docs/guide/admin/install-xaden.md release-signers VERSION CHANGELOG.md LICENSE README.md GETTING-STARTED.md scripts/xaden.sh; do
     assert "the archive holds $path" test -e "$extracted/$path"
   done
-  assert "the archive installs the xaden command" "$extracted/scripts/install.sh" "$bin"
+  assert "the archive installs the xaden command" env XADEN_HOME="$WORKDIR/archive-home" "$extracted/scripts/install.sh" "$bin"
   mkdir -p "$repo" && git -C "$repo" init -q -b main && printf 'x\n' >"$repo/README.md" && git -C "$repo" add README.md && git -C "$repo" commit -q -m "chore: init"
   assert "xaden adopt --plan works from the archive" bash -c "cd '$repo' && '$bin/xaden' adopt --plan"
   mkdir -p "$extracted-head" && git -C "$SCAFFOLD_ROOT" archive HEAD | tar -x -C "$extracted-head"
@@ -259,4 +301,5 @@ test_scaffold_release_check_option
 test_sign_release
 test_release
 test_install_ways
+test_get_xaden
 test_release_archive

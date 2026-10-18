@@ -6,7 +6,7 @@ Check that the Xaden you install is the release the maintainer published, and un
 
 | Check | What it proves | Where |
 |-------|----------------|-------|
-| Checksum | The files are exactly those the project pinned | `checksum` in `xaden/xaden.conf`; compared by `xaden fetch`, `xaden upgrade` and the CI workflow |
+| Checksum | The files are exactly those the project pinned | `checksum` in `xaden/xaden.conf`; compared by `xaden fetch`, `xaden pin` and the CI workflow |
 | Signature | The checksum of a release was signed by the maintainer's key | `release-signers` in the Xaden folder holds the public key |
 | Zip signature | The release zip is the file the maintainer signed | `xaden-<version>.zip.sig` on the release page; verified by hand before extracting ([Install Xaden](install-xaden.md)) |
 
@@ -15,7 +15,7 @@ archive of the same release give the same value, because the release leaves out 
 
 ## What happens on install and upgrade
 
-`xaden fetch` and `xaden upgrade` download the release archive and, next to it, the signed checksum. If a key is listed in
+`xaden fetch`, `xaden pin` and `xaden upgrade` download the release archive and, next to it, the signed checksum. If a key is listed in
 `release-signers` and the signature verifies, the checksum that gets pinned is the signed one, and the output says `signature verified`.
 
 - **The signature does not verify:** nothing is installed and the command exits with code 6.

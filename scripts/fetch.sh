@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # The only script of Xaden that talks to the network (REQ-072), and the version changes built on it.
 # Usage: xaden fetch <version>             install the version this project pins, after you confirm
-#        xaden upgrade [--check] [version] move the project to a newer Xaden on a branch
+#        xaden upgrade [--check]           update Xaden itself: install the newest release, switch `current` (REQ-097)
+#        xaden pin [--check] [version]     move the project to another Xaden on a branch (REQ-071, REQ-099)
 #        xaden update-check [--if-due|--now] look for a newer Xaden and outdated dependencies (REQ-084)
 # Nothing downloads without a person's yes: the question shows version, source and checksum, ends
 # the output, and anything but yes means no. Without a terminal nothing downloads and the command
@@ -161,7 +162,7 @@ fetch_main() {
   conf="$(project_conf)"
   pinned="$(conf_get "$conf" version)"
   checksum="$(conf_get "$conf" checksum)"
-  [ "$version" = "$pinned" ] || die "this project pins Xaden $pinned, not $version. To move it to $version: xaden upgrade $version"
+  [ "$version" = "$pinned" ] || die "this project pins Xaden $pinned, not $version. To move it to $version: xaden pin $version"
   if [ -x "$(versions_dir)/$version/scripts/xaden.sh" ] || [ "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")" = "$version" ]; then
     ok "Xaden $version is installed already"
     return 0
@@ -195,13 +196,13 @@ tools_for() {
   printf '%s' "$(versions_dir)/$version"
 }
 
-# upgrade_main [--check] [version]
-upgrade_main() {
+# pin_main [--check] [version]
+pin_main() {
   local check_only=0 target="" conf root pinned tools checksum branch worktree base
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --check) check_only=1 ;;
-      -*) die "usage: xaden upgrade [--check] [version]" ;;
+      -*) die "usage: xaden pin [--check] [version]" ;;
       *) target=$1 ;;
     esac
     shift
@@ -211,14 +212,14 @@ upgrade_main() {
   pinned="$(conf_get "$conf" version)"
   if [ "$check_only" = 1 ] || [ -z "$target" ]; then
     if ! has_terminal; then
-      warn "No terminal, so Xaden did not look for a newer release. Run 'xaden upgrade --check' in a terminal, or name the version: xaden upgrade <version>"
+      warn "No terminal, so Xaden did not look for a newer release. Run 'xaden pin --check' in a terminal, or name the version: xaden pin <version>"
       exit "$EXIT_NO_TERMINAL"
     fi
     ask "Look up the newest Xaden release on github.com? Nothing else is sent." || { echo "Nothing was looked up."; exit 1; }
     target="$(latest_version)"
     [ -n "$target" ] || die "could not read the newest version from $LATEST_URL"
     if [ "$check_only" = 1 ]; then
-      if [ "$target" = "$pinned" ]; then ok "project pins Xaden $pinned, the newest release"; else info "project pins Xaden $pinned, newest release is $target (xaden upgrade $target)"; fi
+      if [ "$target" = "$pinned" ]; then ok "project pins Xaden $pinned, the newest release"; else info "project pins Xaden $pinned, newest release is $target (xaden pin $target)"; fi
       return 0
     fi
   fi
@@ -236,7 +237,7 @@ upgrade_main() {
   (cd "$worktree" && bash -c 'source "$1/template/scripts/lib.sh"; TOOLS_DIR="$1/template"; render_rules' _ "$tools" >xaden/RULES.md)
   # REQ-080, REQ-081 the command files follow the prompts of the new version
   assistants="$(conf_get "$worktree/xaden/xaden.conf" assistants)"
-  if [ -n "$(command_kinds "$assistants")" ]; then sync_commands "$worktree" "$tools/template" "$assistants"; fi
+  if [ -n "$(command_kinds "$assistants")" ]; then sync_commands "$worktree" "$tools/template" "$assistants" "$SCAFFOLD_ROOT/template"; fi
   if [ -f "$worktree/.github/workflows/xaden.yml" ]; then
     sed -i.bak -e "s/^  XADEN_VERSION: .*/  XADEN_VERSION: \"$target\"/" -e "s/^  XADEN_CHECKSUM: .*/  XADEN_CHECKSUM: \"$checksum\"/" "$worktree/.github/workflows/xaden.yml"
     rm -f "$worktree/.github/workflows/xaden.yml.bak"
@@ -250,6 +251,64 @@ upgrade_main() {
   info "changelog, Xaden $pinned to $target"
   changelog_between "$tools/CHANGELOG.md" "$pinned" "$target"
   ok "branch $branch is ready in $worktree; push it and open the pull request your team reviews"
+}
+
+# upgrade_main [--self] [--check] [version]: updates Xaden itself. The old meaning of `xaden upgrade
+# <version>` inside an adopted project (move the pin) is `xaden pin <version>` now (REQ-099).
+upgrade_main() {
+  local arg version=""
+  for arg in "$@"; do
+    case "$arg" in -*) ;; *) version=$arg ;; esac
+  done
+  if [ -n "$version" ] && [ -f "$(git rev-parse --show-toplevel 2>/dev/null || echo /nonexistent)/xaden/xaden.conf" ]; then
+    warn "xaden upgrade <version> now updates Xaden itself; moving a project is: xaden pin $version (running that now)"
+    pin_main "$@"
+    return
+  fi
+  self_upgrade_main "$@"
+}
+
+# self_upgrade_main [--self] [--check] [version]: installs a release next to the others and switches
+# `current` to it (REQ-097). Download, signature and checksum are install_release's; the switch is the
+# last step, so any failure leaves the old version active.
+self_upgrade_main() {
+  local check_only=0 target="" arg installed
+  for arg in "$@"; do
+    case "$arg" in
+      --check) check_only=1 ;;
+      --self) ;;
+      -*) die "usage: xaden upgrade [--check] [version]" ;;
+      *) target=$arg ;;
+    esac
+  done
+  installed="$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
+  if [ "$check_only" = 1 ] || [ -z "$target" ]; then
+    if ! has_terminal; then
+      warn "No terminal, so Xaden did not look for a newer release. Run 'xaden upgrade --check' in a terminal, or name the version: xaden upgrade <version>"
+      exit "$EXIT_NO_TERMINAL"
+    fi
+    ask "Look up the newest Xaden release on github.com? Nothing else is sent." || { echo "Nothing was looked up."; exit 1; }
+    target="$(latest_version)"
+    [ -n "$target" ] || die "could not read the newest version from $LATEST_URL"
+    if [ "$check_only" = 1 ]; then
+      if [ "$target" = "$installed" ]; then ok "Xaden $installed is the newest release"; else info "Xaden $installed is installed, newest release is $target (xaden upgrade)"; fi
+      return 0
+    fi
+  fi
+  require_version "$target"
+  [ "$target" != "$installed" ] || { ok "Xaden $installed is installed already"; return 0; }
+  if [ -e "$SCAFFOLD_ROOT/.git" ]; then die "this Xaden runs from a git clone; update it with: git -C $SCAFFOLD_ROOT pull"; fi
+  case "$SCAFFOLD_ROOT" in
+    "$(current_link)" | "$(versions_dir)"/*) ;;
+    *) die "this Xaden does not live in $(xaden_home); install it once with: curl -fsSL https://xaden.dev/install | bash (or run scripts/install.sh of a newer release zip), then use xaden upgrade" ;;
+  esac
+  if [ ! -x "$(versions_dir)/$target/scripts/xaden.sh" ]; then
+    confirm_download "$target" "" || { echo "Nothing was downloaded."; exit 1; }
+    install_release "$target" "" >/dev/null
+  fi
+  switch_current "$target"
+  ok "Xaden $target is active (was $installed); $installed stays in $(versions_dir) for projects that pin it"
+  changelog_between "$(versions_dir)/$target/CHANGELOG.md" "$installed" "$target"
 }
 
 # outdated_dependencies <root>: one line about the project's own dependencies. Reports only; never
@@ -310,7 +369,7 @@ update_check_main() {
     if [ "$newest" = "$pinned" ]; then
       printf 'Xaden: pinned %s, installed %s, up to date\n' "$pinned" "$installed"
     else
-      printf 'Xaden: pinned %s, installed %s, newest %s (move the project with: xaden upgrade %s)\n' "$pinned" "$installed" "$newest" "$newest"
+      printf 'Xaden: pinned %s, installed %s, newest %s (move the project with: xaden pin %s)\n' "$pinned" "$installed" "$newest" "$newest"
     fi
     outdated_dependencies "$root"
   } >"$tmp"
@@ -323,6 +382,7 @@ command_name=${1:-}
 case "$command_name" in
   fetch) fetch_main "$@" ;;
   upgrade) upgrade_main "$@" ;;
+  pin) pin_main "$@" ;;
   update-check) update_check_main "$@" ;;
-  *) die "usage: fetch.sh fetch <version> | upgrade [--check] [version] | update-check [--if-due|--now]" ;;
+  *) die "usage: fetch.sh fetch <version> | upgrade [--check] [version] | pin [--check] [version] | update-check [--if-due|--now]" ;;
 esac

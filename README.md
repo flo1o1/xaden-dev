@@ -24,7 +24,7 @@ relative to it.
 | User personas | `docs/personas/`: 3 to 5 personas, created prefilled by `scripts/persona.sh new` or `/xaden-persona`; assistants check every solution against them |
 | Git | New projects get their own repo with hooks installed |
 | An existing repository | `xaden adopt` adds Xaden beneath it on a branch: a visible `xaden/` folder, a marked block in `AGENTS.md`, your own tests, linters, hooks and CI reused, existing findings baselined; `xaden remove` takes it out again |
-| One Xaden version per team | `xaden/xaden.conf` pins the version and a checksum; `xaden doctor`, `xaden fetch` and `xaden upgrade` keep the team on one reviewed version; nothing downloads without your yes |
+| One Xaden version per team | `xaden/xaden.conf` pins the version and a checksum; `xaden doctor`, `xaden fetch` and `xaden pin` keep the team on one reviewed version; nothing downloads without your yes |
 | A new project | `xaden create` creates the same `xaden/` layout `xaden adopt` gives an existing repository; `xaden create --classic` keeps the old copied layout |
 | A new project in one step | `xaden create --autopilot` sets up the recommended checks, hooks and CI for Python or Node after one confirmation |
 | Obsidian | Open the folder as a vault; prompts have frontmatter, wikilinks, a template folder |
@@ -40,7 +40,7 @@ template/             the product: copied 1:1 into every new project
   prompts/            prompt library (open template/ or a project as Obsidian vault)
   docs/               user-guide, admin-guide, requirements, ADRs, clean-code, security, local-llm
   scripts/            setup, check, release, hooks, req, context-status, stacks/
-scripts/              scaffold tools: xaden + install, new-project, update-scaffold, adopt (+ adopt-scan, adopt-lib), fetch (downloads,
+scripts/              scaffold tools: xaden + install (+ get-xaden, the one-line installer), new-project, update-scaffold, adopt (+ adopt-scan, adopt-lib), fetch (downloads,
                       upgrade), autopilot, setup, check-scaffold, release-scaffold
 docs/requirements/    requirements of the scaffold itself
 inbox/                local drop zone (git-ignored contents)

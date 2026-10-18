@@ -31,7 +31,8 @@ coverage/
 .mypy_cache/
 .ruff_cache/
 
-# merge candidates written by the scaffold's update-scaffold.sh
+# merge candidates written by Xaden's update and pin (REQ-100); *.scaffold-new is the older name
+*-dist
 *.scaffold-new
 
 

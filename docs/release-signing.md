@@ -27,7 +27,7 @@ can verify the file before they extract it (REQ-094).
 
 ## What users see
 
-`xaden fetch <version>` and `xaden upgrade <version>` download the two files next to the release archive and verify the
+`xaden fetch <version>`, `xaden pin <version>` and `xaden upgrade` download the two files next to the release archive and verify the
 signature with the keys in the installed Xaden's `release-signers`. A valid signature means the checksum that gets pinned
 comes from the maintainer, not from the download. A wrong signature stops with exit code 6 and installs nothing. Without
 a signature (an old release, or no key in `release-signers` yet) Xaden says so and pins the checksum of the download

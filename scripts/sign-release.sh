@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Signs a release of Xaden (maintainers). Writes dist/xaden-<version>.checksum, the tree checksum of
 # the tagged release, and dist/xaden-<version>.checksum.sig, its SSH signature. `xaden fetch` and
-# `xaden upgrade` verify the signature with the public keys in `release-signers` and pin the signed
+# `xaden upgrade` and `xaden pin` verify the signature with the public keys in `release-signers` and pin the signed
 # checksum, so nobody has to trust the first download. It also writes the release zip
 # dist/xaden-<version>.zip and its signature .zip.sig (REQ-094): the download for people who install
 # without git; the zip holds no maintainer files (.gitattributes). Never uploads: it prints the command.

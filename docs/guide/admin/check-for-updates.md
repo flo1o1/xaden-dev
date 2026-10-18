@@ -40,14 +40,14 @@ xaden update-check
 ## What it reports
 
 ```text
-Xaden: pinned 0.2.3, installed 0.2.3, newest 0.3.0 (move the project with: xaden upgrade 0.3.0)
+Xaden: pinned 0.2.3, installed 0.2.3, newest 0.3.0 (move the project with: xaden pin 0.3.0)
 Dependencies: npm: left-pad; pip: up to date
 ```
 
 - The `Xaden` line compares the version the project pins with the newest release on github.com. Move the project with
-  `xaden upgrade`, on a branch and through a pull request ([Pin one Xaden version per project](pin-one-version-per-project.md)).
+  `xaden pin`, on a branch and through a pull request ([Pin one Xaden version per project](pin-one-version-per-project.md)).
 - The `Dependencies` line lists packages that `npm outdated` or `pip list --outdated` report for the project. Those updates stay yours:
-  `xaden upgrade` never touches `package.json`, lockfiles or `requirements-dev.txt`.
+  `xaden pin` never touches `package.json`, lockfiles or `requirements-dev.txt`.
 - A tool that is not installed shows as `not checked`, never as up to date.
 
 The result is cached in the repository's git folder (`.git/xaden-update-check`), so it is never committed and every worktree shares it.
@@ -56,7 +56,7 @@ They, the commit hooks and the pre-commit checks never use the network.
 
 ## What is sent
 
-One request for the newest release goes to the GitHub release API, the same one `xaden upgrade --check` uses. `npm outdated` and
+One request for the newest release goes to the GitHub release API, the same one `xaden pin --check` and `xaden upgrade --check` use. `npm outdated` and
 `pip list --outdated` contact the registries your project already uses. Nothing else leaves your machine.
 
 Projects created with `xaden create --classic` have no `xaden/xaden.conf`; use `XADEN_UPDATE_CHECK` there.
