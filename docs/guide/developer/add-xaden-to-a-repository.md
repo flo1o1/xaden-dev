@@ -43,7 +43,7 @@ Without a terminal (a script, a CI job) `xaden adopt` stops after the plan and p
 - A short marked block in `AGENTS.md`. Text you wrote there stays untouched.
 - Slash commands for the assistants your team uses, one file for each prompt and nothing else: Claude Code `.claude/commands/<name>.md`, GitHub Copilot `.github/prompts/<name>.prompt.md`, Mistral Vibe and Codex CLI `.agents/skills/<name>/SKILL.md` (one skill that both read). Xaden offers an assistant when it finds a file or folder of its own (`.claude/`, `.github/copilot-instructions.md` or `.github/prompts/`, `.vibe/`, `.codex/`); `--assistants claude,copilot,vibe,codex` answers in advance. A file of the same name that exists already stays as it is.
 - For Claude Code users, `CLAUDE.md` with the single line `@AGENTS.md`, or that line added to an existing `CLAUDE.md` that lacks it. Xaden pre-selects Claude when it finds `CLAUDE.md` or `.claude/` and asks you to confirm; `--assistants claude` answers in advance.
-- A separate workflow, `.github/workflows/xaden.yml`, in its own commit. It installs the pinned Xaden version and verifies its checksum. Your existing workflows are not edited. `--skip-ci` leaves it out.
+- A separate workflow, `.github/workflows/xaden.yml`, in its own commit. It installs the pinned Xaden version, verifies its checksum, runs `xaden check --strict` and checks the messages of the commits the push or pull request brings (`xaden verify-commits --ci`). Your existing workflows are not edited. `--skip-ci` leaves it out.
 - On request, a `worktrees/` folder in its own commit, where change worktrees live. A single `worktrees/.gitignore` makes git ignore everything in the folder. `--worktrees` answers yes in advance, `--no-worktrees` no.
 - Xaden's checks in your git hooks, chained into the hook manager you have (see [Hooks and CI that do not fit](#hooks-and-ci-that-do-not-fit)).
 
@@ -60,6 +60,17 @@ The scan chooses from your history and shows its evidence, for example `conventi
 - fewer than 5 commits: `conventional` only when every subject follows them, because a few commits say too little about a share.
 
 When the answer is `other`, the scan says so and names the setting. To enforce the rule, set `commit-convention = conventional` in `xaden/xaden.conf` (a change that tightens a gate, so your team reviews it), or adopt with `xaden adopt --commit-convention conventional`. `xaden adopt --commit-convention other` does the opposite. A full `xaden check` in a project with `other` prints one `TIP:` line about it.
+
+## CI is the gate, the hooks are a convenience
+
+`git commit --no-verify`, a clone that never ran `xaden setup` and an unattended assistant all skip the local hooks. The workflow
+`xaden.yml` therefore checks every commit a push or pull request brings, with the same rules as the commit hook (see the commit
+convention above): a wrong format, a `feat` without `Refs: REQ-nnn`, or an unknown ID fails the job and the log names the commit.
+With `commit-convention = other` the same findings are warnings. Commits from before the adoption are not checked.
+
+A failing job only stops a merge when the repository requires it. In GitHub, add a branch ruleset (or branch protection) for your default
+branch with "Require status checks to pass" and select the `xaden` job. Xaden changes no repository setting. A project adopted before this
+check existed gets the step through `xaden pin`, on the branch it prepares for the upgrade pull request.
 
 ## Your own tools keep running
 

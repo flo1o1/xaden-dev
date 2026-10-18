@@ -461,8 +461,14 @@ test_versions_and_downloads() {
   assert "without a terminal the exact command is named" grep -q 'xaden fetch 9.9.9' "$XOUT"
   assert "without a terminal nothing is installed" test ! -e "$home/versions"
 
+  # REQ-107 a workflow from before the commit check lacks its step
+  awk '/- name: Commit messages \(the hooks can be skipped/ { skip = 1 } !skip { print }' "$worktree/.github/workflows/xaden.yml" >"$WORKDIR/older-workflow.yml"
+  cp "$WORKDIR/older-workflow.yml" "$worktree/.github/workflows/xaden.yml"
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q -am "test: older workflow"
   x_answers y "$worktree" pin 9.9.9
   upgraded="$worktree-upgrade-xaden-9.9.9"
+  assert "REQ-107 upgrade adds the commit check to an older workflow, once" test "$(grep -c 'xaden.sh verify-commits --ci' "$upgraded/.github/workflows/xaden.yml")" -eq 1
+  assert "REQ-107 the branch the person is on keeps its workflow" bash -c '! grep -q verify-commits "$1"' _ "$worktree/.github/workflows/xaden.yml"
   assert "upgrade works on a branch for a pull request" test "$(git -C "$upgraded" branch --show-current)" = "chore/upgrade-xaden-9.9.9"
   assert "upgrade bumps the version" grep -q '^version = 9.9.9$' "$upgraded/xaden/xaden.conf"
   assert "upgrade bumps the checksum" test "$(grep '^checksum' "$upgraded/xaden/xaden.conf")" != "$(grep '^checksum' "$worktree/xaden/xaden.conf")"
@@ -1235,6 +1241,39 @@ test_convention_from_evidence() {
   assert "REQ-108 conventional: no such TIP" bash -c '! grep -q "^TIP: .*commit-convention" "$1"' _ "$XOUT"
 }
 
+# REQ-107 the commit rules hold in CI, where a skipped hook cannot hide a commit
+test_commit_check_in_ci() {
+  local worktree workflow before ci_uses unknown="REQ-""999" # split: traceability rejects a test that cites an unknown ID
+  worktree="$(adopted_copy commit-check)"
+  workflow="$worktree/.github/workflows/xaden.yml"
+  assert "REQ-107 the generated workflow runs the commit check" grep -q 'run: xaden.sh verify-commits --ci' "$workflow"
+  assert "REQ-107 it reads the events the range comes from" bash -c 'grep -A6 "Commit messages" "$1" | grep -q BEFORE_SHA' _ "$workflow"
+  ci_uses="$(grep -c 'uses:' "$SCAFFOLD_ROOT/scripts/adopt/ci.yml")"
+  assert "REQ-107 the step adds no third-party action" test "$(grep -c 'uses:' "$workflow")" -eq "$ci_uses"
+  assert "REQ-107 the step adds no secret" bash -c '! grep -q "secrets\." "$1"' _ "$workflow"
+
+  edit_file "$worktree/xaden/xaden.conf" 's/^commit-convention = .*/commit-convention = conventional/'
+  before="$(git -C "$worktree" rev-parse HEAD)"
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q --allow-empty -m "feat: no reference"
+  EVENT_NAME=push BEFORE_SHA="$before" x_in "$worktree" verify-commits --ci
+  assert "REQ-107 conventional: a feat commit without Refs fails the step" test "$XRC" -ne 0
+  assert "REQ-107 the log names the rule" grep -q "feat commits need a 'Refs: REQ-nnn' trailer" "$XOUT"
+  assert "REQ-107 the log names the commit" grep -q 'feat: no reference' "$XOUT"
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q --allow-empty -m "fix: unknown reference" -m "Refs: $unknown"
+  EVENT_NAME=push BEFORE_SHA="$(git -C "$worktree" rev-parse HEAD~1)" x_in "$worktree" verify-commits --ci
+  assert "REQ-107 conventional: an unknown requirement fails the step" bash -c 'test "$1" -ne 0 && grep -q "$3" "$2"' _ "$XRC" "$XOUT" "$unknown"
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q --allow-empty -m "fix: fine" -m "Refs: none"
+  EVENT_NAME=push BEFORE_SHA="$(git -C "$worktree" rev-parse HEAD~1)" x_in "$worktree" verify-commits --ci
+  assert "REQ-107 conventional: a valid commit passes" test "$XRC" -eq 0
+  EVENT_NAME=pull_request BASE_REF='bad ref;' x_in "$worktree" verify-commits --ci
+  assert "REQ-107 a range that cannot be derived fails, it is not read as empty" test "$XRC" -ne 0
+
+  edit_file "$worktree/xaden/xaden.conf" 's/^commit-convention = .*/commit-convention = other/'
+  EVENT_NAME=push BEFORE_SHA="$before" x_in "$worktree" verify-commits --ci
+  assert "REQ-107 another convention: the same findings only warn" test "$XRC" -eq 0
+  assert "REQ-107 the warning says why" grep -q "advisory only while commit-convention is 'other'" "$XOUT"
+}
+
 test_messages
 test_scan_and_plan
 test_convention_from_evidence
@@ -1247,6 +1286,7 @@ test_versions_and_downloads
 test_self_upgrade
 test_modes_and_baselines
 test_exit_status_of_checks
+test_commit_check_in_ci
 test_scope_of_changed_files
 test_signed_only_in_generated_ci
 test_prompts_and_ignore_list
