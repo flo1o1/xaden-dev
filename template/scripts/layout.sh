@@ -127,7 +127,7 @@ adopted_text() {
 # is running: the template's AGENTS.md for an adopted project. Sections that need files an
 # adopted project does not have (the guides, the drop zone, the release script) are replaced.
 render_rules() {
-  printf '<!-- Generated from Xaden %s by `xaden adopt` and `xaden upgrade`. Generated, do not edit: change the rules by upgrading Xaden. -->\n\n' \
+  printf '<!-- Generated from Xaden %s by `xaden adopt` and `xaden pin`. Generated, do not edit: change the rules by upgrading Xaden. -->\n\n' \
     "$(tr -d '[:space:]' <"$TOOLS_DIR/../VERSION" 2>/dev/null || tr -d '[:space:]' <"$TOOLS_DIR/VERSION")"
   awk '
     /^## 8\./ { skipping = 1

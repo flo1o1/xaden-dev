@@ -4,6 +4,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ## [Unreleased]
 
+### Added
+- `xaden upgrade` updates Xaden itself, like a package manager: it asks, downloads the newest signed release next to the installed ones (`~/.local/share/xaden/versions/<version>`), verifies signature and checksum, and switches the `current` link. The `xaden` command links to `current` and never changes again; a failed download leaves the old version active, old versions stay for projects that pin them; `xaden upgrade --check` only reports; a git clone is told to `git pull` (REQ-097).
+- `curl -fsSL https://xaden.dev/install | bash` installs Xaden with one command (`scripts/get-xaden.sh`, published on the website after the release): it asks first, reads the answer from the terminal, checks the zip signature against the embedded key and runs the zip's `scripts/install.sh`. `install.sh` now copies the release into `versions/`, so the extracted folder can be deleted, and it replaces a link to a former Xaden (REQ-098).
+- Files you edited are kept and the new version is written next to them as `<file>-dist`: for `xaden update` (instead of `<file>.scaffold-new`) and for the command files `xaden pin` brings up to date. `xaden doctor` names leftover `-dist` and `*.scaffold-new` files (REQ-100).
+
+### Changed
+- **Breaking:** moving a project to another Xaden version is `xaden pin [--check] [version]` now. `xaden upgrade <version>` inside a project still does it, with a warning; `xaden upgrade` without a version, or outside a project, updates the tool (REQ-099). `xaden doctor` names `xaden pin <version>` when a newer Xaden is installed than the one the project pins.
+- Maintainers: the REQ-072 test also allows `scripts/get-xaden.sh` to reach the network, after a yes.
+
 ## [0.5.0] - 2026-10-18
 
 ### Added

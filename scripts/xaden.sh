@@ -48,13 +48,14 @@ Start and keep (any directory):
   remove             take Xaden out of the repository you are in
   update [--apply]   bring a project created by `create` to this Xaden version (dry run without --apply)
   version            print the installed Xaden version
+  upgrade [--check]  update Xaden itself to the newest release (asks first; older versions stay installed)
   help               show this list
 
 Inside a project that adopted Xaden:
   doctor             compare the installed version with the pinned one (no network)
   fetch <version>    install the pinned version if it is missing (asks first)
-  upgrade [--check] [version]
-                     move the project to a newer Xaden on a branch for a pull request
+  pin [--check] [version]
+                     move the project to another Xaden version on a branch for a pull request
   update-check [--now]
                      look for a newer Xaden and outdated dependencies (the setting update-check decides whether and how often)
   rules              regenerate xaden/RULES.md from the pinned version
@@ -113,10 +114,20 @@ run_tool_script() {
   PROJECT_ROOT="$root" exec "$TOOLS/$script" "$@"
 }
 
+# report_leftover_dist <root>: names the <file>-dist and <file>.scaffold-new files an update left to merge (REQ-100).
+report_leftover_dist() {
+  local file
+  find "$1" \( -name .git -o -name node_modules -o -name .venv -o -name worktrees \) -prune -o \
+    -type f \( -name '*-dist' -o -name '*.scaffold-new' \) -print | sort | while IFS= read -r file; do
+    warn "merge or delete this leftover of an update: ${file#"$1"/}"
+  done
+}
+
 # doctor_main: compares the installed version with the pinned one. Reads two files; no network.
 doctor_main() {
   local root conf pinned checksum
   root="$(project_root)"
+  report_leftover_dist "$root"
   is_adopted "$root" || die "this project has not adopted Xaden (xaden/xaden.conf is missing); see: xaden adopt"
   conf="$root/xaden/xaden.conf"
   pinned="$(conf_get "$conf" version)"
@@ -131,6 +142,9 @@ doctor_main() {
     fi
   elif [ -x "$(versions_dir)/$pinned/scripts/xaden.sh" ]; then
     ok "Xaden $pinned is installed in $(versions_dir)/$pinned and is used for this project"
+    if [ "$(newest_version "$pinned" "$(running_version)")" != "$pinned" ]; then
+      info "Xaden $(running_version) is installed; move the project with: xaden pin $(running_version)"
+    fi
   else
     warn "Xaden $pinned is not installed. Install it with: xaden fetch $pinned"
     exit 1
@@ -287,7 +301,7 @@ main() {
     remove) exec "$SCAFFOLD_ROOT/scripts/adopt.sh" __remove "$@" ;;
     update)
       root="$(project_root)"
-      if is_adopted "$root"; then die "this project pins its Xaden version; move it with: xaden upgrade"; fi
+      if is_adopted "$root"; then die "this project pins its Xaden version; move it with: xaden pin"; fi
       exec "$SCAFFOLD_ROOT/scripts/update-scaffold.sh" "$root" "$@"
       ;;
     version) tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION" && echo ;;
@@ -295,6 +309,7 @@ main() {
     doctor) doctor_main ;;
     fetch) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" fetch "$@" ;;
     upgrade) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" upgrade "$@" ;;
+    pin) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" pin "$@" ;;
     update-check) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" update-check "$@" ;;
     setup | check | req | context | persona | release | hook | prompt | doc | rules | ignore-list | preset)
       root="$(project_root)"

@@ -1,15 +1,29 @@
 # Install Xaden
 
-Get Xaden onto your machine and run it as one command, `xaden`, from any folder. Xaden lives in one folder; the command is a link
-to it.
+Get Xaden onto your machine and run it as one command, `xaden`, from any folder. Xaden keeps every installed version in
+`~/.local/share/xaden/versions/<version>`, a link `~/.local/share/xaden/current` points at the active one, and the command links to
+`current`. An upgrade only moves that link.
 
 ## Before you start
 
 You have the [requirements](requirements-and-platforms.md): git, bash and the other standard tools, on Linux or macOS (Windows: WSL).
 
-## Install from a signed zip (recommended)
+## Install with one command (recommended)
 
-The release zip holds only what Xaden needs to run: no tests, no maintainer documents, no signing scripts. The maintainer signs every
+```bash
+curl -fsSL https://xaden.dev/install | bash
+```
+
+- `curl -fsSL https://xaden.dev/install`: downloads the installer script and stops with an error if the download fails.
+- `| bash`: runs it. The script runs only when it arrived completely. Before it downloads anything it shows the version and the source and asks `[y/N]` in your terminal; without a terminal it downloads nothing and exits with code 3. It checks the signature of the release zip against the maintainer's key, which is inside the script, and then runs the zip's own `scripts/install.sh`.
+
+To read the script first, run `curl -fsSL https://xaden.dev/install | less`, or save it with `curl -fsSLO https://xaden.dev/install` and read the file. To install a release other than the newest, name it for `bash`: `curl -fsSL https://xaden.dev/install | XADEN_VERSION=<version> bash`.
+
+Then continue with the `PATH` line and `xaden version` below. From now on, `xaden upgrade` keeps Xaden current ([Update Xaden](update-xaden.md)).
+
+## Install from a signed zip
+
+Use this route to verify the zip yourself before anything runs. The release zip holds only what Xaden needs to run: no tests, no maintainer documents, no signing scripts. The maintainer signs every
 zip, so you can check it before you extract it. Replace `<version>` with the release you want (for example `0.5.0`; the
 [releases page](https://github.com/flo1o1/xaden-dev/releases) lists them).
 
@@ -40,8 +54,8 @@ unzip -q xaden-<version>.zip -d ~/tools
 ~/tools/xaden-<version>/scripts/install.sh
 ```
 
-- `unzip ...`: extracts it into `~/tools/xaden-<version>`. If `unzip` is missing, install it with your package manager. Do not move the folder afterwards, because the `xaden` link points into it.
-- `~/tools/xaden-<version>/scripts/install.sh`: creates one link, `~/.local/bin/xaden`, that points into that folder. It changes nothing else and never replaces a different file of that name.
+- `unzip ...`: extracts it into `~/tools/xaden-<version>`. If `unzip` is missing, install it with your package manager.
+- `~/tools/xaden-<version>/scripts/install.sh`: copies the release to `~/.local/share/xaden/versions/<version>`, points `current` at it and creates one link, `~/.local/bin/xaden`, to `current`. You can delete the extracted folder afterwards. It replaces a link to a former Xaden (after saying so) and never replaces any other file of that name.
 
 If `~/.local/bin` is not on your `PATH`, the installer says so. Add this line to your shell profile (`~/.bashrc` for bash, `~/.zshrc` for zsh)
 and open a new terminal:
@@ -76,7 +90,8 @@ Then continue with the `PATH` line and `xaden version` above.
 
 ## When to choose which
 
-- **zip:** you want to use Xaden. It is signed, small, and holds nothing for maintainers.
+- **one command:** you want to use Xaden. It asks first, checks the signature for you and leaves nothing to clean up.
+- **zip:** you want to verify the signature yourself before anything runs. Same result, more steps.
 - **git clone:** you want to read the history, contribute, or work on Xaden itself.
 
 ## Verify what you downloaded
@@ -87,4 +102,4 @@ are about to run: they are plain shell. The maintainer also signs the checksum o
 ## Next
 
 [Create a project](../developer/create-a-project.md) or [add Xaden to a repository](../developer/add-xaden-to-a-repository.md).
-Later: [Update Xaden](update-xaden.md).
+Later: [Update Xaden](update-xaden.md) (`xaden upgrade`).

@@ -16,7 +16,7 @@ When a newer Xaden is out, I want to run `xaden upgrade` and have the tool updat
 ## Acceptance criteria
 
 - Given an install, then Xaden lives in `versions/<version>/` under the Xaden home, `current` is a link to the active version, and the `xaden` command links to `current/scripts/xaden.sh`, so the command link never changes.
-- Given `xaden upgrade` outside a project or with `--self`, when a newer release exists and the person answers yes, then the release is installed into `versions/`, `current` switches to it atomically, and the changelog between both versions is printed.
+- Given `xaden upgrade` outside a project or with `--self`, when a newer release exists and the person answers yes, then the release is installed into `versions/`, `current` switches to it as the last step, and the changelog between both versions is printed.
 - Given a download that fails, a wrong signature or a wrong checksum, then `current` still points to the old version and nothing new stays behind.
 - Given no terminal, then nothing is downloaded and the command exits with code 3 and prints the command to run (REQ-072).
 - Given `xaden upgrade --check`, then it only reports the newest version and changes nothing.

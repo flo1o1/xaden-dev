@@ -14,15 +14,15 @@ Your build, tests, documentation and other workflows were never changed, so ther
 
 ## Remove Xaden from a machine
 
-If you installed from the zip, remove the link with the `install.sh` of the extracted folder, then delete that folder:
+If you installed with the one command or from the zip, remove the link with the `install.sh` of any Xaden version, then delete the Xaden folder:
 
 ```bash
-~/tools/xaden-<version>/scripts/install.sh --uninstall
-rm -r ~/tools/xaden-<version>
+~/.local/share/xaden/current/scripts/install.sh --uninstall
+rm -r ~/.local/share/xaden
 ```
 
-- `~/tools/xaden-<version>/scripts/install.sh --uninstall`: removes the `xaden` link, but only if it points into that folder.
-- `rm -r ~/tools/xaden-<version>`: deletes the extracted folder. Delete the downloaded `xaden-<version>.zip` and `.zip.sig` too.
+- `~/.local/share/xaden/current/scripts/install.sh --uninstall`: removes the `xaden` link, but only if it points to a Xaden.
+- `rm -r ~/.local/share/xaden`: deletes every installed version. If you set `XADEN_HOME`, delete that folder instead. Delete a downloaded `xaden-<version>.zip` and `.zip.sig` and the extracted folder too, if you kept them.
 
 If you installed with git:
 
@@ -33,8 +33,6 @@ rm -r ~/.xaden
 
 - `~/.xaden/scripts/install.sh --uninstall`: removes the `xaden` link, but only if it points into that folder.
 - `rm -r ~/.xaden`: deletes the Xaden folder.
-
-Other versions that Xaden installed for pinned projects live in `~/.local/share/xaden`. Delete that folder as well if you no longer need them.
 
 Projects created with Xaden keep working without it, except that their hooks print `xaden not found` and skip the checks until you remove
 the hook blocks (`xaden remove` does that).

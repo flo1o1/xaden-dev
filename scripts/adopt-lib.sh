@@ -202,7 +202,7 @@ and the settings. Everything is plain Markdown plus one settings file.
 The Xaden tooling is not copied into the repository. Install Xaden once per machine
 (https://xaden.dev), then use `xaden check`, `xaden req`, `xaden prompt` and the rest. A newer
 Xaden on your machine changes nothing here; `xaden doctor` compares the installed version with
-the pinned one, and `xaden upgrade` moves the whole team in one pull request.
+the pinned one, and `xaden pin` moves the whole team in one pull request.
 TEXT
 }
 

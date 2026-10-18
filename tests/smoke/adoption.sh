@@ -427,7 +427,7 @@ fake_release() {
 
 # REQ-071 REQ-072 pinned versions, upgrades and downloads only with a yes
 test_versions_and_downloads() {
-  local current repo worktree releases="$WORKDIR/releases" home="$WORKDIR/xaden-home" upgraded
+  local current repo worktree hint releases="$WORKDIR/releases" home="$WORKDIR/xaden-home" upgraded
   current="$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")" # not hardcoded: a release bumps it
   fake_release "$releases" 9.9.9
   export XADEN_RELEASES_URL="file://$releases" XADEN_HOME="$home"
@@ -442,6 +442,17 @@ test_versions_and_downloads() {
   assert "looking for newer releases needs a terminal and a yes" test "$XRC" -eq 3
   assert "nothing was looked up without a terminal" grep -q 'did not look for a newer release' "$XOUT"
 
+  x_in "$worktree" pin --check
+  assert "pin --check needs a terminal and a yes as well (REQ-099)" test "$XRC" -eq 3
+  x_in "$worktree" upgrade 9.9.9
+  assert "upgrade <version> in a project names xaden pin (REQ-099)" grep -q 'xaden pin 9.9.9' "$XOUT"
+  hint="$(adopted_copy hint)"
+  mkdir -p "$home/versions/0.0.1/scripts" && printf '#!/bin/sh\n' >"$home/versions/0.0.1/scripts/xaden.sh" && chmod +x "$home/versions/0.0.1/scripts/xaden.sh"
+  edit_file "$hint/xaden/xaden.conf" 's/^version = .*/version = 0.0.1/'
+  x_in "$hint" doctor
+  assert "doctor names xaden pin when a newer Xaden is installed (REQ-099)" grep -q "xaden pin $current" "$XOUT"
+  rm -rf "$home/versions/0.0.1"
+
   x_answers n "$worktree" upgrade 9.9.9
   assert "no answer but yes downloads nothing" test ! -e "$home/versions/9.9.9"
   assert "a no leaves no upgrade branch" test -z "$(git -C "$repo" branch --list 'chore/upgrade-xaden-*')"
@@ -450,7 +461,7 @@ test_versions_and_downloads() {
   assert "without a terminal the exact command is named" grep -q 'xaden fetch 9.9.9' "$XOUT"
   assert "without a terminal nothing is installed" test ! -e "$home/versions"
 
-  x_answers y "$worktree" upgrade 9.9.9
+  x_answers y "$worktree" pin 9.9.9
   upgraded="$worktree-upgrade-xaden-9.9.9"
   assert "upgrade works on a branch for a pull request" test "$(git -C "$upgraded" branch --show-current)" = "chore/upgrade-xaden-9.9.9"
   assert "upgrade bumps the version" grep -q '^version = 9.9.9$' "$upgraded/xaden/xaden.conf"
@@ -572,8 +583,45 @@ PY
     unset XADEN_ASSETS_URL XADEN_SIGNERS_FILE
   fi
 
-  assert "only fetch.sh reaches the network" bash -c \
-    '! grep -rnE "^[^#]*(curl|wget)[[:space:]]|^[^#]*git (clone|fetch|pull|ls-remote)" "$1/scripts" "$1/template/scripts" --include="*.sh" | grep -v "scripts/fetch.sh:" | grep .' _ "$SCAFFOLD_ROOT"
+  assert "only fetch.sh and the installer get-xaden.sh reach the network" bash -c \
+    '! grep -rnE "^[^#]*(curl|wget)[[:space:]]|^[^#]*git (clone|fetch|pull|ls-remote)" "$1/scripts" "$1/template/scripts" --include="*.sh" | grep -v -e "scripts/fetch.sh:" -e "scripts/get-xaden.sh:" | grep .' _ "$SCAFFOLD_ROOT"
+  unset XADEN_RELEASES_URL XADEN_HOME
+}
+
+# REQ-097 xaden upgrade updates Xaden itself
+test_self_upgrade() {
+  local releases="$WORKDIR/self-releases" home="$WORKDIR/self-home" source="$WORKDIR/self-source" bin="$WORKDIR/self-bin" current
+  current="$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
+  fake_release "$releases" 9.9.9
+  export XADEN_RELEASES_URL="file://$releases" XADEN_HOME="$home"
+  mkdir -p "$source" && git -C "$SCAFFOLD_ROOT" archive "$(git -C "$SCAFFOLD_ROOT" write-tree)" | tar -x -C "$source"
+  "$source/scripts/install.sh" "$bin" >/dev/null
+  rm -rf "$source"
+  run_installed() { XRC=0; (cd "$WORKDIR" && "$bin/xaden" "$@") >"$XOUT" 2>&1 || XRC=$?; }
+
+  run_installed upgrade 9.9.9
+  assert "without a terminal nothing downloads, exit code 3" test "$XRC" -eq 3
+  assert "without a terminal current stays" test "$(readlink "$home/current")" = "versions/$current"
+  XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=n run_installed upgrade 9.9.9
+  assert "a no downloads nothing" test ! -e "$home/versions/9.9.9"
+  XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=y run_installed upgrade 7.7.7
+  assert "a failed download fails" test "$XRC" -ne 0
+  assert "a failed download leaves current on the old version" test "$(readlink "$home/current")" = "versions/$current"
+  assert "a failed download leaves no folder behind" test ! -e "$home/versions/7.7.7"
+
+  XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=y run_installed upgrade 9.9.9
+  assert "upgrade succeeds" test "$XRC" -eq 0
+  assert "current points to the new version" test "$(readlink "$home/current")" = "versions/9.9.9"
+  assert "the same command now runs the new version" test "$("$bin/xaden" version)" = "9.9.9"
+  assert "the old version stays installed" test -x "$home/versions/$current/scripts/xaden.sh"
+  assert "the changelog entries are shown" grep -q 'Something new in 9.9.9' "$XOUT"
+  assert "the command link did not change" test "$(readlink "$bin/xaden")" = "$home/current/scripts/xaden.sh"
+  run_installed upgrade 9.9.9
+  assert "upgrading to the installed version says so" grep -q 'installed already' "$XOUT"
+
+  XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=y x_in "$WORKDIR" upgrade 9.9.9
+  assert "a git clone is not upgraded, it is pulled" grep -q 'git -C .* pull' "$XOUT"
+  assert "a git clone changed nothing" test "$(readlink "$home/current")" = "versions/9.9.9"
   unset XADEN_RELEASES_URL XADEN_HOME
 }
 
@@ -933,6 +981,7 @@ test_command_prefix_migration
 test_other_assistant_commands
 test_reuse_of_existing_tooling
 test_versions_and_downloads
+test_self_upgrade
 test_modes_and_baselines
 test_prompts_and_ignore_list
 test_autopilot

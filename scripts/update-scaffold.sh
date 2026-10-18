@@ -13,7 +13,7 @@
 #   missing in project, in base       skip         project deleted it on purpose
 #   not in template, current == base  remove       delete
 #   modified locally, new == base     keep         local change, nothing upstream
-#   modified locally, new differs     conflict     keep current, write <file>.scaffold-new
+#   modified locally, new differs     conflict     keep current, write <file>-dist
 set -euo pipefail
 
 SCAFFOLD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -93,7 +93,7 @@ classify() {
 # apply_action <action> <path>: performs one planned action inside the project.
 apply_action() {
   local action=$1 path=$2 written=$2
-  [ "$action" = conflict ] && written="$path.scaffold-new" # conflicts keep the project's file
+  [ "$action" = conflict ] && written="$path-dist" # conflicts keep the project's file
   refuse_symlink_on_path "$PROJECT" "$written"
   case "$action" in
     add | update)
@@ -152,7 +152,7 @@ main() {
     info "$CHANGES change(s) planned; run again with --apply"
   fi
   if [ "$CONFLICTS" -gt 0 ]; then
-    warn "$CONFLICTS conflict(s): merge each <file>.scaffold-new into <file>, then delete it"
+    warn "$CONFLICTS conflict(s): merge each <file>-dist into <file>, then delete it"
   fi
 }
 
