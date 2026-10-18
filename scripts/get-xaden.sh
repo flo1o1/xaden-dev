@@ -18,9 +18,9 @@ get_xaden() {
     command -v "$tool" >/dev/null 2>&1 || { echo "Xaden install needs $tool; install it and run this again." >&2; return 1; }
   done
 
-  # ask <question>: reads the answer from the terminal; returns 0 only for yes. Tests answer through
+  # yes_from_terminal <question>: reads the answer from the terminal; returns 0 only for yes. Tests answer through
   # XADEN_TEST_ANSWER with XADEN_TEST_MODE=1; nothing else answers for a person.
-  ask() {
+  yes_from_terminal() {
     if [ "${XADEN_TEST_MODE:-0}" = "1" ] && [ -n "${XADEN_TEST_ANSWER+x}" ]; then
       answer=$XADEN_TEST_ANSWER
     elif { : >/dev/tty; } 2>/dev/null; then
@@ -34,7 +34,7 @@ get_xaden() {
   }
 
   if [ -z "$version" ]; then
-    ask "Look up the newest Xaden release on github.com? Nothing else is sent." || { echo "Nothing was looked up."; return 1; }
+    yes_from_terminal "Look up the newest Xaden release on github.com? Nothing else is sent." || { echo "Nothing was looked up."; return 1; }
     version="$(curl -fsSL "$latest" | sed -n 's/.*"tag_name": *"v\{0,1\}\([0-9][0-9.]*\)".*/\1/p' | head -n 1)"
   fi
   case "$version" in
