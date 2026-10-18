@@ -45,6 +45,22 @@ a failing test is always a failure. A command without the line fails on every no
 **Upgrading from an earlier version:** a mapped command that exits non-zero with only baselined output used to pass. It now fails until
 you add its `findings-status.<name>` line. Weakening or removing such a line is an approval point, like changing the mode.
 
+## Which files "the change" means
+
+In `changed-files` mode a finding fails when its file is in the change. Xaden works out the change like this:
+
+| Where | The change is |
+|-------|---------------|
+| pre-commit | the staged files |
+| CI, a push | the files from the previous tip of the push (`BEFORE_SHA`) to `HEAD` |
+| CI, a pull request | the files since the merge base with the target branch (`origin/$BASE_REF`) |
+| your machine | the files that differ from the default branch, plus uncommitted edits |
+
+If Xaden cannot tell (a first push, a rewritten history, a shallow clone, a target branch that is not fetched, CI without an event),
+that run checks all files as `strict` does and says so. An empty list of files never stands in for "unknown". `xaden/xaden.conf` stays
+as it is. The workflows `xaden adopt` writes, and the template's `ci.yml`, hand `EVENT_NAME`, `BASE_REF` and `BEFORE_SHA` to the check step;
+a workflow of your own that runs `xaden check` needs the same three variables and `fetch-depth: 0`.
+
 ## Commit convention
 
 If your repository does not use Conventional Commits, the `Refs:` checks only advise. Set `commit-convention = conventional` in

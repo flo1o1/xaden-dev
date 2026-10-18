@@ -28,8 +28,7 @@ ci_range() {
     printf 'origin/%s..HEAD' "$BASE_REF"
     return 0
   fi
-  if printf '%s' "${BEFORE_SHA:-}" | grep -Eq '^[0-9a-f]{40}$' &&
-     printf '%s' "$BEFORE_SHA" | grep -vq '^0*$' && is_commit "$BEFORE_SHA"; then
+  if usable_commit "${BEFORE_SHA:-}" "$ROOT"; then
     printf '%s..HEAD' "$BEFORE_SHA"
     return 0
   fi

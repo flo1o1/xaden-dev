@@ -25,22 +25,57 @@ violation_keys() {
     -e 's#^::(warning|error|notice) file=([^,]+),line=[0-9]+[^:]*::([A-Za-z0-9._-]+\.ya?ml:[0-9]+: )?(.*)$#\2: \4#p' | LC_ALL=C sort
 }
 
-# changed_files: files the change touches, one per line. Pre-commit: the staged files. Otherwise:
-# files that differ from the default branch, plus uncommitted edits.
-changed_files() {
-  local repo="${GIT_REPO:-.}" base="" candidate
-  if [ -n "${STAGED_LIST:-}" ] && [ -f "$STAGED_LIST" ]; then tr '\0' '\n' <"$STAGED_LIST"; return 0; fi
+# usable_commit <sha> [repo]: true for a full, non-zero commit id that exists in the checkout. The
+# previous tip of a push (BEFORE_SHA) is all zeros on a first push and may be missing after a
+# rewrite or in a shallow clone (REQ-102).
+usable_commit() {
+  printf '%s' "$1" | grep -Eq '^[0-9a-f]{40}$' && printf '%s' "$1" | grep -vq '^0*$' &&
+    git -C "${2:-.}" rev-parse -q --verify "$1^{commit}" >/dev/null 2>&1
+}
+
+# change_base [repo]: prints the commit the change is measured from (nothing when the change is
+# only the uncommitted edits). Returns 1 when the scope is unknown: a missing event, a previous
+# tip or target branch that is not in the checkout, or history that was rewritten. Unknown never
+# means empty (REQ-102).
+change_base() {
+  local repo="${1:-.}" candidate base
+  case "${EVENT_NAME:-}" in
+    pull_request) # compare with the actual target branch, which may be a release branch
+      printf '%s' "${BASE_REF:-}" | grep -Eq '^[A-Za-z0-9._/-]+$' || return 1
+      git -C "$repo" merge-base HEAD "origin/$BASE_REF" 2>/dev/null
+      return $? ;;
+    push)
+      if ! usable_commit "${BEFORE_SHA:-}" "$repo"; then return 1; fi
+      if ! git -C "$repo" merge-base --is-ancestor "$BEFORE_SHA" HEAD 2>/dev/null; then return 1; fi
+      printf '%s' "$BEFORE_SHA"
+      return 0 ;;
+  esac
+  [ -z "${CI:-}" ] || return 1 # CI without an event: nothing says what this run brought
   for candidate in origin/HEAD origin/main origin/master main master; do
-    if git -C "$repo" rev-parse -q --verify "$candidate" >/dev/null; then
-      base="$(git -C "$repo" merge-base HEAD "$candidate" 2>/dev/null || true)"
-      [ -n "$base" ] && [ "$base" != "$(git -C "$repo" rev-parse HEAD)" ] && break
-      base=""
-    fi
+    git -C "$repo" rev-parse -q --verify "$candidate" >/dev/null || continue
+    base="$(git -C "$repo" merge-base HEAD "$candidate" 2>/dev/null)" || return 1
+    [ "$base" != "$(git -C "$repo" rev-parse HEAD)" ] || continue # on the default branch: try the next
+    printf '%s' "$base"
+    return 0
   done
-  {
+  # a default branch exists and HEAD is on it: only uncommitted edits differ. No branch at all: unknown.
+  for candidate in origin/HEAD origin/main origin/master main master; do
+    ! git -C "$repo" rev-parse -q --verify "$candidate" >/dev/null || return 0
+  done
+  return 1
+}
+
+# changed_files: files the change touches, one per line. Pre-commit: the staged files. Otherwise:
+# files that differ from change_base, plus uncommitted edits. Returns 1 when the scope is unknown.
+changed_files() {
+  local repo="${GIT_REPO:-.}" base files
+  if [ -n "${STAGED_LIST:-}" ] && [ -f "$STAGED_LIST" ]; then tr '\0' '\n' <"$STAGED_LIST"; return 0; fi
+  base="$(change_base "$repo")" || return 1
+  files="$({
     [ -z "$base" ] || git -C "$repo" diff --name-only "$base" HEAD
     git -C "$repo" diff --name-only HEAD
-  } 2>/dev/null | LC_ALL=C sort -u
+  })" || return 1
+  [ -z "$files" ] || printf '%s\n' "$files" | LC_ALL=C sort -u
 }
 
 # gate_findings_status <name>: the exit statuses meaning "violations found", comma separated, or
@@ -133,10 +168,14 @@ gate_run() {
   gate_new_violations "$keys" "$(gate_baseline_file "$name")" >"$new"
   if [ "$mode" = "changed-files" ]; then
     scope="$(mktemp)"
-    changed_files >"$scope"
-    # keep violations whose file ("path:" before the first colon) is in the change
-    awk -F': ' 'NR == FNR { changed[$0] = 1; next } ($1 in changed)' "$scope" "$new" >"$new.scoped"
-    mv "$new.scoped" "$new"
+    if changed_files >"$scope"; then
+      # keep violations whose file ("path:" before the first colon) is in the change
+      awk -F': ' 'NR == FNR { changed[$0] = 1; next } ($1 in changed)' "$scope" "$new" >"$new.scoped"
+      mv "$new.scoped" "$new"
+    else # unknown scope is not an empty one: judge every file, as strict mode does, for this run
+      mode=strict
+      warn "$label: cannot tell which files this run changes; checking all files (strict) for this run"
+    fi
     rm -f "$scope"
   fi
   gate_shrink_baseline "$keys" "$(gate_baseline_file "$name")"

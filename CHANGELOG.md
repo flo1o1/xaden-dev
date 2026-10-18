@@ -14,6 +14,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 - Maintainers: the REQ-072 test also allows `scripts/get-xaden.sh` to reach the network, after a yes.
 
 ### Fixed
+- In `changed-files` mode a check no longer passes on an empty list of changed files when the scope is unknown: on a clean default branch after a merge, on a first push, after a rewritten history, and in CI without an event, the run checks all files as `strict` does and says so. A push is measured from its previous tip (`BEFORE_SHA`), a pull request from the merge base with its actual target branch (`BASE_REF`). The workflows `xaden adopt` and the template write now pass `EVENT_NAME`, `BASE_REF` and `BEFORE_SHA` to the check step; a workflow of your own needs the same (REQ-102).
 - **Breaking:** a check that exits with a status it does not declare as "violations found" fails, even when everything it printed was already in the baseline; before, a tool that crashed after printing a baselined finding counted as passed. Built-in checks and the presets declare their statuses; a mapped command declares them with `findings-status.<name> = 1` in `xaden/xaden.conf` (`xaden adopt` records it, `test` never has one), otherwise any non-zero exit fails. A mapped command that exits non-zero with baselined output needs that line after upgrading (REQ-101).
 
 ## [0.5.0] - 2026-10-18
