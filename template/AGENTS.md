@@ -85,8 +85,9 @@ Details and examples: `docs/clean-code.md` (same IDs).
 - Linter and type-checker configuration only gets stricter on your own. Loosening a rule,
   raising a threshold, or adding an ignore or suppression is an **Approval point**.
 - In a project that adopted Xaden, the `mode` in `xaden/xaden.conf` (`advisory`, `changed-files`,
-  `strict`) is part of that configuration: loosening it, or letting a file in `xaden/baselines/`
-  grow, is an **Approval point**.
+  `strict`) is part of that configuration: loosening it, widening or removing a
+  `findings-status.<name>` line (REQ-101), or letting a file in `xaden/baselines/` grow, is an
+  **Approval point**.
 - Adopting a linter on existing code: record the current violations in the tool's baseline or
   suppression file; it may only shrink, and new code never adds to it. Recurring security mistakes
   become a rule in `.semgrep/rules.yml` (offline, versioned).

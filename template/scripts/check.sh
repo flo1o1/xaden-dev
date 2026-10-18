@@ -56,6 +56,25 @@ detected_kinds() {
   fi
 }
 
+# check_findings_status_config: "findings-status.<name> = 1,2" (REQ-101) names a mapped or built-in
+# check other than "test" and lists exit statuses from 1 to 255; anything else is a mistake that
+# would silently turn a crash into a finding, so it stops the run.
+check_findings_status_config() {
+  local conf="$TEAM_DIR/$CONF_NAME" key name value status
+  while IFS= read -r key; do
+    name="${key#findings-status.}"
+    value="$(conf_get "$conf" "$key")"
+    [ "$name" != "test" ] || die "xaden.conf: $key is not allowed; failing assertions are never baselined"
+    if [ -z "$(conf_get "$conf" "check.$name")" ] && ! printf ' shellcheck semgrep actionlint zizmor ' | grep -q " $name "; then
+      die "xaden.conf: $key names no check (check.$name is not mapped)"
+    fi
+    printf '%s' "$value" | grep -Eq '^[0-9]{1,3}(,[0-9]{1,3})*$' || die "xaden.conf: $key = '$value' is not a comma separated list of exit statuses from 1 to 255"
+    for status in ${value//,/ }; do
+      [ $((10#$status)) -ge 1 ] && [ $((10#$status)) -le 255 ] || die "xaden.conf: $key lists $status; exit statuses run from 1 to 255"
+    done
+  done < <(conf_keys "$conf" "findings-status.")
+}
+
 # check_mapped_commands: the commands the team mapped in xaden.conf ("check.<name> = <command>",
 # REQ-069) run under the project's mode and baseline. Pre-commit runs only the kinds named in
 # "hook-checks" (default: lint); the full run runs all. Expected kinds without a command are gaps:
@@ -64,6 +83,7 @@ check_mapped_commands() {
   local conf="$TEAM_DIR/$CONF_NAME" key name kind hooked mode command_line binary expected
   hooked="$(conf_get "$conf" hook-checks lint)"
   mode="$(project_mode "$ROOT")"
+  check_findings_status_config
   while IFS= read -r key; do
     name="${key#check.}"
     printf '%s' "$name" | grep -Eq '^[a-z][a-z0-9-]*$' || die "xaden.conf: invalid check name '$name'"

@@ -323,6 +323,15 @@ preset_commands() {
   esac
 }
 
+# preset_findings_status <stack> <kind>: the exit statuses the preset's tool uses for "violations
+# found" (REQ-101); the test runner declares none.
+preset_findings_status() {
+  case "$1/$2" in
+    node/typecheck) printf '1,2' ;; # tsc --noEmit: 1 or 2 depending on the version
+    */lint | */typecheck) printf '1' ;;
+  esac
+}
+
 # preset_install_command <stack>: what the person runs to install the preset's tools.
 preset_install_command() {
   case "$1" in
@@ -356,6 +365,7 @@ apply_preset() {
     [ -z "$(conf_get "$conf" "check.$kind")" ] || continue
     line="$(preset_commands "$stack" | grep "^$kind=" || true)"
     [ -z "$line" ] || conf_set "$conf" "check.$kind" "${line#*=}"
+    [ -z "$line" ] || [ -z "$(preset_findings_status "$stack" "$kind")" ] || conf_set "$conf" "findings-status.$kind" "$(preset_findings_status "$stack" "$kind")"
   done
 }
 

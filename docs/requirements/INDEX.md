@@ -85,7 +85,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-088 | job | should | done | CI runs once for each commit |
 | REQ-092 | job | could | done | A maintainer re-checks only the smoke area a change touched |
 | REQ-093 | job | should | done | A maintainer waits for CI once, not for the same suite twice |
-| REQ-101 | job | must | approved | A check that fails to run to completion never counts as passed |
+| REQ-101 | job | must | done | A check that fails to run to completion never counts as passed |
 
 ## Releases and documentation (`release-and-docs`)
 
