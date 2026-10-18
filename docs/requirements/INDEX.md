@@ -59,6 +59,10 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-084 | job | should | done | I decide whether and how often Xaden checks for updates |
 | REQ-087 | job | should | done | Xaden's slash commands carry the xaden- prefix |
 | REQ-090 | job | should | done | My change worktrees live in one known folder |
+| REQ-097 | job | should | approved | `xaden upgrade` updates Xaden itself in one command |
+| REQ-098 | job | should | approved | Xaden installs with one command and one install step |
+| REQ-099 | job | should | approved | A project moves to another Xaden version with `xaden pin` |
+| REQ-100 | job | must | approved | Files I edited are kept and the new version comes as `-dist` |
 
 ## Quality gates (`quality-gates`)
 
