@@ -451,7 +451,7 @@ test_versions_and_downloads() {
   edit_file "$hint/xaden/xaden.conf" 's/^version = .*/version = 0.0.1/'
   x_in "$hint" doctor
   assert "doctor names xaden pin when a newer Xaden is installed (REQ-099)" grep -q "xaden pin $current" "$XOUT"
-  rm -rf "$home/versions/0.0.1"
+  rm -rf "${home:?}"
 
   x_answers n "$worktree" upgrade 9.9.9
   assert "no answer but yes downloads nothing" test ! -e "$home/versions/9.9.9"

@@ -44,7 +44,7 @@ get_xaden() {
   echo "Xaden $version"
   echo "  source:    $assets/v$version/xaden-$version.zip"
   echo "  signed by: release@xaden.dev (key inside this script; the zip is checked before it is opened)"
-  ask "Download and install Xaden $version now?" || { echo "Nothing was downloaded."; return 1; }
+  yes_from_terminal "Download and install Xaden $version now?" || { echo "Nothing was downloaded."; return 1; }
 
   GET_XADEN_WORK="$(mktemp -d)"
   trap 'rm -rf "${GET_XADEN_WORK:?}"' EXIT
