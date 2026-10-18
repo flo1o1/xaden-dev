@@ -1302,6 +1302,42 @@ test_commit_check_range() {
   assert "REQ-109 a shallow checkout fails under another convention too" test "$XRC" -ne 0
 }
 
+# REQ-105 the full run says what an adopted project does not check, and the guide page matches it
+# shellcheck disable=SC2016 # the bash -c scripts read their arguments as $1
+test_not_covered() {
+  local page="$SCAFFOLD_ROOT/docs/guide/developer/what-xaden-checks.md" py="$WORKDIR/repos/not-covered-py" node="$WORKDIR/repos/not-covered-node" listed said tool
+  make_repo "$py" bare-python
+  x_in "$py" adopt --yes --skip-ci --mode strict
+  x_in "$py-adopt-xaden" check
+  assert "REQ-105 a Python repository is told that pip-audit is not covered" grep -q '^NOT COVERED: pip-audit; .*check.audit in xaden/xaden.conf' "$XOUT"
+  assert "REQ-105 a Python repository is told that bandit is not covered" grep -q '^NOT COVERED: bandit; .*check.security in xaden/xaden.conf' "$XOUT"
+  said="$(grep '^NOT COVERED:' "$XOUT" | sed 's/^NOT COVERED: \([^;]*\);.*/\1/')"
+  make_repo "$node" shop
+  x_in "$node" adopt --yes --skip-ci --mode strict
+  x_in "$node-adopt-xaden" check
+  assert "REQ-105 a Node repository is told that npm audit is not covered" grep -q '^NOT COVERED: npm audit; .*check.audit in xaden/xaden.conf' "$XOUT"
+  said="$said
+$(grep '^NOT COVERED:' "$XOUT" | sed 's/^NOT COVERED: \([^;]*\);.*/\1/')"
+  listed="$(grep -F '**not run**' "$page" | sed 's/^| `\([^`]*\)`.*/\1/')"
+  assert "REQ-105 the page lists as not run exactly what the full run reports" test "$(printf '%s\n' "$said" | sort -u)" = "$(printf '%s\n' "$listed" | sed 's/ (.*//' | sort -u)"
+
+  # an expected kind is a gap, reported once
+  edit_file "$py-adopt-xaden/xaden/xaden.conf" 's/^expect = .*/expect = test,lint,typecheck,audit/'
+  x_in "$py-adopt-xaden" check
+  assert "REQ-105 an expected kind is a gap" grep -q "gap: no 'audit' check is configured" "$XOUT"
+  assert "REQ-105 an expected kind is not also reported as not covered" bash -c '! grep -q "^NOT COVERED: pip-audit" "$1"' _ "$XOUT"
+
+  # a mapped kind is covered
+  printf 'check.audit = true\n' >>"$py-adopt-xaden/xaden/xaden.conf"
+  x_in "$py-adopt-xaden" check
+  assert "REQ-105 a mapped kind is not reported" bash -c '! grep -q "^NOT COVERED: pip-audit" "$1"' _ "$XOUT"
+
+  # every tool the page names exists in the scaffold, so the page cannot describe a check that is gone
+  while read -r tool; do
+    assert "REQ-105 the page names $tool, which the scaffold runs" grep -rqF -- "$tool" "$SCAFFOLD_ROOT/template/scripts" "$SCAFFOLD_ROOT/template/presets"
+  done < <(grep -E '^\| `' "$page" | sed 's/^| `\([^`]*\)`.*/\1/' | awk '{print $1}' | sort -u)
+}
+
 test_messages
 test_scan_and_plan
 test_convention_from_evidence
@@ -1323,3 +1359,4 @@ test_autopilot
 test_migration
 test_new_project_layout
 test_update_check
+test_not_covered

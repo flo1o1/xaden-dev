@@ -109,6 +109,29 @@ check_mapped_commands() {
       warn "gap: no '$kind' check is configured (check.$kind in xaden/xaden.conf; mode $mode)"
     fi
   done
+  report_not_covered
+}
+
+# classic_extra_checks: "<kind> <tool>" lines for the checks a project made by xaden create runs for the
+# stack's files, beyond test, lint and typecheck (REQ-105). Keep in step with stacks/python.sh and node.sh.
+classic_extra_checks() {
+  if [ -f pyproject.toml ] || [ -f setup.py ] || ls requirements*.txt >/dev/null 2>&1; then
+    printf '%s\n' "audit pip-audit" "security bandit"
+  elif [ -f package.json ]; then
+    printf '%s\n' "audit npm audit"
+  fi
+}
+
+# report_not_covered: a full run of an adopted project says which checks the classic layout would
+# run for this stack and nothing maps. An expected kind is already a gap (REQ-101), so it is skipped here.
+report_not_covered() {
+  local conf="$TEAM_DIR/$CONF_NAME" kind tool
+  while read -r kind tool; do
+    [ -n "$kind" ] || continue
+    [ -z "$(conf_get "$conf" "check.$kind")" ] || continue
+    if printf ',%s,' "$(conf_get "$conf" expect)" | grep -q ",$kind,"; then continue; fi
+    printf 'NOT COVERED: %s; a project made by xaden create runs it. Map it with check.%s in xaden/xaden.conf (see "What Xaden checks")\n' "$tool" "$kind"
+  done < <(classic_extra_checks)
 }
 
 # check_stacks: each file in stacks/ defines stack_check <mode> for one language. An adopted
