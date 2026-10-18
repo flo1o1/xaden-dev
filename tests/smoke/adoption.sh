@@ -609,6 +609,12 @@ PY
     x_answers y "$policy_pinned" fetch 9.9.9
     assert "policy: fetch re-verifies the installed copy against the signed checksum" test "$XRC" -eq 0
     assert "policy: and records the result" test -f "$home/versions/9.9.9.signed"
+    git init -q "$home/versions/9.9.9"
+    x_in "$policy_pinned" check
+    assert "policy: a git checkout is never accepted" test "$XRC" -ne 0
+    rm -rf "$home/versions/9.9.9/.git"
+    x_in "$policy_pinned" check
+    assert "policy: the same files without .git run again" test "$XRC" -eq 0
     printf 'changed\n' >>"$home/versions/9.9.9/README.md"
     x_in "$policy_pinned" check
     assert "policy: files that no longer match the signed checksum are not run" test "$XRC" -ne 0
@@ -623,6 +629,9 @@ PY
       x_in "$policy_pinned" $command
       assert "policy: an invalid value stops '$command'" grep -q 'require-signature must be true or false (got: yes)' "$XOUT"
     done
+    edit_file "$policy_pinned/xaden/xaden.conf" 's/^require-signature = .*/require-signature =/'
+    x_in "$policy_pinned" check
+    assert "policy: an empty value is refused, not read as false" grep -q 'require-signature must be true or false (got: )' "$XOUT"
     assert "policy: CI installs only the pinned checksum" grep -q 'XADEN_CHECKSUM' "$SCAFFOLD_ROOT/scripts/adopt/ci.yml"
     unset XADEN_ASSETS_URL XADEN_SIGNERS_FILE
   fi
@@ -1030,6 +1039,17 @@ test_exit_status_of_checks() {
   conf="$worktree/xaden/xaden.conf"
   assert "adoption records the status the check exits with while printing violations" grep -q '^findings-status.stub = 1$' "$conf"
 
+  # a tool that already crashes while adoption records the baseline: its status is not learned
+  make_repo "$WORKDIR/repos/exit-status-crash" shop
+  mkdir -p "$WORKDIR/repos/exit-status-crash/tools"
+  printf '#!/bin/sh\necho "scripts/build.sh:3:1: note: old finding"\necho "FATAL: crashed" >&2\nexit 2\n' >"$WORKDIR/repos/exit-status-crash/tools/stub.sh"
+  git -C "$WORKDIR/repos/exit-status-crash" add -A && git -C "$WORKDIR/repos/exit-status-crash" commit -q -m "chore: crashing stub"
+  x_in "$WORKDIR/repos/exit-status-crash" adopt --yes --skip-ci --check "stub=sh tools/stub.sh"
+  assert "adoption does not learn a crash as the findings status" bash -c '! grep -q "^findings-status.stub" "$1"' _ "$WORKDIR/repos/exit-status-crash-adopt-xaden/xaden/xaden.conf"
+  assert "adoption says which line to add" grep -q 'findings-status.stub = 2' "$XOUT"
+  x_in "$WORKDIR/repos/exit-status-crash-adopt-xaden" check --strict
+  assert "the crashing tool fails afterwards" test "$XRC" -ne 0
+
   # checks_in <mode>: the check run under that mode, XRC and XOUT as x_in leaves them
   checks_in() {
     edit_file "$conf" "s/^mode = .*/mode = $1/"
@@ -1142,6 +1162,36 @@ test_scope_of_changed_files() {
     done' _ "$SCAFFOLD_ROOT"
 }
 
+# REQ-103 the generated CI installation under require-signature = true: the workflow's own install
+# step, run on a fresh home, then the check command of the workflow
+test_signed_only_in_generated_ci() {
+  local worktree version checksum ci="$WORKDIR/ci-signed"
+  worktree="$(adopted_copy ci-signed)"
+  printf 'require-signature = true\n' >>"$worktree/xaden/xaden.conf"
+  git -C "$worktree" add -A && git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "chore: require signed releases"
+  version="$(conf_get "$worktree/xaden/xaden.conf" version)"
+  checksum="$(conf_get "$worktree/xaden/xaden.conf" checksum)"
+  rm -rf "$ci" && mkdir -p "$ci/temp" "$ci/home"
+  git -C "$SCAFFOLD_ROOT" archive --prefix="xaden-$version/" HEAD | gzip >"$ci/release.tar.gz"
+  # the install step of the generated workflow, with the download replaced by the local archive
+  awk '/- name: Install Xaden/ { on = 1; next } on && /run: \|/ { run = 1; next } run && /- name:/ { exit } run { sub(/^          /, ""); print }' \
+    "$worktree/.github/workflows/xaden.yml" |
+    sed 's#^curl -fsSL .* | tar -xz -C "\$RUNNER_TEMP"#tar -xz -C "$RUNNER_TEMP" -f "$CI_ARCHIVE"#' >"$ci/install.sh"
+  assert "the install step was found" grep -q 'CI_ARCHIVE' "$ci/install.sh"
+  XRC=0
+  (cd "$ci" && env -u XADEN_HOME -u XDG_DATA_HOME HOME="$ci/home" RUNNER_TEMP="$ci/temp" GITHUB_PATH="$ci/path" CI_ARCHIVE="$ci/release.tar.gz" \
+    XADEN_VERSION="$version" XADEN_CHECKSUM="$checksum" bash "$ci/install.sh") >"$XOUT" 2>&1 || XRC=$?
+  assert "CI installs the pinned tree" test "$XRC" -eq 0
+  XRC=0
+  (cd "$worktree" && env -u CI -u XADEN_HOME -u XDG_DATA_HOME HOME="$ci/home" "$ci/temp/xaden-$version/scripts/xaden.sh" check) >"$XOUT" 2>&1 || XRC=$?
+  assert "CI: the signed-only check accepts exactly the pinned tree" bash -c '! grep -q "requires signed releases" "$1"' _ "$XOUT"
+  assert "CI: the checks run" grep -q 'check mode: full' "$XOUT"
+  printf 'changed\n' >>"$ci/temp/xaden-$version/README.md"
+  XRC=0
+  (cd "$worktree" && env -u CI -u XADEN_HOME -u XDG_DATA_HOME HOME="$ci/home" "$ci/temp/xaden-$version/scripts/xaden.sh" check) >"$XOUT" 2>&1 || XRC=$?
+  assert "CI: a changed tree is refused" grep -q 'requires signed releases' "$XOUT"
+}
+
 test_messages
 test_scan_and_plan
 test_adopt_and_remove
@@ -1154,6 +1204,7 @@ test_self_upgrade
 test_modes_and_baselines
 test_exit_status_of_checks
 test_scope_of_changed_files
+test_signed_only_in_generated_ci
 test_prompts_and_ignore_list
 test_autopilot
 test_migration

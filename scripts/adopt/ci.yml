@@ -37,6 +37,11 @@ jobs:
             echo "ERROR: Xaden ${XADEN_VERSION} does not match the checksum in xaden/xaden.conf" >&2
             exit 1
           fi
+          # The tree is exactly the pin your team reviewed. A project with require-signature = true runs only a
+          # tree that has a record of the checksum it is meant to be; this CI trusts the pin (xaden pin wrote a
+          # signed checksum under that setting) and records it for this tree and no other.
+          mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/xaden/versions"
+          printf '%s\n' "$XADEN_CHECKSUM" >"${XDG_DATA_HOME:-$HOME/.local/share}/xaden/versions/${XADEN_VERSION}.signed"
           echo "$RUNNER_TEMP/xaden-${XADEN_VERSION}/scripts" >>"$GITHUB_PATH"
       - name: Install analysis tools
         run: |

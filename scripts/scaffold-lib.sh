@@ -167,13 +167,16 @@ versions_dir() { printf '%s/versions' "$(xaden_home)"; }
 # --- signed releases only (REQ-103) ------------------------------------------------------
 
 # load_signature_policy <conf>: sets SIGNATURE_REQUIRED to 1 when the project says
-# "require-signature = true", else 0. Any other value dies: the control must not turn off by a typo.
+# "require-signature = true", else 0. A key that is absent means false; a key that is present with
+# any other value, an empty one included, dies: the control must not turn off by a typo.
 # Not a command substitution on purpose: die has to end the calling script.
 SIGNATURE_REQUIRED=0
 # shellcheck disable=SC2034 # SIGNATURE_REQUIRED is read by scripts/fetch.sh and scripts/xaden.sh
 load_signature_policy() {
   local value
-  value="$(conf_get "$1" require-signature false)"
+  SIGNATURE_REQUIRED=0
+  conf_keys "$1" require-signature | grep -qx require-signature || return 0
+  value="$(conf_get "$1" require-signature)"
   case "$value" in
     true) SIGNATURE_REQUIRED=1 ;;
     false) SIGNATURE_REQUIRED=0 ;;
@@ -186,9 +189,11 @@ load_signature_policy() {
 signed_record() { printf '%s/%s.signed' "$(versions_dir)" "$1"; }
 
 # installation_authenticated <version> <dir> [pinned-checksum]: true when the files in <dir> are
-# exactly what the maintainer signed for <version> (and, when given, what the project pins).
+# exactly what the maintainer signed for <version> (and, when given, what the project pins). A git
+# checkout or worktree never is: tree_checksum hashes its last commit, not the files that run.
 installation_authenticated() {
   local record signed
+  [ ! -e "$2/.git" ] || return 1
   record="$(signed_record "$1")"
   [ -f "$record" ] || return 1
   signed="$(tr -d '[:space:]' <"$record")"
