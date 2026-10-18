@@ -3,7 +3,7 @@ id: REQ-100
 type: job
 epic: project-setup
 priority: must
-status: approved
+status: done
 updated: 2026-10-18
 ---
 
