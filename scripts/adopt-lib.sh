@@ -292,6 +292,7 @@ apply_ci() {
   mkdir -p "$dir/.github/workflows"
   sed -e "s/@VERSION@/$(running_version)/g" -e "s/@CHECKSUM@/$(running_checksum)/g" \
     -e "s/@DEFAULT_BRANCH@/$ADOPT_DEFAULT_BRANCH/g" "$SCAFFOLD_ROOT/scripts/adopt/ci.yml" >"$dir/$file"
+  cat "$SCAFFOLD_ROOT/scripts/adopt/ci-commit-step.yml" >>"$dir/$file" # REQ-107: the step `xaden pin` adds to older workflows
   note_footprint "$dir" file "$file"
 }
 

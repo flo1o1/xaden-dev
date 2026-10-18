@@ -71,6 +71,8 @@ Project commands (anywhere inside a project):
   req [...]          requirements: list, show, new, index
   context            rule IDs, requirement counts and the CONTEXT CHECK fingerprint
   persona new <name> create a user persona
+  verify-commits --ci
+                     check the commit messages a CI run introduces (adopted projects; advises only while commit-convention is other)
   release <part>     cut a release: major, minor or patch (projects created by `create`)
 EOF
 }
@@ -194,6 +196,17 @@ hook_main() {
   esac
 }
 
+# verify_commits_main <root> <args...>: the commit-msg checks on commits that exist already; CI runs it
+# because a hook can be skipped (REQ-107). Another commit convention only advises (REQ-068).
+verify_commits_main() {
+  local root=$1 convention
+  shift
+  convention="$(conf_get "$root/xaden/xaden.conf" commit-convention conventional)"
+  if [ "$convention" = "conventional" ]; then run_tool_script "$root" verify-commits.sh "$@"; fi
+  (cd "$root" && PROJECT_ROOT="$root" "$TOOLS/verify-commits.sh" "$@") ||
+    warn "commit references: advisory only while commit-convention is '$convention'"
+}
+
 # setup_main <root>: hooks and tools for one clone of an adopted project.
 setup_main() {
   local root=$1 manager
@@ -232,6 +245,7 @@ adopted_project_command() {
     persona) run_tool_script "$root" persona.sh "$@" ;;
     release) run_tool_script "$root" release.sh "$@" ;;
     hook) hook_main "$root" "${1:-}" "${@:2}" ;;
+    verify-commits) verify_commits_main "$root" "$@" ;;
     prompt)
       name="${1:-}"
       [ -n "$name" ] || die "usage: xaden prompt <name>"
@@ -327,7 +341,7 @@ main() {
     upgrade) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" upgrade "$@" ;;
     pin) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" pin "$@" ;;
     update-check) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" update-check "$@" ;;
-    setup | check | req | context | persona | release | hook | prompt | doc | rules | ignore-list | preset)
+    setup | check | req | context | persona | release | hook | verify-commits | prompt | doc | rules | ignore-list | preset)
       root="$(project_root)"
       if is_adopted "$root"; then
         adopted_project_command "$command" "$root" "$@"

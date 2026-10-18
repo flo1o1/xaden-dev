@@ -299,6 +299,10 @@ pin_main() {
   if [ -f "$worktree/.github/workflows/xaden.yml" ]; then
     sed -i.bak -e "s/^  XADEN_VERSION: .*/  XADEN_VERSION: \"$target\"/" -e "s/^  XADEN_CHECKSUM: .*/  XADEN_CHECKSUM: \"$checksum\"/" "$worktree/.github/workflows/xaden.yml"
     rm -f "$worktree/.github/workflows/xaden.yml.bak"
+    # REQ-107 a workflow from before the commit check gets the step of the new version, on this branch only
+    if ! grep -q 'verify-commits --ci' "$worktree/.github/workflows/xaden.yml" && [ -f "$tools/scripts/adopt/ci-commit-step.yml" ]; then
+      cat "$tools/scripts/adopt/ci-commit-step.yml" >>"$worktree/.github/workflows/xaden.yml"
+    fi
   fi
   git -C "$worktree" add -A
   git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "chore: upgrade Xaden from $pinned to $target" \
