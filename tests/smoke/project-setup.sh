@@ -54,10 +54,13 @@ test_setup_and_commit_checks() {
   git -C "$PROJECT" config --unset core.hooksPath
   assert "setup activates hooks" "$PROJECT/scripts/setup.sh"
   assert "hooks path restored" test "$(git -C "$PROJECT" config core.hooksPath)" = "scripts/hooks"
+  # REQ-109 the range must exist: HEAD~1 is not there in a project with one commit, and such a range is no valid history
+  git -C "$PROJECT" commit -q --allow-empty --no-verify -m "docs: a valid commit"
   assert "verify-commits accepts valid history" "$PROJECT/scripts/verify-commits.sh" HEAD~1..HEAD
   git -C "$PROJECT" commit -q --allow-empty --no-verify -m "feat: sneaked past hooks"
   assert_fails "verify-commits catches skipped hooks" "$PROJECT/scripts/verify-commits.sh" HEAD~1..HEAD
-  git -C "$PROJECT" reset -q --hard HEAD~1
+  assert_fails_with "verify-commits fails on a range it cannot read" "cannot read" "$PROJECT/scripts/verify-commits.sh" HEAD~99..HEAD
+  git -C "$PROJECT" reset -q --hard HEAD~2
 }
 
 # REQ-017 update path for existing projects
