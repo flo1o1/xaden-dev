@@ -2,7 +2,7 @@
 title: Refactor
 type: prompt
 status: stable
-version: 1.1.0
+version: 1.2.0
 works-with: [claude-code, chatgpt, local-llm]
 tags: [prompt, development, clean-code]
 ---
@@ -29,3 +29,4 @@ Improve structure without changing behaviour.
 - [ ] Behaviour unchanged (tests identical or only added)
 - [ ] Smell list resolved or consciously deferred (note in commit body)
 - [ ] Completion report given (AGENTS.md §5): checks run, checks skipped, unresolved findings, acceptance evidence
+- [ ] Explained and handed over as AGENTS.md §9 (Judgment stays with the human) says

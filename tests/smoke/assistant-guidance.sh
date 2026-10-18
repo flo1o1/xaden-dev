@@ -122,6 +122,22 @@ test_claude_permissions() {
   fi
 }
 
+# REQ-111 the assistant explains what it did and says what it cannot judge
+# shellcheck disable=SC2016 # the bash -c scripts read their file as $1
+test_judgment_stays_human() {
+  local rules="$PROJECT/AGENTS.md" section name
+  section="$(awk '/^### Judgment stays with the human/ { on = 1; print; next } on && /^##/ { exit } on { print }' "$rules")"
+  assert "REQ-111 the rules have the section" test -n "$section"
+  assert "REQ-111 the section is at most 1 KB" test "$(printf '%s' "$section" | wc -c | tr -d ' ')" -le 1024
+  assert "REQ-111 it asks for an explanation and a way to check" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "Explain a non-trivial change.*one way to check it"' _ "$section"
+  assert "REQ-111 it names what the assistant cannot evaluate" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "Say what you cannot evaluate"' _ "$section"
+  assert "REQ-111 a second failed attempt is a signal" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "second failed attempt.*inspect scope, context, assumptions and tests"' _ "$section"
+  assert "REQ-111 lessons go to docs/decisions after approval" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "docs/decisions/.*only after the user approves"' _ "$section"
+  for name in feature bugfix refactor; do
+    assert "REQ-111 the $name prompt points to the section" grep -q 'AGENTS.md §9 (Judgment stays with the human)' "$PROJECT/prompts/$name.md"
+  done
+}
+
 # REQ-035 one workflow and approval model across prompts
 test_prompt_workflow() {
   local prompts="$PROJECT/prompts" name
@@ -307,6 +323,7 @@ test_assistant_trust_rules
 test_add_on_rule_sets
 test_model_routing_option
 test_claude_permissions
+test_judgment_stays_human
 test_prompt_workflow
 test_branch_rule
 test_approve_before_branch

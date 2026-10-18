@@ -2,7 +2,7 @@
 title: Fix a bug
 type: prompt
 status: stable
-version: 1.1.0
+version: 1.2.0
 works-with: [claude-code, chatgpt, local-llm]
 tags: [prompt, development]
 ---
@@ -31,3 +31,4 @@ Fix the root cause, prove it with a regression test.
 - [ ] Regression test exists and passes
 - [ ] `scripts/check.sh` passes
 - [ ] Completion report given (AGENTS.md §5): checks run, checks skipped, unresolved findings, acceptance evidence
+- [ ] Explained and handed over as AGENTS.md §9 (Judgment stays with the human) says
