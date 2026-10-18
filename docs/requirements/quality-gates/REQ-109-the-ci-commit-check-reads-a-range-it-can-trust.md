@@ -3,7 +3,7 @@ id: REQ-109
 type: job
 epic: quality-gates
 priority: must
-status: approved
+status: done
 updated: 2026-10-18
 ---
 
@@ -24,4 +24,4 @@ When CI checks the commits of a push or pull request, I want to see it fail when
 - Given `commit-convention = other`, then findings stay warnings (REQ-068, REQ-107); a shallow checkout or an unreadable range fails in either convention, because the check did not run (REQ-101, REQ-102)
 - Given a pull request, or a push with a usable previous tip, in a full checkout, then the range is unchanged (REQ-022)
 - Given the smoke test, then a shallow clone and a range that cannot be read fail in both layouts, a fixture with commits before and after the adoption passes or fails as the sixth criterion says, and `xaden create` still checks the whole history
-- Given the troubleshooting guide, then it names the shallow-checkout failure and its fix; the guide sentence that commits from before the adoption are not checked holds without exception
+- Given the adopt guide, then it names the shallow-checkout failure and its fix (the Troubleshooting page of the website follows with the next site update), and the sentence that commits from before the adoption are not checked holds without exception

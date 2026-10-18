@@ -66,7 +66,9 @@ When the answer is `other`, the scan says so and names the setting. To enforce t
 `git commit --no-verify`, a clone that never ran `xaden setup` and an unattended assistant all skip the local hooks. The workflow
 `xaden.yml` therefore checks every commit a push or pull request brings, with the same rules as the commit hook (see the commit
 convention above): a wrong format, a `feat` without `Refs: REQ-nnn`, or an unknown ID fails the job and the log names the commit.
-With `commit-convention = other` the same findings are warnings. Commits from before the adoption are not checked.
+With `commit-convention = other` the same findings are warnings. Commits from before the adoption are never checked, not even on the first push of the default branch: the check starts after the commit that added `xaden/xaden.conf`.
+
+The check needs the full history. In a shallow checkout (the default depth of `actions/checkout` is 1) it fails with exit status 2 and names `fetch-depth: 0`, whatever the convention, because a range it cannot read is not a range with nothing wrong in it. The workflow Xaden writes already sets `fetch-depth: 0`; a workflow you edited or another CI system must do the same.
 
 A failing job only stops a merge when the repository requires it. In GitHub, add a branch ruleset (or branch protection) for your default
 branch with "Require status checks to pass" and select the `xaden` job. Xaden changes no repository setting. A project adopted before this

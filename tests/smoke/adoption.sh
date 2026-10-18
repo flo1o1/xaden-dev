@@ -1274,6 +1274,32 @@ test_commit_check_in_ci() {
   assert "REQ-107 the warning says why" grep -q "advisory only while commit-convention is 'other'" "$XOUT"
 }
 
+# REQ-109 the commit check judges only the commits since the adoption, in a checkout it can read
+test_commit_check_range() {
+  local worktree clone zero="0000000000000000000000000000000000000000"
+  worktree="$(adopted_copy commit-range)"
+  edit_file "$worktree/xaden/xaden.conf" 's/^commit-convention = .*/commit-convention = conventional/'
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q -am "chore: enforce the convention"
+  # the fixture's first commit, from before the adoption, is not a conventional message
+  EVENT_NAME=push BEFORE_SHA="$zero" x_in "$worktree" verify-commits --ci
+  assert "REQ-109 a first push passes although a commit from before the adoption is not conventional" test "$XRC" -eq 0
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q --allow-empty -m "wip after the adoption"
+  EVENT_NAME=push BEFORE_SHA="$zero" x_in "$worktree" verify-commits --ci
+  assert "REQ-109 a bad commit after the adoption fails the first push" test "$XRC" -ne 0
+  assert "REQ-109 the log names that commit" grep -q 'wip after the adoption' "$XOUT"
+  assert "REQ-109 the log does not name the commit from before the adoption" bash -c '! grep -q " initial" "$1"' _ "$XOUT"
+  git -C "$worktree" reset -q --hard HEAD~1
+
+  clone="$WORKDIR/repos/commit-range-shallow"
+  rm -rf "$clone" && git clone -q --depth 1 "file://$worktree" "$clone"
+  EVENT_NAME=push BEFORE_SHA="$zero" x_in "$clone" verify-commits --ci
+  assert "REQ-109 a shallow checkout fails the adopted project's check" test "$XRC" -ne 0
+  assert "REQ-109 the log names fetch-depth" grep -q 'fetch-depth: 0' "$XOUT"
+  edit_file "$clone/xaden/xaden.conf" 's/^commit-convention = .*/commit-convention = other/'
+  EVENT_NAME=push BEFORE_SHA="$zero" x_in "$clone" verify-commits --ci
+  assert "REQ-109 a shallow checkout fails under another convention too" test "$XRC" -ne 0
+}
+
 test_messages
 test_scan_and_plan
 test_convention_from_evidence
@@ -1287,6 +1313,7 @@ test_self_upgrade
 test_modes_and_baselines
 test_exit_status_of_checks
 test_commit_check_in_ci
+test_commit_check_range
 test_scope_of_changed_files
 test_signed_only_in_generated_ci
 test_prompts_and_ignore_list
