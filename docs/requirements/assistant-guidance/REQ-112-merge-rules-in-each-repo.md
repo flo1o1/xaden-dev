@@ -19,4 +19,4 @@ When I land several changes across the Xaden repositories, I want the merge and 
 - Given a failed merge (conflicts, red CI), then the assistant fixes the cause and reports; it never uses `--admin`
 - Given only one of two CI checks green, then the assistant does not ask for a merge
 - Given a scaffold change that affects the documentation, then `AGENTS.md` says the website needs a follow-up after the release
-- Given the website's rule file, then it says the user merges, and that the site's `main` must show what the scaffold's `main` does
+- Given the website's rule file, then it says the user merges, and that the site's `main` must show what the scaffold's `main` does; the site repository's `scripts/check-site.sh` fails when either sentence is missing
