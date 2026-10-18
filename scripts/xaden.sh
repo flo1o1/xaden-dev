@@ -86,6 +86,20 @@ is_adopted() { [ -f "$1/xaden/xaden.conf" ]; }
 # running_version: the version of the Xaden that runs this command.
 running_version() { tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION"; }
 
+# require_signed_installation <conf> <pinned>: with "require-signature = true" the Xaden that runs for
+# the project must be exactly what the maintainer signed and what the project pins (REQ-103). An
+# invalid value of the setting stops here too. A pinned version that is not installed is fetch.sh's
+# business: it refuses unsigned downloads itself.
+require_signed_installation() {
+  local dir
+  load_signature_policy "$1"
+  [ "$SIGNATURE_REQUIRED" = 1 ] || return 0
+  if [ "$2" = "$(running_version)" ]; then dir="$SCAFFOLD_ROOT"; else dir="$(versions_dir)/$2"; fi
+  [ -d "$dir" ] || return 0
+  installation_authenticated "$2" "$dir" "$(conf_get "$1" checksum)" ||
+    die "this project requires signed releases (require-signature = true), and Xaden $2 in $dir has no matching signature on record. Verify it once with: xaden fetch $2"
+}
+
 # select_pinned_version <root> <args...>: runs the Xaden version the project pins. When it is
 # not the running one, hands over to the installed copy; when it is not installed, asks before
 # anything downloads.
@@ -95,6 +109,7 @@ select_pinned_version() {
   conf="$root/xaden/xaden.conf"
   pinned="$(conf_get "$conf" version)"
   is_semver "$pinned" || die "xaden/xaden.conf: version must look like 1.2.3 (got: ${pinned:-nothing})"
+  require_signed_installation "$conf" "$pinned"
   [ "$pinned" != "$(running_version)" ] || return 0
   [ -z "${XADEN_HANDED_OVER:-}" ] || die "Xaden $(running_version) was started for a project that pins $pinned"
   if [ -x "$(versions_dir)/$pinned/scripts/xaden.sh" ]; then
@@ -130,6 +145,7 @@ doctor_main() {
   report_leftover_dist "$root"
   is_adopted "$root" || die "this project has not adopted Xaden (xaden/xaden.conf is missing); see: xaden adopt"
   conf="$root/xaden/xaden.conf"
+  load_signature_policy "$conf"
   pinned="$(conf_get "$conf" version)"
   checksum="$(conf_get "$conf" checksum)"
   info "installed $(running_version), project pinned $pinned"

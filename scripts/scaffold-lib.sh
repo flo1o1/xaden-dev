@@ -164,6 +164,38 @@ tree_checksum() {
 xaden_home() { printf '%s' "${XADEN_HOME:-${XDG_DATA_HOME:-${HOME:?HOME is not set}/.local/share}/xaden}"; }
 versions_dir() { printf '%s/versions' "$(xaden_home)"; }
 
+# --- signed releases only (REQ-103) ------------------------------------------------------
+
+# load_signature_policy <conf>: sets SIGNATURE_REQUIRED to 1 when the project says
+# "require-signature = true", else 0. Any other value dies: the control must not turn off by a typo.
+# Not a command substitution on purpose: die has to end the calling script.
+SIGNATURE_REQUIRED=0
+# shellcheck disable=SC2034 # SIGNATURE_REQUIRED is read by scripts/fetch.sh and scripts/xaden.sh
+load_signature_policy() {
+  local value
+  value="$(conf_get "$1" require-signature false)"
+  case "$value" in
+    true) SIGNATURE_REQUIRED=1 ;;
+    false) SIGNATURE_REQUIRED=0 ;;
+    *) die "xaden/xaden.conf: require-signature must be true or false (got: $value)" ;;
+  esac
+}
+
+# signed_record <version>: where the checksum the maintainer signed for an installed version is kept.
+# Next to the versions folder, not inside it: the folder's checksum must stay the release's.
+signed_record() { printf '%s/%s.signed' "$(versions_dir)" "$1"; }
+
+# installation_authenticated <version> <dir> [pinned-checksum]: true when the files in <dir> are
+# exactly what the maintainer signed for <version> (and, when given, what the project pins).
+installation_authenticated() {
+  local record signed
+  record="$(signed_record "$1")"
+  [ -f "$record" ] || return 1
+  signed="$(tr -d '[:space:]' <"$record")"
+  [ "$(tree_checksum "$2")" = "$signed" ] || return 1
+  [ -z "${3:-}" ] || [ "$3" = "$signed" ]
+}
+
 # The version that runs when you type `xaden`: a link to one folder of versions/ (REQ-097). The
 # `xaden` command links to current/scripts/xaden.sh, so an upgrade only moves this one link.
 current_link() { printf '%s/current' "$(xaden_home)"; }
