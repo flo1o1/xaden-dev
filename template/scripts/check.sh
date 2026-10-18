@@ -94,6 +94,9 @@ check_mapped_commands() {
     gate_run "$name" "check: $name" bash -c "$command_line"
   done < <(conf_keys "$conf" "check.")
   [ "$MODE" = "full" ] || return 0
+  if [ "$(conf_get "$conf" commit-convention conventional)" = other ]; then
+    tip "commit-convention is 'other', so the Refs: checks only advise; set commit-convention = conventional in xaden/xaden.conf to enforce them"
+  fi
   expected="$(conf_get "$conf" expect)"
   # No "expect" line (a project that began empty): the stack that appeared decides.
   if [ -z "$expected" ] && ! grep -q '^expect' "$conf"; then expected="$(detected_kinds | tr ' ' ',')"; fi

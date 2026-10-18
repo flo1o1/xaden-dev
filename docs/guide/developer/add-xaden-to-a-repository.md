@@ -49,6 +49,18 @@ Without a terminal (a script, a CI job) `xaden adopt` stops after the plan and p
 
 Your `README.md`, `docs/`, `scripts/`, `CHANGELOG.md` and build files are never changed.
 
+## The commit convention decides how hard the `Refs:` rule is
+
+`xaden/xaden.conf` holds `commit-convention`, `conventional` or `other`. With `conventional`, the commit hook and CI reject a `feat` commit without `Refs: REQ-nnn`, a `fix` without a requirement ID or `none`, and any unknown ID. With `other` they only warn, so a team with its own commit format (a ticket number in the subject, for example) can adopt without a fight.
+
+The scan chooses from your history and shows its evidence, for example `conventional (3 of 3 subjects)`:
+
+- no history at all: `conventional`;
+- 5 or more commits: `conventional` when at least 60 percent of the last 30 subjects follow Conventional Commits;
+- fewer than 5 commits: `conventional` only when every subject follows them, because a few commits say too little about a share.
+
+When the answer is `other`, the scan says so and names the setting. To enforce the rule, set `commit-convention = conventional` in `xaden/xaden.conf` (a change that tightens a gate, so your team reviews it), or adopt with `xaden adopt --commit-convention conventional`. `xaden adopt --commit-convention other` does the opposite. A full `xaden check` in a project with `other` prints one `TIP:` line about it.
+
 ## Your own tools keep running
 
 The scan maps the commands it finds (`npm test`, `make lint`, `pytest`, `ruff check .` and similar) to `check.test`, `check.lint` and
