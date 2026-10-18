@@ -126,9 +126,9 @@ test_get_xaden() {
 # REQ-065: the guide documents both ways to get Xaden, and both ways work as written.
 test_install_ways() {
   local install="$SCAFFOLD_ROOT/docs/guide/admin/install-xaden.md" platforms="$SCAFFOLD_ROOT/docs/guide/admin/requirements-and-platforms.md"
-  local update="$SCAFFOLD_ROOT/docs/guide/admin/update-xaden.md"
+  local update="$SCAFFOLD_ROOT/docs/guide/admin/update-xaden.md" contributing="$SCAFFOLD_ROOT/docs/guide/contributing" page
   local extracted="$WORKDIR/extracted-zip" clone="$WORKDIR/cloned-xaden" heading version
-  for heading in '## Install with one command \(recommended\)' '## Install from a signed zip' '## Install with git \(contributors\)' '## When to choose which' '## Verify what you downloaded'; do
+  for heading in '## Install with one command' '## Install from a git clone' '## Verify what you downloaded'; do
     assert "install guide has the heading $heading" grep -qE "^$heading\$" "$install"
   done
   for heading in '## Linux' '## macOS' '## Windows'; do
@@ -137,10 +137,15 @@ test_install_ways() {
   assert "guide states the Windows support level" grep -q 'untested' "$platforms"
   assert "guide says native PowerShell is not supported" grep -qi 'native PowerShell is not supported' "$platforms"
   assert "guide says the maintainer signs the checksum of every release" grep -q 'signs the checksum of every release' "$install"
-  assert "guide verifies the zip signature before extracting" grep -q 'ssh-keygen -Y verify .* xaden-<version>.zip.sig' "$install"
+  assert "install guide describes no manual zip route (REQ-104)" test -z "$(grep -nE 'unzip|Install from a signed zip' "$install" "$SCAFFOLD_ROOT/GETTING-STARTED.md" || true)"
+  for page in install-with-git architecture work-on-xaden release-and-signing threat-model-and-requirements; do
+    assert "contributing page $page exists (REQ-104)" test -f "$contributing/$page.md"
+    assert "contributing page $page is listed for the site (REQ-104)" grep -qxF "docs/guide/contributing/$page.md" "$SCAFFOLD_ROOT/docs/site-pages.txt"
+  done
   assert "guide explains xaden upgrade" grep -q '^xaden upgrade$' "$update"
-  assert "guide explains the clone update" grep -q 'git -C ~/.xaden pull' "$update"
-  assert "guide explains picking a release tag" grep -q 'git -C ~/.xaden checkout v' "$update"
+  assert "contributing guide explains the clone update" grep -q 'git -C ~/.xaden pull' "$contributing/install-with-git.md"
+  assert "contributing guide explains picking a release tag" grep -q 'git -C ~/.xaden checkout v' "$contributing/install-with-git.md"
+  assert "update guide points to the clone steps" grep -q 'contributing/install-with-git.md' "$update"
 
   # The zip way: an archive has no .git; install.sh and xaden create must still work from it.
   version="$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"

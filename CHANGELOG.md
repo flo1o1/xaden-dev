@@ -10,6 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 - Files you edited are kept and the new version is written next to them as `<file>-dist`: for `xaden update` (instead of `<file>.scaffold-new`) and for the command files `xaden pin` brings up to date. `xaden doctor` names leftover `-dist` and `*.scaffold-new` files (REQ-100).
 
 ### Changed
+- The guides no longer describe downloading, verifying and extracting the release zip by hand: the install guide shows the one command (the installer verifies the zip itself). Everything about working on Xaden moved to a new Contributing section: Install with git (install, update and uninstall of a clone), Architecture, Work on Xaden, Release and sign Xaden, and Threat model and requirements; the website shows it below Reference (REQ-104).
 - **Breaking:** moving a project to another Xaden version is `xaden pin [--check] [version]` now. `xaden upgrade <version>` inside a project still does it, with a warning; `xaden upgrade` without a version, or outside a project, updates the tool (REQ-099). `xaden doctor` names `xaden pin <version>` when a newer Xaden is installed than the one the project pins.
 - Maintainers: the REQ-072 test also allows `scripts/get-xaden.sh` to reach the network, after a yes.
 

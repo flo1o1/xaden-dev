@@ -8,7 +8,7 @@ Check that the Xaden you install is the release the maintainer published, and un
 |-------|----------------|-------|
 | Checksum | The files are exactly those the project pinned | `checksum` in `xaden/xaden.conf`; compared by `xaden fetch`, `xaden pin` and the CI workflow |
 | Signature | The checksum of a release was signed by the maintainer's key | `release-signers` in the Xaden folder holds the public key |
-| Zip signature | The release zip is the file the maintainer signed | `xaden-<version>.zip.sig` on the release page; verified by hand before extracting ([Install Xaden](install-xaden.md)) |
+| Zip signature | The release zip is the file the maintainer signed | `xaden-<version>.zip.sig` on the release page; the one-command installer verifies it before it opens the zip ([Install Xaden](install-xaden.md)) |
 
 The checksum is the SHA-256 of the paths and contents of all files of a release (the "tree checksum"). A git clone and an extracted
 archive of the same release give the same value, because the release leaves out the files only maintainers need.
@@ -42,7 +42,7 @@ Then, for that project:
   blocks with or without the setting. The first download of a version is covered too: the signed checksum is the one that gets pinned.
 - Xaden runs for the project only when the installed files are exactly what the maintainer signed and what the project pins. Xaden keeps
   the signed checksum of every verified install in `<versions folder>/<version>.signed`, next to the version, not inside it. A copy with
-  no record (installed from the release zip, or before you set the option) is verified once: `xaden fetch <version>` downloads the
+  no record (installed before you set the option) is verified once: `xaden fetch <version>` downloads the
   signed checksum after your yes, compares it with the installed files, and records the result. A git clone of Xaden is never accepted.
 - Any value other than `true` or `false` stops every `xaden` command in the project, so a typo cannot switch the control off.
 - Setting it back to `false`, or removing it, weakens a control: do it in a pull request your team reviews.
