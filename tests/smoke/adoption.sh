@@ -1303,6 +1303,20 @@ test_commit_check_range() {
   assert "REQ-109 a shallow checkout fails under another convention too" test "$XRC" -ne 0
 }
 
+# Xaden files present but untracked (a contributor in a foreign repository): the hook reads them from the working tree
+test_hook_with_untracked_xaden_files() {
+  local worktree
+  worktree="$(adopted_copy untracked-xaden)"
+  git -C "$worktree" rm -rq --cached xaden AGENTS.md
+  printf 'xaden/\nAGENTS.md\n' >>"$(git -C "$worktree" rev-parse --git-common-dir)/info/exclude"
+  git -C "$worktree" commit -q --no-verify -m "chore: untrack xaden"
+  printf 'more\n' >>"$worktree/README.md"
+  git -C "$worktree" add README.md
+  x_in "$worktree" hook pre-commit
+  assert "the hook passes without tracked Xaden files" test "$XRC" -eq 0
+  assert "the hook does not look for docs/requirements" bash -c '! grep -q "not found" "$1"' _ "$XOUT"
+}
+
 # REQ-106 the dependency audit and Bandit are check kinds of an adopted project
 # shellcheck disable=SC2016 # the bash -c scripts read their arguments as $1
 test_audit_kinds() {
@@ -1446,3 +1460,4 @@ test_new_project_layout
 test_update_check
 test_not_covered
 test_audit_kinds
+test_hook_with_untracked_xaden_files
