@@ -95,10 +95,17 @@ gate_findings_status() {
 gate_is_findings_status() { printf ',%s,' "$(gate_findings_status "$2")" | grep -q ",$1,"; }
 
 # gate_record_findings_status <status> <name>: adoption saw the check exit with <status> while
-# printing violations; unless it declares statuses already, that becomes its declaration.
+# printing violations. Status 1, the convention of linters, becomes its declaration for the team to
+# review in the adoption pull request. Any other status is not learned: a tool that crashes after
+# printing findings would otherwise be accepted as healthy for good (REQ-101).
 gate_record_findings_status() {
   [ "$2" != "test" ] && [ -z "$(gate_findings_status "$2")" ] && [ -f "$TEAM_DIR/$CONF_NAME" ] || return 0
-  conf_set "$TEAM_DIR/$CONF_NAME" "findings-status.$2" "$1"
+  if [ "$1" -eq 1 ]; then
+    conf_set "$TEAM_DIR/$CONF_NAME" "findings-status.$2" "$1"
+    info "recorded findings-status.$2 = 1 in xaden/xaden.conf: exit status 1 means violations found; review it"
+  else
+    warn "check '$2' exited with status $1 while printing violations; not recorded. If $1 means 'violations found', add: findings-status.$2 = $1"
+  fi
 }
 
 # gate_baseline_file <name>: where the baseline of one check lives.
