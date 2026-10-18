@@ -32,6 +32,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-091 | job | should | done | Maintainers use the feature, requirements, release and persona commands on the scaffold |
 | REQ-110 | job | must | done | A human owns and merges every change an assistant prepares |
 | REQ-111 | job | must | done | The assistant explains what it did and says what it cannot judge |
+| REQ-112 | job | should | approved | Merge and site-follow-up rules live in each repository's own rule file |
 
 ## Project setup (`project-setup`)
 
