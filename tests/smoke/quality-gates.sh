@@ -151,6 +151,17 @@ test_commit_bypasses() {
     env EVENT_NAME=pull_request BASE_REF=main "$PROJECT/scripts/verify-commits.sh" --ci
   assert_fails "CI rejects a malformed base ref" \
     env EVENT_NAME=pull_request BASE_REF='main;rm' "$PROJECT/scripts/verify-commits.sh" --ci
+  # REQ-109 a range the check could not read is never reported as OK
+  assert_fails_with "CI fails when the base of a pull request cannot be read" "cannot read" \
+    env EVENT_NAME=pull_request BASE_REF=gone "$PROJECT/scripts/verify-commits.sh" --ci
+  git clone -q --depth 1 "file://$PROJECT" "$WORKDIR/shallow-ci"
+  assert_fails_with "CI fails in a shallow checkout and names fetch-depth" "fetch-depth: 0" \
+    env EVENT_NAME=push BEFORE_SHA="$zero" DEFAULT_BRANCH=main "$WORKDIR/shallow-ci/scripts/verify-commits.sh" --ci
+  assert_fails_with "CI fails in a shallow checkout of a pull request too" "fetch-depth: 0" \
+    env EVENT_NAME=pull_request BASE_REF=main "$WORKDIR/shallow-ci/scripts/verify-commits.sh" --ci
+  rm -rf "$WORKDIR/shallow-ci"
+  assert "an empty range that was read is still OK" \
+    env EVENT_NAME=push BEFORE_SHA="$(git -C "$PROJECT" rev-parse HEAD)" "$PROJECT/scripts/verify-commits.sh" --ci
   git -C "$PROJECT" update-ref -d refs/remotes/origin/main
   git -C "$PROJECT" reset -q --hard "$before_bad~1"
 

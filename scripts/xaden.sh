@@ -199,12 +199,18 @@ hook_main() {
 # verify_commits_main <root> <args...>: the commit-msg checks on commits that exist already; CI runs it
 # because a hook can be skipped (REQ-107). Another commit convention only advises (REQ-068).
 verify_commits_main() {
-  local root=$1 convention
+  local root=$1 convention status
   shift
   convention="$(conf_get "$root/xaden/xaden.conf" commit-convention conventional)"
+  # REQ-109 the history before the adoption is not Xaden's: start after the commit that added xaden.conf
+  VERIFY_COMMITS_AFTER="$(git -C "$root" log --diff-filter=A --format=%H -- xaden/xaden.conf | tail -n 1)"
+  export VERIFY_COMMITS_AFTER
   if [ "$convention" = "conventional" ]; then run_tool_script "$root" verify-commits.sh "$@"; fi
-  (cd "$root" && PROJECT_ROOT="$root" "$TOOLS/verify-commits.sh" "$@") ||
-    warn "commit references: advisory only while commit-convention is '$convention'"
+  status=0
+  (cd "$root" && PROJECT_ROOT="$root" "$TOOLS/verify-commits.sh" "$@") || status=$?
+  # status 2: the run could not read what it had to check; that is no advice-only finding
+  if [ "$status" -eq 2 ]; then exit 2; fi
+  if [ "$status" -ne 0 ]; then warn "commit references: advisory only while commit-convention is '$convention'"; fi
 }
 
 # setup_main <root>: hooks and tools for one clone of an adopted project.
