@@ -112,6 +112,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-094 | job | should | done | Xaden installs from a signed release zip that holds no maintainer files |
 | REQ-103 | job | should | done | A team can require that every Xaden it runs came from a signed release |
 | REQ-104 | job | should | done | Contributors find working on Xaden in a Contributing section, apart from using it |
+| REQ-113 | job | should | approved | Xaden credits the tools it runs and says under which license |
 
 ## Requirements (`requirements`)
 
