@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 ## [Unreleased]
 
 ### Added
+- A prompt `epic` (`/xaden-epic`) builds the approved requirements of one epic in order: you approve the list once, each requirement stays a normal change with its own branch, checks, commit and pull request, the loop stops on a red check, an approval point, a size change or a wrong acceptance criterion, and it ends with one review and a retro that proposes requirement edits as drafts (REQ-124). Prompt only; it never merges.
 - A review finding that is not fixed in the change is offered three routes (fix now, ask, defer) and, once you agree, recorded in `docs/deferred-work.md` with source, summary and evidence; `xaden check` fails on an incomplete row or an unknown requirement ID (REQ-125, AIDD principle 06).
 - The assistant states a size for each change (small, normal or large) and you can overrule it: a small change skips the requirement draft, the library search, the plan and the security review and keeps the tests, checks, trailer, changelog, guides and a quick diff review; a large one is split into steps (`template/AGENTS.md` §9, REQ-123, AIDD principle 04). Guidance only; no hook or check changes.
 - The rules tell the assistant to say when a session lost its coherence and to propose a fresh one, and the developer guide explains how to restart a session from the files (REQ-120, AIDD principle 10).
