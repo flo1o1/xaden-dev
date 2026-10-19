@@ -207,6 +207,27 @@ test_site_pages() {
   assert_fails "a missing last line without newline fails the check" "$check" "$copy"
 }
 
+# REQ-113: THIRD-PARTY.md credits every tool the stack files, presets and CI workflow name.
+test_third_party() {
+  local copy="$WORKDIR/third-party" check="$SCAFFOLD_ROOT/scripts/check-third-party.sh"
+  assert "the complete THIRD-PARTY.md passes" "$check" "$SCAFFOLD_ROOT"
+  mkdir -p "$copy/template/docs" "$copy/scripts" "$copy/template/scripts"
+  cp -R "$SCAFFOLD_ROOT/template/scripts/stacks" "$copy/template/scripts/"
+  cp "$SCAFFOLD_ROOT/template/scripts/lib.sh" "$SCAFFOLD_ROOT/template/scripts/layout.sh" "$SCAFFOLD_ROOT/template/scripts/gate.sh" "$copy/template/scripts/"
+  cp -R "$SCAFFOLD_ROOT/template/presets" "$copy/template/"
+  cp "$SCAFFOLD_ROOT/template/docs/optional-tools.md" "$copy/template/docs/"
+  cp -R "$SCAFFOLD_ROOT/scripts/adopt" "$copy/scripts/"
+  cp "$SCAFFOLD_ROOT/THIRD-PARTY.md" "$copy/"
+  assert "a copy of the complete file passes" "$check" "$copy"
+  grep -vi 'astral-sh/ruff' "$SCAFFOLD_ROOT/THIRD-PARTY.md" >"$copy/THIRD-PARTY.md"
+  assert_fails "a stack tool missing from the file fails the check" "$check" "$copy"
+  sed 's#https://github.com/astral-sh/ruff#ruff-site#' "$SCAFFOLD_ROOT/THIRD-PARTY.md" >"$copy/THIRD-PARTY.md"
+  assert_fails "a tool without a link fails the check" "$check" "$copy"
+  sed '/astral-sh\/ruff/s/| MIT |/| unknown |/' "$SCAFFOLD_ROOT/THIRD-PARTY.md" >"$copy/THIRD-PARTY.md"
+  assert_fails "a tool without a license fails the check" "$check" "$copy"
+  assert "the file says the Semgrep rules are not LGPL" grep -q 'Semgrep Rules License v1.0.*not LGPL' "$SCAFFOLD_ROOT/THIRD-PARTY.md"
+}
+
 # The guides link to each other with relative paths (the website turns them into page links): every target exists.
 test_guide_links() {
   local file link target broken=""
@@ -301,6 +322,7 @@ test_release_archive() {
 test_bump_version
 test_guide_links
 test_site_pages
+test_third_party
 test_scaffold_release_failures
 test_scaffold_release_check_option
 test_sign_release

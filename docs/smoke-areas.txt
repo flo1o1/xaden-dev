@@ -9,5 +9,5 @@ project-setup|scripts/new-project.sh scripts/update-scaffold.sh scripts/install.
 quality-gates|template/scripts/check.sh scripts/check-scaffold.sh template/scripts/verify-commits.sh template/scripts/verify-refs.sh
 requirements|template/scripts/req.sh template/scripts/check-requirements.sh template/scripts/check-traceability.sh
 security|template/scripts/check-security-exceptions.sh template/.semgrep/
-release-and-docs|scripts/release-scaffold.sh template/scripts/release.sh scripts/sign-release.sh scripts/check-site-pages.sh scripts/check-release-archive.sh .gitattributes
+release-and-docs|scripts/release-scaffold.sh template/scripts/release.sh scripts/sign-release.sh scripts/check-site-pages.sh scripts/check-third-party.sh scripts/check-release-archive.sh .gitattributes
 *all*|template/scripts/lib.sh scripts/xaden.sh tests/smoke.sh tests/smoke/lib.sh scripts/check-scaffold.sh .github/ docs/smoke-areas.txt scripts/select-smoke-areas.sh
