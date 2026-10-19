@@ -99,7 +99,7 @@ remove_block() {
 
 # --- the footprint: everything a step puts outside xaden/ (REQ-073) -------------------
 
-# --- migration: a project created by `xaden create` keeps a copy of the tooling (REQ-071) ---
+# --- migration: a project created by `xaden project create` keeps a copy of the tooling (REQ-071) ---
 
 # move_team_content <dir> <from> <to> [except-name]: moves the files of a folder into the xaden
 # folder and leaves the scaffold's template file behind.
@@ -204,12 +204,12 @@ and the settings. Everything is plain Markdown plus one settings file.
 | `security-reviews/` | Recorded security reviews |
 | `baselines/` | Violations that existed before adoption; the lists only shrink |
 | `prompts/` | Optional: a prompt of the same name as a default prompt replaces it |
-| `footprint.txt` | The few paths outside this folder that Xaden touched, so `xaden remove` can undo them |
+| `footprint.txt` | The few paths outside this folder that Xaden touched, so `xaden project remove` can undo them |
 
 The Xaden tooling is not copied into the repository. Install Xaden once per machine
 (https://xaden.dev), then use `xaden check`, `xaden req`, `xaden prompt` and the rest. A newer
-Xaden on your machine changes nothing here; `xaden doctor` compares the installed version with
-the pinned one, and `xaden pin` moves the whole team in one pull request.
+Xaden on your machine changes nothing here; `xaden project doctor` compares the installed version with
+the pinned one, and `xaden project pin` moves the whole team in one pull request.
 TEXT
 }
 
@@ -284,7 +284,7 @@ git_hooks_dir() {
 }
 
 # install_local_hooks <repo>: the hooks of plain git, pre-commit and lefthook live in .git, not
-# in the repository: chain Xaden into them. `xaden setup` does the same for every teammate.
+# in the repository: chain Xaden into them. `xaden project setup` does the same for every teammate.
 install_local_hooks() {
   local hooks_dir
   hooks_dir="$(git_hooks_dir "$1")"
@@ -300,7 +300,7 @@ apply_ci() {
   mkdir -p "$dir/.github/workflows"
   sed -e "s/@VERSION@/$(running_version)/g" -e "s/@CHECKSUM@/$(running_checksum)/g" \
     -e "s/@DEFAULT_BRANCH@/$ADOPT_DEFAULT_BRANCH/g" "$SCAFFOLD_ROOT/scripts/adopt/ci.yml" >"$dir/$file"
-  cat "$SCAFFOLD_ROOT/scripts/adopt/ci-commit-step.yml" >>"$dir/$file" # REQ-107: the step `xaden pin` adds to older workflows
+  cat "$SCAFFOLD_ROOT/scripts/adopt/ci-commit-step.yml" >>"$dir/$file" # REQ-107: the step `xaden project pin` adds to older workflows
   note_footprint "$dir" file "$file"
 }
 

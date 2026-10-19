@@ -19,7 +19,7 @@ curl -fsSL https://xaden.dev/install | bash
 
 To read the script first, run `curl -fsSL https://xaden.dev/install | less`, or save it with `curl -fsSLO https://xaden.dev/install` and read the file before you run it with `bash install`. To install a release other than the newest, name it for `bash`: `curl -fsSL https://xaden.dev/install | XADEN_VERSION=<version> bash`.
 
-From now on, `xaden upgrade` keeps Xaden current ([Update Xaden](update-xaden.md)).
+From now on, `xaden core upgrade` keeps Xaden current ([Update Xaden](update-xaden.md)).
 
 If `~/.local/bin` is not on your `PATH`, the installer says so. Add this line to your shell profile (`~/.bashrc` for bash, `~/.zshrc` for zsh)
 and open a new terminal:
@@ -46,4 +46,4 @@ the scripts you are about to run: they are plain shell. The maintainer also sign
 ## Next
 
 [Create a project](../developer/create-a-project.md) or [add Xaden to a repository](../developer/add-xaden-to-a-repository.md).
-Later: [Update Xaden](update-xaden.md) (`xaden upgrade`).
+Later: [Update Xaden](update-xaden.md) (`xaden core upgrade`).

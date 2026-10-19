@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Installs the `xaden` command (REQ-056, REQ-098). From an extracted release it copies the folder to
 # <xaden home>/versions/<version>, points `current` at it and links `xaden` to current/scripts/xaden.sh,
-# so the extracted folder can be deleted and `xaden upgrade` needs no new link. From a git clone it
+# so the extracted folder can be deleted and `xaden core upgrade` needs no new link. From a git clone it
 # links to the clone instead (`git pull` updates it). It never replaces a file that is not a Xaden link.
 # Usage: scripts/install.sh [--uninstall] [bin-dir]   (default bin-dir: ~/.local/bin)
 set -euo pipefail

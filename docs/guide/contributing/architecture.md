@@ -27,7 +27,7 @@ AGENTS.md CLAUDE.md   rules for maintaining the scaffold
 
 ## Project layout
 
-Projects (`xaden create`, `xaden adopt`) keep their team's content in an `xaden/` folder and no copy of the tooling. `xaden/xaden.conf` pins the Xaden version and its checksum. `scripts/new-project.sh` is the maintainers' test fixture: a project with its own copy of the tooling that the smoke suite runs against; `xaden` does not reach it.
+Projects (`xaden project create`, `xaden project adopt`) keep their team's content in an `xaden/` folder and no copy of the tooling. `xaden/xaden.conf` pins the Xaden version and its checksum. `scripts/new-project.sh` is the maintainers' test fixture: a project with its own copy of the tooling that the smoke suite runs against; `xaden` does not reach it.
 
 ## The `xaden` command and versions
 
@@ -35,7 +35,7 @@ The command is one link, `~/.local/bin/xaden`, to `current/scripts/xaden.sh` in 
 `versions/<version>`, and `current` points at the active one. In a project that pins a version, `xaden` hands over to that installed version, and when it is
 missing it asks before it downloads it. Nothing inside a version folder is edited after it is installed.
 
-`xaden upgrade` installs a newer release next to the others and moves `current`. `xaden pin` moves a project to another version on a branch. A clone
+`xaden core upgrade` installs a newer release next to the others and moves `current`. `xaden project pin` moves a project to another version on a branch. A clone
 runs from where it is; `git pull` updates it.
 
 ## The network

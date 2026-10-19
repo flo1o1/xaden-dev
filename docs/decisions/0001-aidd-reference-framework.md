@@ -14,7 +14,7 @@ weighs it. Facts come from the GitHub API and the repository files named, read o
 Two scopes need different answers:
 
 - **(a) Maintaining Xaden:** this repository. Bash and standard tools only, one rule set for every assistant.
-- **(b) Projects created or adopted with Xaden:** `template/` and `xaden adopt`. The maintainer wants full
+- **(b) Projects created or adopted with Xaden:** `template/` and `xaden project adopt`. The maintainer wants full
   AI-Driven Development here, wherever the environment supports it.
 
 | | |

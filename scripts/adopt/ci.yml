@@ -1,6 +1,6 @@
 name: xaden
 
-# Runs Xaden's checks next to the existing workflows. Added by `xaden adopt`; the version and the
+# Runs Xaden's checks next to the existing workflows. Added by `xaden project adopt`; the version and the
 # checksum below are the ones pinned in xaden/xaden.conf and change only by pull request (REQ-072).
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
             exit 1
           fi
           # The tree is exactly the pin your team reviewed. A project with require-signature = true runs only a
-          # tree that has a record of the checksum it is meant to be; this CI trusts the pin (xaden pin wrote a
+          # tree that has a record of the checksum it is meant to be; this CI trusts the pin (xaden project pin wrote a
           # signed checksum under that setting) and records it for this tree and no other.
           mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/xaden/versions"
           printf '%s\n' "$XADEN_CHECKSUM" >"${XDG_DATA_HOME:-$HOME/.local/share}/xaden/versions/${XADEN_VERSION}.signed"

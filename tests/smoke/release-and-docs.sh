@@ -142,12 +142,12 @@ test_install_ways() {
     assert "contributing page $page exists (REQ-104)" test -f "$contributing/$page.md"
     assert "contributing page $page is listed for the site (REQ-104)" grep -qxF "docs/guide/contributing/$page.md" "$SCAFFOLD_ROOT/docs/site-pages.txt"
   done
-  assert "guide explains xaden upgrade" grep -q '^xaden upgrade$' "$update"
+  assert "guide explains xaden core upgrade" grep -q '^xaden core upgrade$' "$update"
   assert "contributing guide explains the clone update" grep -q 'git -C ~/.xaden pull' "$contributing/install-with-git.md"
   assert "contributing guide explains picking a release tag" grep -q 'git -C ~/.xaden checkout v' "$contributing/install-with-git.md"
   assert "admin guides do not cover installing with git (REQ-104)" test -z "$(grep -ln 'install-with-git' "$install" "$update" "$SCAFFOLD_ROOT/docs/guide/admin/uninstall.md" || true)"
 
-  # The zip way: an archive has no .git; install.sh and xaden create must still work from it.
+  # The zip way: an archive has no .git; install.sh and xaden project create must still work from it.
   version="$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
   mkdir -p "$extracted"
   git -C "$SCAFFOLD_ROOT" archive HEAD | tar -x -C "$extracted"
@@ -160,7 +160,7 @@ test_install_ways() {
   assert "xaden still runs after the extracted folder is gone" test "$("$WORKDIR/zip-bin/xaden" version)" = "$version"
   mv "$extracted-moved" "$extracted"
   assert "xaden from the archive prints the version" test "$("$WORKDIR/zip-bin/xaden" version)" = "$version"
-  assert "xaden from the archive creates a project" bash -c "cd '$WORKDIR' && '$WORKDIR/zip-bin/xaden' create zip-app"
+  assert "xaden from the archive creates a project" bash -c "cd '$WORKDIR' && '$WORKDIR/zip-bin/xaden' project create zip-app"
   # A second extraction installs over the first; an older link into a former folder is replaced (REQ-098).
   mkdir -p "$extracted-next" "$WORKDIR/old-style-bin"
   git -C "$SCAFFOLD_ROOT" archive HEAD | tar -x -C "$extracted-next"
@@ -346,7 +346,7 @@ test_release_archive() {
   done
   assert "the archive installs the xaden command" env XADEN_HOME="$WORKDIR/archive-home" "$extracted/scripts/install.sh" "$bin"
   mkdir -p "$repo" && git -C "$repo" init -q -b main && printf 'x\n' >"$repo/README.md" && git -C "$repo" add README.md && git -C "$repo" commit -q -m "chore: init"
-  assert "xaden adopt --plan works from the archive" bash -c "cd '$repo' && '$bin/xaden' adopt --plan"
+  assert "xaden project adopt --plan works from the archive" bash -c "cd '$repo' && '$bin/xaden' project adopt --plan"
   mkdir -p "$extracted-head" && git -C "$SCAFFOLD_ROOT" archive HEAD | tar -x -C "$extracted-head"
   assert "a clone and its extracted archive have the same tree checksum" test "$(tree_checksum "$SCAFFOLD_ROOT")" = "$(tree_checksum "$extracted-head")"
   assert "the guides name no path of a maintainer's machine" test -z "$(grep -rnE '/Users/|/home/[a-z]' "$SCAFFOLD_ROOT/docs/guide" || true)"

@@ -11,11 +11,11 @@ You have a working project at the end of this page.
 ## Create the project
 
 ```bash
-xaden create my-app
+xaden project create my-app
 cd my-app
 ```
 
-- `xaden create my-app`: creates the folder `my-app` in the current directory, starts a git repository in it and makes the first commit on `main`. If anything fails, it removes the half-created folder.
+- `xaden project create my-app`: creates the folder `my-app` in the current directory, starts a git repository in it and makes the first commit on `main`. If anything fails, it removes the half-created folder.
 - `cd my-app`: moves your terminal into the new project.
 
 Check that it worked:
@@ -26,7 +26,7 @@ xaden check
 
 - `xaden check`: runs the project's checks and ends with a summary. A new project passes, because it has no code yet.
 
-To create the project somewhere else, add the folder: `xaden create my-app ~/code/x`.
+To create the project somewhere else, add the folder: `xaden project create my-app ~/code/x`.
 
 ## What you got
 
@@ -43,7 +43,7 @@ To create the project somewhere else, add the folder: `xaden create my-app ~/cod
 Nothing is copied from the Xaden folder into the project. The tooling stays in the installed Xaden, and the project
 pins the version it uses. See [Pin one Xaden version per project](../admin/pin-one-version-per-project.md).
 
-Claude Code users get `CLAUDE.md` with the single line `@AGENTS.md`. `xaden create` asks when a terminal is attached;
+Claude Code users get `CLAUDE.md` with the single line `@AGENTS.md`. `xaden project create` asks when a terminal is attached;
 `--assistants claude` answers it in advance; `--assistants claude,copilot,vibe,codex` also writes the slash commands of GitHub Copilot, Mistral Vibe and Codex CLI.
 
 ## Set up a stack in one step (autopilot)
@@ -51,10 +51,10 @@ Claude Code users get `CLAUDE.md` with the single line `@AGENTS.md`. `xaden crea
 If you already know the stack, let Xaden add the recommended checks, hooks and CI as well:
 
 ```bash
-xaden create --autopilot --stack python my-app
+xaden project create --autopilot --stack python my-app
 ```
 
-- `xaden create --autopilot --stack python my-app`: prints one plan and asks once. Use `--stack node` for a Node project.
+- `xaden project create --autopilot --stack python my-app`: prints one plan and asks once. Use `--stack node` for a Node project.
 
 The plan covers the layout above, the stack's preset (linter, type checker and test configuration), mode `strict`, hooks, the CI
 workflow and the first commit. It prints the exact install commands for the development tools, with pinned versions. You run

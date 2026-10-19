@@ -28,7 +28,7 @@ git -C ~/.xaden pull
 xaden version
 ```
 
-- `git -C ~/.xaden pull`: fetches the newest Xaden into the folder. The `xaden` command keeps working. `xaden upgrade` refuses to touch a clone and names this command.
+- `git -C ~/.xaden pull`: fetches the newest Xaden into the folder. The `xaden` command keeps working. `xaden core upgrade` refuses to touch a clone and names this command.
 - `xaden version`: prints the version you now have.
 
 To stay on a fixed release instead of the newest code:
@@ -41,7 +41,7 @@ git -C ~/.xaden checkout v<version>
 - `git -C ~/.xaden tag -l`: lists the releases.
 - `git -C ~/.xaden checkout v<version>`: switches to the release you choose. Switch back with `git -C ~/.xaden checkout main` before the next `git pull`.
 
-A project that pins a Xaden version needs that release installed by `xaden fetch`, not the clone; a clone is never accepted when a team requires signed releases
+A project that pins a Xaden version needs that release installed by `xaden project fetch`, not the clone; a clone is never accepted when a team requires signed releases
 ([Verify releases](../admin/verify-releases.md)).
 
 ## Uninstall

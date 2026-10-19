@@ -231,7 +231,7 @@ aidd_main() {
   local root=$1 sub=${2:-}
   shift
   [ "$#" -eq 0 ] || shift
-  [ -f "$root/xaden/xaden.conf" ] || die "xaden aidd works in a project that adopted Xaden (xaden adopt)"
+  [ -f "$root/xaden/xaden.conf" ] || die "xaden aidd works in a project that adopted Xaden (xaden project adopt)"
   case "$sub" in
     enable) enable_main "$root" "$@" ;;
     status) status_main "$root" ;;

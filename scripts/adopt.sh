@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Adds Xaden to an existing repository, or takes it out again (REQ-066, REQ-067, REQ-069, REQ-070, REQ-073).
-# Usage: xaden adopt [--scan | --plan] [--yes] [--assistants <list>] [--mode <mode>]
+# Usage: xaden project adopt [--scan | --plan] [--yes] [--assistants <list>] [--mode <mode>]
 #                    [--check <kind>=<command>]... [--preset | --no-preset] [--worktrees | --no-worktrees] [--skip-hooks] [--skip-ci]
 #                    [--commit-convention <conventional|other>]
-#        xaden remove [--yes]
+#        xaden project remove [--yes]
 #   --scan        read the repository and report what it has; changes nothing
 #   --plan        print the exact diff and the files a run would create or change; changes nothing
 #   (default)     scan, plan, then ask once whether to apply the plan on a new branch and worktree
@@ -37,7 +37,7 @@ TOOLS_DIR="$SCAFFOLD_ROOT/template"
 ADOPT_REPO=""
 STOP_AFTER=""          # scan or plan
 ASSUME_YES=0
-CLASSIC=0              # a project created by `xaden create`, with a copy of the tooling
+CLASSIC=0              # a project created by `xaden project create`, with a copy of the tooling
 PRESET_CHOICE=ask      # ask, yes, no
 WORKTREES_CHOICE=ask   # ask, yes, no
 EXIT_UNSUPPORTED=4     # an unsupported hook manager or CI system (a manual step is printed)
@@ -74,7 +74,7 @@ parse_arguments() {
         printf '%s' "${1:-}" | grep -Eq '^[a-z][a-z0-9-]*=.+$' || die "--check takes <kind>=<command>, for example --check test=\"make verify\""
         ADOPT_CHECKS="$ADOPT_CHECKS${ADOPT_CHECKS:+$'\n'}$1" ;;
       -h | --help) usage; exit 0 ;;
-      *) die "unknown option: $1 (xaden adopt --help)" ;;
+      *) die "unknown option: $1 (xaden project adopt --help)" ;;
     esac
     shift
   done
@@ -93,14 +93,14 @@ check_supported() {
     unsupported*)
       if [ "$ADOPT_HOOKS" = 1 ]; then
         unsupported_stop "The hook setup (${SCAN_HOOKS#unsupported: })" \
-          "Manual step: call 'xaden hook pre-commit' from your pre-commit hook and 'xaden hook commit-msg \"\$1\"' from your commit-msg hook, or run 'xaden adopt --skip-hooks' to adopt without them."
+          "Manual step: call 'xaden hook pre-commit' from your pre-commit hook and 'xaden hook commit-msg \"\$1\"' from your commit-msg hook, or run 'xaden project adopt --skip-hooks' to adopt without them."
       fi ;;
   esac
   case "$SCAN_CI" in
     unsupported*)
       if [ "$ADOPT_CI" = 1 ]; then
         unsupported_stop "The CI system (${SCAN_CI#unsupported: })" \
-          "Manual step: install Xaden at the pinned version in a CI job (xaden/README.md) and run 'xaden check --strict', or run 'xaden adopt --skip-ci' to adopt without a workflow."
+          "Manual step: install Xaden at the pinned version in a CI job (xaden/README.md) and run 'xaden check --strict', or run 'xaden project adopt --skip-ci' to adopt without a workflow."
       fi ;;
   esac
 }
@@ -255,7 +255,7 @@ print_plan() {
     echo
     git -C "$scratch" diff "$base" HEAD
   else
-    echo "  Show the exact diff with: xaden adopt --plan"
+    echo "  Show the exact diff with: xaden project adopt --plan"
   fi
   if [ "$CLASSIC" = 1 ]; then
     echo "  This project keeps a copy of the tooling (.scaffold/). The plan moves its requirements, personas and"
@@ -264,7 +264,7 @@ print_plan() {
   echo "  Besides the files:"
   echo "    - the violations that exist today are recorded in xaden/baselines/ when the plan is applied (it runs your check commands)"
   if [ "$SCAN_HOOKS" != husky ] && [ "$ADOPT_HOOKS" = 1 ]; then
-    echo "    - Xaden is chained into the git hooks of this clone ($SCAN_HOOKS); not a tracked file, each teammate runs 'xaden setup'"
+    echo "    - Xaden is chained into the git hooks of this clone ($SCAN_HOOKS); not a tracked file, each teammate runs 'xaden project setup'"
   fi
   echo "    - nothing is downloaded, pushed or published"
   [ -z "$ADOPT_PRESET" ] || echo "    - install the preset's tools yourself: $(preset_install_command "$ADOPT_PRESET")"
@@ -309,7 +309,7 @@ adopt_main() {
   parse_arguments "$@"
   has_command git || die "git is required"
   ADOPT_REPO="$(git rev-parse --show-toplevel 2>/dev/null)" || die "this is not a git repository; run 'git init' first"
-  [ ! -f "$ADOPT_REPO/xaden/xaden.conf" ] || die "Xaden is adopted here already (xaden/xaden.conf). Move it with: xaden pin"
+  [ ! -f "$ADOPT_REPO/xaden/xaden.conf" ] || die "Xaden is adopted here already (xaden/xaden.conf). Move it with: xaden project pin"
   if [ -d "$ADOPT_REPO/.scaffold" ]; then
     CLASSIC=1
     ADOPT_MODE=strict # that project was strict already
@@ -338,7 +338,7 @@ adopt_main() {
   choose_update_check
   if [ "$ASSUME_YES" != 1 ]; then
     if ! has_terminal; then
-      echo "No terminal, so nothing was changed. To apply this plan: xaden adopt --yes (add the options you used)."
+      echo "No terminal, so nothing was changed. To apply this plan: xaden project adopt --yes (add the options you used)."
       return 0
     fi
     ask "Apply this plan on the new branch $ADOPT_BRANCH?" || { echo "Nothing was changed."; return 0; }
@@ -352,10 +352,10 @@ remove_main() {
   [ "${1:-}" != "--yes" ] || ASSUME_YES=1
   repo="$(git rev-parse --show-toplevel 2>/dev/null)" || die "this is not a git repository"
   [ -f "$repo/$FOOTPRINT_FILE" ] || die "Xaden is not adopted here ($FOOTPRINT_FILE not found)"
-  info "xaden remove would delete xaden/ and undo these changes:"
+  info "xaden project remove would delete xaden/ and undo these changes:"
   while read -r kind path; do printf '  %s %s\n' "$kind" "$path"; done <"$repo/$FOOTPRINT_FILE"
   if [ "$ASSUME_YES" != 1 ]; then
-    has_terminal || { echo "No terminal, so nothing was changed. To remove: xaden remove --yes"; return 0; }
+    has_terminal || { echo "No terminal, so nothing was changed. To remove: xaden project remove --yes"; return 0; }
     ask "Remove Xaden from this repository?" || { echo "Nothing was changed."; return 0; }
   fi
   remove_adoption "$repo"

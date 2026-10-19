@@ -25,10 +25,10 @@ relative to it.
 | Fewer invented rules/requirements | Numbered rules (`CC-nn`) and requirements (`REQ-nnn`); Claude Code imports them into every session; `scripts/req.sh` lookup; commit hook and traceability check reject unknown IDs. `scripts/context-status.sh` fingerprints the files the assistant started from: a consistency aid, not proof it read or followed them |
 | User personas | `docs/personas/`: 3 to 5 personas, created prefilled by `scripts/persona.sh new` or `/xaden-persona`; assistants check every solution against them |
 | Git | New projects get their own repo with hooks installed |
-| An existing repository | `xaden adopt` adds Xaden beneath it on a branch: a visible `xaden/` folder, a marked block in `AGENTS.md`, your own tests, linters, hooks and CI reused, existing findings baselined; `xaden remove` takes it out again |
-| One Xaden version per team | `xaden/xaden.conf` pins the version and a checksum; `xaden doctor`, `xaden fetch` and `xaden pin` keep the team on one reviewed version; nothing downloads without your yes |
-| A new project | `xaden create` creates the same `xaden/` layout `xaden adopt` gives an existing repository |
-| A new project in one step | `xaden create --autopilot` sets up the recommended checks, hooks and CI for Python or Node after one confirmation |
+| An existing repository | `xaden project adopt` adds Xaden beneath it on a branch: a visible `xaden/` folder, a marked block in `AGENTS.md`, your own tests, linters, hooks and CI reused, existing findings baselined; `xaden project remove` takes it out again |
+| One Xaden version per team | `xaden/xaden.conf` pins the version and a checksum; `xaden project doctor`, `xaden project fetch` and `xaden project pin` keep the team on one reviewed version; nothing downloads without your yes |
+| A new project | `xaden project create` creates the same `xaden/` layout `xaden project adopt` gives an existing repository |
+| A new project in one step | `xaden project create --autopilot` sets up the recommended checks, hooks and CI for Python or Node after one confirmation |
 | Obsidian | Open the folder as a vault; prompts have frontmatter, wikilinks, a template folder |
 
 **Start here: [GETTING-STARTED.md](GETTING-STARTED.md)** — prerequisites, creating a project,

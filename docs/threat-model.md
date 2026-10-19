@@ -38,14 +38,14 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
   `.scaffold/manifest` and `package.json` /
   `pyproject.toml` (which decide which tools run).
 - Files of an adopted repository: `xaden/xaden.conf` (version, checksum, mode and the commands `check.<name>`
-  that `xaden check` runs), `xaden/footprint.txt` (paths `xaden remove` deletes), `xaden/baselines/`,
+  that `xaden check` runs), `xaden/footprint.txt` (paths `xaden project remove` deletes), `xaden/baselines/`,
   `xaden/prompts/`, the existing `AGENTS.md`, `CLAUDE.md`, hook files and workflows.
 - Environment: `XADEN_HOME`, `XADEN_RELEASES_URL`, `XADEN_LATEST_URL`, `XADEN_PLAIN`, `XADEN_UPDATE_CHECK`; `XADEN_TEST_MODE` and
   `XADEN_TEST_ANSWER`, `XADEN_NOW` (tests only; ignored without `XADEN_TEST_MODE=1`); `PROJECT_ROOT`, `RULES_FILE`, `STRICT`, `ALLOW_MAIN_COMMIT`, `PATH`; the current
   branch (pre-commit branch guard); in CI `EVENT_NAME`, `BASE_REF`,
   `BEFORE_SHA`, `DEFAULT_BRANCH`, filled from GitHub event data.
 - Release archives of Xaden itself from GitHub (`fetch.sh`, only after a person's yes) and the release API
-  (`xaden pin --check` and `xaden upgrade --check`, same). The update check (REQ-084, run as `xaden upgrade --check --if-due`, REQ-130) asks the same API without a yes each time, but only when
+  (`xaden project pin --check` and `xaden core upgrade --check`, same). The update check (REQ-084, run as `xaden core upgrade --check --if-due`, REQ-130) asks the same API without a yes each time, but only when
   the person set `update-check` in `xaden/xaden.conf` or `XADEN_UPDATE_CHECK` (off by default); it also runs `npm outdated` and
   `pip list --outdated` in the project (`upgrade --check` asks for a yes and runs them too). Its result is cached in `.git/xaden-update-check` and printed by `doctor` and
   `context-status.sh`, which an assistant reads: names are filtered to package-name characters before they are cached.
@@ -55,7 +55,7 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
 ## Trust boundaries
 
 - Untracked or ignored files in `template/` vs. the reviewed, tracked template content.
-- A project's own files vs. the files the scaffold manages there (`xaden pin`, `-dist` files).
+- A project's own files vs. the files the scaffold manages there (`xaden project pin`, `-dist` files).
 - Pull-request and push data (branch names, commit messages) vs. the CI shell.
 - Downloads from GitHub, PyPI and Homebrew vs. the CI runner.
 - A release archive from the network vs. the installed versions folder (`fetch.sh`): checked for unsafe members,
@@ -116,7 +116,7 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
 | Release archive with `..`, absolute paths or links writes outside the versions folder | users' machines | `safe_archive` rejects such members before extraction; size limit on the download | REQ-072, smoke `test_versions_and_downloads` |
 | A substituted release comes with a matching checksum | users' machines | the checksum is signed with the maintainer's SSH key and verified against `release-signers`; a bad signature exits with code 6 and installs nothing; `XADEN_SIGNERS_FILE` works only in test mode | REQ-077, smoke `test_versions_and_downloads` |
 | An assistant, script or IDE answers the download question | users' machines | the answer is read from the terminal only; `XADEN_TEST_ANSWER` works only with `XADEN_TEST_MODE=1`; AGENTS.md §10 tells assistants never to answer | REQ-072, smoke `test_messages` |
-| `xaden remove` or a hook edit deletes a team's own text | project integrity | only marked blocks and the files listed in `xaden/footprint.txt` are touched; paths with `..` or leading `/` are refused; text outside the markers is never changed | REQ-066, REQ-073, smoke `test_adopt_and_remove` |
+| `xaden project remove` or a hook edit deletes a team's own text | project integrity | only marked blocks and the files listed in `xaden/footprint.txt` are touched; paths with `..` or leading `/` are refused; text outside the markers is never changed | REQ-066, REQ-073, smoke `test_adopt_and_remove` |
 | A new Xaden on one machine changes the rules for everyone | trust in the gates | tooling is selected by the pinned version; `RULES.md` that differs from the pinned version fails the check; `upgrade` is a reviewed pull request | REQ-070, REQ-071, smoke `test_versions_and_downloads` |
 | Legacy findings are hidden by a baseline that grows | trust in the gates | the baseline only shrinks; mode changes and baseline growth are approval points | REQ-068, smoke `test_modes_and_baselines` |
 | Instructions hidden in `inbox/` or pasted content | users' machines, secrets | `inbox/` ignored by git; AGENTS.md §10 treats it as data | REQ-026, REQ-033 |
@@ -125,12 +125,12 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
 
 - `xaden check` and the hooks run the commands in `check.*` of `xaden/xaden.conf`, the same trust as running the
   repository's own test and lint scripts. A pull request that changes `xaden.conf` therefore needs the same
-  review as one that changes a build script. The adoption pull request and every `xaden pin` show it.
+  review as one that changes a build script. The adoption pull request and every `xaden project pin` show it.
 - A release without a signature (or while `release-signers` holds no key) is pinned by the checksum of the
   archive just downloaded (trust on first use); the person sees the checksum and the team reviews it in the
   pull request. A stolen signing key or a maintainer who signs something malicious is not covered.
 
-- `xaden setup|check|req|release` run the current repository's own `scripts/*.sh`, the
+- `xaden project setup|check|req|release` run the current repository's own `scripts/*.sh`, the
   same trust as running them by hand; use them only in projects you trust (review
   2026-10-11-xaden-command #1).
 - The macOS CI job installs Homebrew's current shellcheck, semgrep, ruff and gitleaks without

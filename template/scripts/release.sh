@@ -38,7 +38,7 @@ main() {
   if [ "$LAYOUT" = "adopted" ]; then
     release_files=(VERSION CHANGELOG.md)
     if [ ! -f VERSION ] || [ ! -f CHANGELOG.md ]; then
-      die "xaden release stamps VERSION and CHANGELOG.md; this repository has no such pair. Create them (VERSION: 0.0.0, CHANGELOG.md with a '## [Unreleased]' section) or release with your own process"
+      die "xaden project release stamps VERSION and CHANGELOG.md; this repository has no such pair. Create them (VERSION: 0.0.0, CHANGELOG.md with a '## [Unreleased]' section) or release with your own process"
     fi
   fi
   [ -n "$part" ] || die "usage: scripts/release.sh <major|minor|patch>"

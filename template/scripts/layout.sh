@@ -2,7 +2,7 @@
 # Where a project keeps its files (REQ-070). Sourced by lib.sh; do not execute it.
 # Two layouts, one set of scripts:
 #   classic  the scaffold copied scripts, prompts and guides into the project; requirements and
-#            reviews live in docs/. This is what `xaden create` creates.
+#            reviews live in docs/. This is what `xaden project create` creates.
 #   adopted  the team content lives in the visible folder xaden/ (requirements, personas,
 #            security reviews, baselines, xaden.conf); the tooling stays in the installed Xaden
 #            and is selected by the version pinned in xaden/xaden.conf.
@@ -112,9 +112,9 @@ adopted_text() {
     -e 's#scripts/check-traceability\.sh#xaden check#g' \
     -e 's#scripts/check-docs\.sh#xaden check#g' \
     -e 's#scripts/context-status\.sh#xaden context#g' \
-    -e 's#scripts/apply-preset\.sh#xaden preset#g' \
-    -e 's#scripts/persona\.sh#xaden persona#g' \
-    -e 's#scripts/release\.sh#xaden release#g' \
+    -e 's#scripts/apply-preset\.sh#xaden project preset#g' \
+    -e 's#scripts/persona\.sh#xaden project persona#g' \
+    -e 's#scripts/release\.sh#xaden project release#g' \
     -e 's#scripts/req\.sh#xaden req#g' \
     -e 's#scripts/check\.sh#xaden check#g' \
     -e 's#--cone docs/requirements scripts#--cone docs/requirements#g' \
@@ -162,7 +162,7 @@ adopted_rules_text() {
 # is running: the template's AGENTS.md for an adopted project. The topics moved to docs/rules/
 # (REQ-126) are read with `xaden doc rules-<topic>`, which applies the same filter.
 render_rules() {
-  printf '<!-- Generated from Xaden %s by `xaden adopt` and `xaden pin`. Generated, do not edit: change the rules by upgrading Xaden. -->\n\n' \
+  printf '<!-- Generated from Xaden %s by `xaden project adopt` and `xaden project pin`. Generated, do not edit: change the rules by upgrading Xaden. -->\n\n' \
     "$(tr -d '[:space:]' <"$TOOLS_DIR/../VERSION" 2>/dev/null || tr -d '[:space:]' <"$TOOLS_DIR/VERSION")"
   adopted_rules_text <"$TOOLS_DIR/AGENTS.md"
 }

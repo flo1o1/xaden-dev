@@ -224,7 +224,7 @@ newest_version() { printf '%s\n' "$@" | sort -t. -k1,1n -k2,2n -k3,3n | tail -n 
 
 FOOTPRINT_FILE="xaden/footprint.txt"
 
-# note_footprint <dir> <kind> <path>: records a path outside xaden/ so `xaden remove` can undo it.
+# note_footprint <dir> <kind> <path>: records a path outside xaden/ so `xaden project remove` can undo it.
 note_footprint() {
   mkdir -p "$1/xaden"
   grep -qxF "$2 $3" "$1/$FOOTPRINT_FILE" 2>/dev/null || printf '%s %s\n' "$2" "$3" >>"$1/$FOOTPRINT_FILE"
