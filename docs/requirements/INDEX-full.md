@@ -77,7 +77,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-100 | job | must | done | Files I edited are kept and the new version comes as `-dist` |
 | REQ-108 | job | should | done | Adopting Xaden never switches the reference rule off without telling the team |
 | REQ-118 | job | should | done | I can switch on the AIDD framework in a Xaden project with one command |
-| REQ-129 | job | should | approved | A version change offers a CI workflow candidate for older installs |
+| REQ-129 | job | should | done | A version change offers a CI workflow candidate for older installs |
 
 ## Quality gates (`quality-gates`)
 

@@ -49,6 +49,7 @@ test_versions_and_downloads() {
   upgraded="$worktree-upgrade-xaden-9.9.9"
   assert "REQ-107 upgrade adds the commit check to an older workflow, once" test "$(grep -c 'xaden.sh verify-commits --ci' "$upgraded/.github/workflows/xaden.yml")" -eq 1
   assert "REQ-107 the branch the person is on keeps its workflow" bash -c '! grep -q verify-commits "$1"' _ "$worktree/.github/workflows/xaden.yml"
+  assert "REQ-129 a workflow that equals the generated one gets no -dist file" test ! -e "$upgraded/.github/workflows/xaden.yml-dist"
   assert "upgrade works on a branch for a pull request" test "$(git -C "$upgraded" branch --show-current)" = "chore/upgrade-xaden-9.9.9"
   assert "upgrade bumps the version" grep -q '^version = 9.9.9$' "$upgraded/xaden/xaden.conf"
   assert "upgrade bumps the checksum" test "$(grep '^checksum' "$upgraded/xaden/xaden.conf")" != "$(grep '^checksum' "$worktree/xaden/xaden.conf")"
@@ -68,6 +69,8 @@ test_versions_and_downloads() {
   # a newer Xaden installed on one machine changes no repository file; the pinned one is used
   x_in "$worktree" doctor
   assert "an installed newer version changes nothing in the project" test -z "$(git -C "$worktree" status --porcelain)"
+
+  test_pin_offers_ci_candidate
 
   # a pinned version that is missing
   rm -rf "$home"
@@ -414,6 +417,34 @@ test_signed_only_in_generated_ci() {
   XRC=0
   (cd "$worktree" && env -u CI -u XADEN_HOME -u XDG_DATA_HOME HOME="$ci/home" "$ci/temp/xaden-$version/scripts/xaden.sh" check) >"$XOUT" 2>&1 || XRC=$?
   assert "CI: a changed tree is refused" grep -q 'requires signed releases' "$XOUT"
+}
+
+# REQ-129 an older workflow (no signed-record step, no Python audit tools): pin keeps it and writes the generated one
+# beside it; under require-signature = true the candidate step also warns (the fake release cannot be signed, so
+# that part calls ci_candidate directly)
+test_pin_offers_ci_candidate() {
+  local worktree upgraded
+  worktree="$(adopted_copy ci-old)"
+  # drop the signed-record lines and the audit step the way an older workflow lacked them
+  grep -v -e 'versions/\${XADEN_VERSION}.signed' -e 'mkdir -p "\${XDG_DATA_HOME' "$worktree/.github/workflows/xaden.yml" |
+    awk '/- name: Install the dependency audit and Bandit/ { skip = 1; next } skip && /- name:/ { skip = 0 } !skip { print }' >"$WORKDIR/old-ci.yml"
+  cp "$WORKDIR/old-ci.yml" "$worktree/.github/workflows/xaden.yml"
+  assert "the older workflow lacks the signed-record step" bash -c '! grep -q "\.signed" "$1"' _ "$worktree/.github/workflows/xaden.yml"
+  git -C "$worktree" add -A && git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "test: older workflow, signed only"
+  x_answers y "$worktree" pin 9.9.9 # installed by the test before; XADEN_HOME and XADEN_RELEASES_URL are still exported
+  upgraded="$worktree-upgrade-xaden-9.9.9"
+  assert "REQ-129 pin writes the generated workflow beside the project's" test -f "$upgraded/.github/workflows/xaden.yml-dist"
+  assert "REQ-129 the candidate has the signed-record step" grep -q '\.signed' "$upgraded/.github/workflows/xaden.yml-dist"
+  assert "REQ-129 the project's workflow is not replaced" bash -c '! grep -q "\.signed" "$1"' _ "$upgraded/.github/workflows/xaden.yml"
+  assert "REQ-129 pin names the diff command" grep -q 'diff .github/workflows/xaden.yml .github/workflows/xaden.yml-dist' "$XOUT"
+  assert "REQ-129 the candidate is on the footprint list" grep -q 'xaden.yml-dist' "$upgraded/xaden/footprint.txt"
+  rm "$upgraded/.github/workflows/xaden.yml-dist"
+  printf 'require-signature = true\n' >>"$upgraded/xaden/xaden.conf"
+  sed -e '/^command_name=/,$d' -e 's|^SCAFFOLD_ROOT=.*|SCAFFOLD_ROOT=${SCAFFOLD_ROOT:?}|' "$SCAFFOLD_ROOT/scripts/fetch.sh" >"$WORKDIR/fetch-functions.sh"
+  XRC=0
+  SCAFFOLD_ROOT="$SCAFFOLD_ROOT" bash -c 'source "$1"; ci_candidate "$2" "$SCAFFOLD_ROOT" 9.9.9 abc' _ "$WORKDIR/fetch-functions.sh" "$upgraded" >"$XOUT" 2>&1 || XRC=$?
+  assert "REQ-129 under signed-only the warning names the fresh runner's refusal" grep -q 'no matching signature on record' "$XOUT"
+  assert "REQ-129 the warning does not fail pin" test "$XRC" -eq 0
 }
 
 test_versions_and_downloads

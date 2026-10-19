@@ -74,6 +74,11 @@ A failing job only stops a merge when the repository requires it. In GitHub, add
 branch with "Require status checks to pass" and select the `xaden` job. Xaden changes no repository setting. A project adopted before this
 check existed gets the step through `xaden pin`, on the branch it prepares for the upgrade pull request.
 
+`xaden pin` also never rewrites a workflow you may have edited beyond that step. When yours differs from the one the new version
+generates (for example it lacks the step that records the pinned checksum, which a project with `require-signature = true` needs on a
+fresh runner, or the Python audit tools), the new workflow comes as `.github/workflows/xaden.yml-dist` on the same branch, and `pin`
+prints the `diff` command. Merge what you need in the pull request and delete the `-dist` file.
+
 ## Your own tools keep running
 
 The scan maps the commands it finds (`npm test`, `make lint`, `pytest`, `ruff check .` and similar) to `check.test`, `check.lint` and
