@@ -13,7 +13,7 @@ missing=0
 count=0
 for file in "$ROOT"/tests/smoke/*.sh; do
   area="$(basename "$file" .sh)"
-  [ "$area" = lib ] && continue
+  case "$area" in lib | adoption-lib) continue ;; esac # helpers, not areas
   count=$((count + 1))
   grep -qF "| \`$area\` |" "$ROOT/AGENTS.md" || { warn "smoke area $area has no row in AGENTS.md"; missing=1; }
 done

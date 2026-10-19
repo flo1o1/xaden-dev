@@ -85,7 +85,7 @@ secret other than `GITHUB_TOKEN`: the scaffold holds no site credential and neve
 
 `tests/smoke.sh <area>` runs one area after the demo project is created; `tests/smoke.sh --list` names
 them. Pick the area by the requirement your change refers to (one area per epic under
-`docs/requirements/`, plus `adoption`); the paths are the scripts it exercises most. CI runs the full
+`docs/requirements/`, plus `adoption-setup`, `adoption-versions` and `adoption-checks`); the paths are the scripts it exercises most. CI runs the full
 suite once for the pull request (REQ-093), so run only the areas you touched before opening it.
 `scripts/check-smoke-areas.sh` (part of `scripts/check-scaffold.sh`) fails when an area has no row here, or
 when a row's paths differ from `docs/smoke-areas.txt`, the machine-readable table CI reads (REQ-114).
@@ -101,9 +101,11 @@ or to the workflow therefore runs all areas. `SMOKE=skip scripts/check-scaffold.
 
 | Area | Requirements | Main paths |
 |------|--------------|------------|
-| `adoption` | REQ-066 to REQ-076 | `scripts/xaden.sh`, `scripts/fetch.sh`, `template/scripts/lib.sh` |
+| `adoption-setup` | REQ-066 to REQ-076, REQ-121 | `scripts/xaden.sh`, `scripts/fetch.sh`, `template/scripts/lib.sh`, `tests/smoke/adoption-lib.sh` |
+| `adoption-versions` | REQ-066 to REQ-076, REQ-121 | `scripts/xaden.sh`, `scripts/fetch.sh`, `template/scripts/lib.sh`, `tests/smoke/adoption-lib.sh`, `CHANGELOG.md` |
+| `adoption-checks` | REQ-066 to REQ-076, REQ-121 | `scripts/xaden.sh`, `scripts/fetch.sh`, `template/scripts/lib.sh`, `tests/smoke/adoption-lib.sh` |
 | `assistant-guidance` | epic `assistant-guidance` | `template/scripts/persona.sh`, `template/scripts/check-deferred-work.sh`, `template/AGENTS.md`, `template/prompts/`, `GETTING-STARTED.md`, `docs/guide/admin/`, `docs/guide/contributing/` |
-| `project-setup` | epic `project-setup` | `scripts/new-project.sh`, `scripts/update-scaffold.sh`, `scripts/install.sh`, `scripts/setup.sh` |
+| `project-setup` | epic `project-setup` | `scripts/new-project.sh`, `scripts/update-scaffold.sh`, `scripts/install.sh`, `scripts/setup.sh`, `scripts/aidd.sh` |
 | `quality-gates` | epic `quality-gates` | `template/scripts/check.sh`, `scripts/check-scaffold.sh`, `template/scripts/verify-commits.sh`, `template/scripts/verify-refs.sh` |
 | `requirements` | epic `requirements` | `template/scripts/req.sh`, `template/scripts/check-requirements.sh`, `template/scripts/check-traceability.sh`, `docs/requirements/INDEX.md` |
 | `security` | epic `security` | `template/scripts/check-security-exceptions.sh`, `template/.semgrep/` |
