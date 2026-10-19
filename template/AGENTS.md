@@ -12,6 +12,9 @@ Explicit user instructions in the current session override this file.
   `scripts/req.sh list`, or read the file. If it is not in the files, it does not exist: say so and ask.
 - Cite IDs when you act ("per CC-05", "implements REQ-003"). Commits are rejected when they cite
   an unknown ID, and `feat` commits must carry a `Refs: REQ-nnn` trailer.
+- Name a requirement with its epic, title and ID, never the ID alone, when you mention it or ask the user
+  to approve or decide something about it: "requirement REQ-123 'Pause a running export' in the epic
+  'Exports'", and say how to read it (`scripts/req.sh show REQ-123`).
 - Cannot read files or run scripts? Say so and stop: Xaden needs an assistant with file access.
 
 ## 1. Session start
