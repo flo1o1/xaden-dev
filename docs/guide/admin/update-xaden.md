@@ -12,6 +12,13 @@ xaden upgrade
 - `xaden upgrade`: asks before it looks for the newest release on github.com, then shows the version, source and checksum and asks again before it downloads. It verifies the signature and the checksum, installs the release next to the others in `~/.local/share/xaden/versions`, and only then switches `current`. It prints what changed since your version. A failed download or check leaves the old version active.
 
 ```bash
+xaden upgrade <version>
+```
+
+- `xaden upgrade <version>`: the same for that version instead of the newest. Inside a project it installs the version on your machine and does not touch the
+  project; move the project with `xaden pin <version>` ([Pin one Xaden version per project](pin-one-version-per-project.md)).
+
+```bash
 xaden upgrade --check
 ```
 

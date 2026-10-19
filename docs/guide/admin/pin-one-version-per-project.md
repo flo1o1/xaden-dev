@@ -50,7 +50,7 @@ xaden pin 0.3.0
 - `xaden pin --check`: asks, then looks for a newer release on github.com. This is the only way Xaden looks for one.
 - `xaden pin 0.3.0`: works on a branch for a pull request. It bumps the version and checksum in `xaden.conf`, regenerates `xaden/RULES.md`, updates the workflow, and shows the diff and the changelog entries between the two versions.
 
-`xaden upgrade` is a different command: it updates Xaden on your machine and never moves a project. (In Xaden up to 0.5 `xaden upgrade 0.3.0` did what `xaden pin 0.3.0` does now; it still works inside a project, with a warning.) A file you edited, such as a command file in `.claude/commands/`, is never overwritten: the new text is written next to it as `<file>-dist`.
+`xaden upgrade` is a different command: it updates Xaden on your machine and never moves a project. A file you edited, such as a command file in `.claude/commands/`, is never overwritten: the new text is written next to it as `<file>-dist`.
 
 Your team reviews the pull request, so everyone moves at once. If the new version is not installed on your machine, Xaden asks before it
 downloads it. With a signed release the pinned checksum is the one the maintainer signed ([Verify releases](verify-releases.md)).

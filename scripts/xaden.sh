@@ -48,7 +48,8 @@ Start and keep (any directory):
   remove             take Xaden out of the repository you are in
   update [--apply]   bring a project created by `create` to this Xaden version (dry run without --apply)
   version            print the installed Xaden version
-  upgrade [--check]  update Xaden itself to the newest release (asks first; older versions stay installed);
+  upgrade [--check] [version]
+                     update Xaden itself to the newest release or to <version> (asks first; older versions stay installed);
                      --check only reports: the newest Xaden and, in a project, its outdated dependencies
   help               show this list
 
@@ -57,8 +58,6 @@ Inside a project that adopted Xaden:
   fetch <version>    install the pinned version if it is missing (asks first)
   pin [--check] [version]
                      move the project to another Xaden version on a branch for a pull request
-  update-check [--now]
-                     deprecated: use `xaden upgrade --check` (the setting update-check still decides how often --if-due looks)
   rules              regenerate xaden/RULES.md from the pinned version
   preset <python|node>
                      add Xaden's preset for a stack and map its checks
@@ -333,8 +332,7 @@ main() {
   local command=${1:-help} root
   [ "$#" -gt 0 ] && shift
   case "$command" in
-    create | new)
-      [ "$command" = new ] && warn "xaden new is now called xaden create; the old name still works"
+    create)
       if [ "${1:-}" = "--classic" ]; then
         shift
         [ -n "${1:-}" ] || die "usage: xaden create --classic <name> [dir]"
@@ -355,7 +353,6 @@ main() {
     fetch) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" fetch "$@" ;;
     upgrade) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" upgrade "$@" ;;
     pin) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" pin "$@" ;;
-    update-check) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" update-check "$@" ;;
     setup | check | req | context | persona | release | hook | verify-commits | prompt | doc | rules | ignore-list | preset | aidd)
       root="$(project_root)"
       if is_adopted "$root"; then

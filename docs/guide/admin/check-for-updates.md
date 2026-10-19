@@ -38,8 +38,8 @@ xaden upgrade --check
   Outside a project it reports the `Xaden` line only.
 - `xaden upgrade --check --if-due`: checks only when the interval has passed, writes the cache, prints nothing and exits 0 when the network is down.
   The setting decides here: `off` means no check.
-- `xaden update-check` is the old name of the same thing. It still works, says so on stderr, and goes away in a later release.
-  The setting `update-check` and `XADEN_UPDATE_CHECK` keep their names.
+
+The setting is still called `update-check` and the variable `XADEN_UPDATE_CHECK`; there is no command of that name.
 
 ## What it reports
 

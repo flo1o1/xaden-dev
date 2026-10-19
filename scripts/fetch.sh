@@ -4,7 +4,6 @@
 #        xaden upgrade [--check [--if-due]] update Xaden itself: install the newest release, switch `current` (REQ-097);
 #                                          --check only reports Xaden and the project's outdated dependencies (REQ-130)
 #        xaden pin [--check] [version]     move the project to another Xaden on a branch (REQ-071, REQ-099)
-#        xaden update-check [--if-due|--now] deprecated: use `xaden upgrade --check` (REQ-084, REQ-130)
 # Nothing downloads without a person's yes: the question shows version, source and checksum, ends
 # the output, and anything but yes means no. Without a terminal nothing downloads and the command
 # exits with code 3 and prints the command to run. A yes is not remembered. A download is installed
@@ -341,22 +340,7 @@ pin_main() {
   ok "branch $branch is ready in $worktree; push it and open the pull request your team reviews"
 }
 
-# upgrade_main [--self] [--check] [version]: updates Xaden itself. The old meaning of `xaden upgrade
-# <version>` inside an adopted project (move the pin) is `xaden pin <version>` now (REQ-099).
-upgrade_main() {
-  local arg version=""
-  for arg in "$@"; do
-    case "$arg" in -*) ;; *) version=$arg ;; esac
-  done
-  if [ -n "$version" ] && [ -f "$(git rev-parse --show-toplevel 2>/dev/null || echo /nonexistent)/xaden/xaden.conf" ]; then
-    warn "xaden upgrade <version> now updates Xaden itself; moving a project is: xaden pin $version (running that now)"
-    pin_main "$@"
-    return
-  fi
-  self_upgrade_main "$@"
-}
-
-# self_upgrade_main [--self] [--check] [version]: installs a release next to the others and switches
+# self_upgrade_main [--check [--if-due]] [version]: installs a release next to the others and switches
 # `current` to it (REQ-097). Download, signature and checksum are install_release's; the switch is the
 # last step, so any failure leaves the old version active.
 self_upgrade_main() {
@@ -364,7 +348,7 @@ self_upgrade_main() {
   for arg in "$@"; do
     case "$arg" in
       --check) check_only=1 ;;
-      --if-due) update_check_main --if-due; return ;;
+      --if-due) update_check_due; return ;;
       --self) ;;
       -*) die "usage: xaden upgrade [--check [--if-due]] [version]" ;;
       *) target=$arg ;;
@@ -405,6 +389,7 @@ self_upgrade_main() {
   switch_current "$target"
   ok "Xaden $target is active (was $installed); $installed stays in $(versions_dir) for projects that pin it"
   changelog_between "$(versions_dir)/$target/CHANGELOG.md" "$installed" "$target"
+  [ ! -f "$(git rev-parse --show-toplevel 2>/dev/null || echo /nonexistent)/xaden/xaden.conf" ] || info "this project still pins its own Xaden version; move it with: xaden pin $target"
 }
 
 # outdated_names: reads "name current newest" lines and prints the names as "a, b (major)". A name that is no
@@ -440,34 +425,20 @@ outdated_dependencies() {
   printf 'Dependencies: %s\n' "${parts:-no npm or pip project found}"
 }
 
-# update_check_main [--if-due|--now]
-# By hand it checks now (refused while the setting is off); --now checks regardless; --if-due is
-# what commands call: silent, only when the interval has passed, and never an error for a network that is down.
-update_check_main() {
-  local mode=manual root conf setting value origin seconds cache newest installed pinned tmp
-  case "${1:-}" in
-    "") ;;
-    --if-due) mode=due ;;
-    --now) mode=now ;;
-    *) die "usage: xaden update-check [--if-due|--now]" ;;
-  esac
-  [ "$mode" = due ] || warn "xaden update-check is deprecated; use: xaden upgrade --check (xaden upgrade --check --if-due for scripts)"
+# update_check_due: `xaden upgrade --check --if-due`, what commands call: silent, only when the setting is on and the
+# interval has passed, and never an error for a network that is down (REQ-084, REQ-130).
+update_check_due() {
+  local root conf setting value origin seconds cache newest installed pinned tmp
   root="$(git rev-parse --show-toplevel 2>/dev/null)" || die "run this inside a project (no git repository here)"
   conf="$root/xaden/xaden.conf"
   setting="$(update_check_setting "$conf")"
   value="${setting% *}"
   origin="${setting#* }"
   seconds="$(update_check_seconds "$value")" || die "update-check = $value ($origin) is not valid. Use $UPDATE_CHECK_FORMS"
-  if [ "$seconds" = 0 ] && [ "$mode" != now ]; then
-    [ "$mode" = due ] && return 0
-    die "update-check is off ($origin). Turn it on with update-check = 1d in xaden/xaden.conf, or run: xaden update-check --now"
-  fi
+  [ "$seconds" != 0 ] || return 0
   cache="$(update_check_cache "$root")" || die "run this inside a git repository"
-  if [ "$mode" = due ] && ! update_check_is_due "$cache" "$seconds"; then return 0; fi
-  if ! newest="$(latest_version 2>/dev/null)" || [ -z "$newest" ]; then
-    [ "$mode" = due ] && return 0
-    die "could not read the newest version from $LATEST_URL"
-  fi
+  update_check_is_due "$cache" "$seconds" || return 0
+  if ! newest="$(latest_version 2>/dev/null)" || [ -z "$newest" ]; then return 0; fi
   installed="$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
   pinned="$(conf_get "$conf" version "$installed")"
   tmp="$(mktemp)"
@@ -481,7 +452,6 @@ update_check_main() {
     outdated_dependencies "$root"
   } >"$tmp"
   mv "$tmp" "$cache"
-  [ "$mode" = due ] || update_check_print_cached "$root"
 }
 
 command_name=${1:-}
@@ -489,8 +459,7 @@ command_name=${1:-}
 project_signature_policy
 case "$command_name" in
   fetch) fetch_main "$@" ;;
-  upgrade) upgrade_main "$@" ;;
+  upgrade) self_upgrade_main "$@" ;;
   pin) pin_main "$@" ;;
-  update-check) update_check_main "$@" ;;
-  *) die "usage: fetch.sh fetch <version> | upgrade [--check [--if-due]] [version] | pin [--check] [version] | update-check [--if-due|--now]" ;;
+  *) die "usage: fetch.sh fetch <version> | upgrade [--check [--if-due]] [version] | pin [--check] [version]" ;;
 esac
