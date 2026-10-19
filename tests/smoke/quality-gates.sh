@@ -447,11 +447,14 @@ test_area_selection() {
   git -C "$repo" init -q -b main
   git -C "$repo" add -A
   git -C "$repo" commit -q --no-verify -m "chore: base"
-  # selected <description> <changed file> <expected output, one line>: a branch that changes one file
+  # selected <description> <changed file(s)> <expected output, one line>: a branch that changes these files
   selected() {
     git -C "$repo" checkout -q -B probe main
-    mkdir -p "$repo/$(dirname "$2")"
-    echo "$RANDOM" >>"$repo/$2"
+    local f
+    for f in $2; do # the second argument may name several files, separated by spaces
+      mkdir -p "$repo/$(dirname "$f")"
+      echo "$RANDOM" >>"$repo/$f"
+    done
     git -C "$repo" add -A
     git -C "$repo" commit -q --no-verify -m "chore: probe"
     assert "$1" test "$("$repo/$select" main HEAD 2>/dev/null | tr '\n' ' ')" = "$3"
@@ -468,6 +471,13 @@ test_area_selection() {
   selected "REQ-114 a second change in one area still selects only it" template/scripts/req.sh "requirements "
   # shellcheck disable=SC2016 # the bash -c script reads its file as $1
   assert "REQ-114 the skipped areas are named on stderr" bash -c '"$1" main probe 2>&1 >/dev/null | grep -q "skip adoption"' _ "$repo/$select"
+  selected "REQ-114 a script of one area plus the changelog selects that area and release-and-docs" "template/scripts/req.sh CHANGELOG.md" "requirements release-and-docs "
+  selected "REQ-114 a script, the changelog and the requirements index select two areas" "scripts/new-project.sh CHANGELOG.md docs/requirements/INDEX.md" "project-setup requirements release-and-docs "
+  selected "REQ-114 the requirements index alone selects requirements" docs/requirements/INDEX.md "requirements "
+  selected "REQ-114 the third-party list and the site page list select release-and-docs" "THIRD-PARTY.md docs/site-pages.txt" "release-and-docs "
+  selected "REQ-114 a guide of the admin folder selects release-and-docs and assistant-guidance" docs/guide/admin/install-xaden.md "assistant-guidance release-and-docs "
+  selected "REQ-114 a guide of the developer folder is in no area and selects all areas" docs/guide/developer/build-features.md "all "
+  selected "REQ-114 the README with the changelog still selects all areas" "README.md CHANGELOG.md" "all "
   # the workflow keeps REQ-088/REQ-093 and the gate names the ruleset on main requires
   assert "REQ-114 the summary job is named check and runs for both systems" \
     awk '/^  check:/{f=1} f&&/os: \[ubuntu-latest, macos-latest\]/{ok=1} END{exit !ok}' "$ci"

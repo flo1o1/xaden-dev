@@ -3,7 +3,7 @@ id: REQ-114
 type: job
 epic: quality-gates
 priority: should
-status: approved
+status: done
 updated: 2026-10-19
 ---
 
@@ -23,6 +23,8 @@ When I open a pull request that changes little, I want CI to run the checks that
 - Given the area table, then it lives in one machine-readable file that the selection script and the table in the root `AGENTS.md` both use, and `scripts/check-smoke-areas.sh` fails when they disagree
 - Given the selection script, then its smoke test shows: a change in one area's paths selects that area, a shared file selects all areas, an unknown path selects all areas, and an unreadable diff selects all areas
 - Given a run in CI, then it prints the duration of each area job, so the split can be tuned
+- Given the files nearly every pull request changes, then `CHANGELOG.md`, `THIRD-PARTY.md`, `docs/site-pages.txt`, `GETTING-STARTED.md`, `docs/guide/admin/`, `docs/guide/contributing/` and `docs/requirements/INDEX.md` are in the area table, each in the rows of the areas whose tests read the repository's own copy (the changelog, the third-party list and the site page list in `release-and-docs`, the two guide folders and `GETTING-STARTED.md` in `release-and-docs` and `assistant-guidance`, the requirements index in `requirements`); `README.md` (read by the tests of six areas) and `docs/guide/developer/` (a page of it is read by `adoption`, whose row is not changed here) stay unmapped and still select all areas
+- Given a pull request that changes the code of one area and `CHANGELOG.md`, then that area and `release-and-docs` run and the others are skipped; given only `docs/requirements/INDEX.md`, then `requirements` runs; given `README.md`, then all areas run
 - Given a pull request with several pushes, then the cancel rule of REQ-093 still holds, and a cancelled run is not a pass
 - Given the root `AGENTS.md`, then "Smoke areas" and "Landing a change on main" describe the selection and say that a change to the selection or to the workflow itself runs all areas
 - Given a repository that is private, then the minutes of a run count against the plan (macOS minutes count ten times); the public repository pays nothing, and the selection exists for speed, not for cost
