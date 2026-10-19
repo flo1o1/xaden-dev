@@ -166,6 +166,13 @@ test_judgment_stays_human() {
   done
 }
 
+# REQ-122 assistants cite a requirement with epic, title and ID
+# shellcheck disable=SC2016 # the bash -c scripts read their file as $1
+test_cite_requirement_in_full() {
+  assert "REQ-122 the rules ask for epic, title and ID, never the ID alone" \
+    bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "Name a requirement with its epic, title and ID, never the ID alone"' _ "$PROJECT/AGENTS.md"
+}
+
 # REQ-035 one workflow and approval model across prompts
 test_prompt_workflow() {
   local prompts="$PROJECT/prompts" name
@@ -354,6 +361,7 @@ test_claude_permissions
 test_human_merges
 test_merge_rules_in_repo
 test_judgment_stays_human
+test_cite_requirement_in_full
 test_prompt_workflow
 test_branch_rule
 test_approve_before_branch
