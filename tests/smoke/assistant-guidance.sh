@@ -171,6 +171,27 @@ test_judgment_stays_human() {
   done
 }
 
+# REQ-123 a small change takes a short path, a large change the full one
+# shellcheck disable=SC2016 # the bash -c scripts read their file as $1
+test_size_the_task() {
+  local rules="$PROJECT/AGENTS.md" section small name
+  section="$(awk '/^### Size the task/ { on = 1; print; next } on && /^##/ { exit } on { print }' "$rules")"
+  assert "REQ-123 the rules have the size table" test -n "$section"
+  assert "REQ-123 the assistant states the size and the user can overrule it" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "say its size and why in one line.*user can overrule it"' _ "$section"
+  assert "REQ-123 the size is guidance, not a check" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "not a check; hooks and .scripts/check.sh. run the same for every size"' _ "$section"
+  assert "REQ-123 small is at most 2 files and no new surface" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "one approved requirement covers it, at most 2 files, no new dependency, no new input, auth, data, files or network surface"' _ "$section"
+  assert "REQ-123 large writes the plan to docs/architecture.md" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "new structure, a new dependency or more than one epic.*docs/architecture.md.*each a normal change"' _ "$section"
+  assert "REQ-123 a change that grows switches to the normal flow" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "touches a third file.*size changed and switch to the normal flow"' _ "$section"
+  assert "REQ-123 several goals are listed and the user decides" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "two or more independently shippable goals.*the user decides"' _ "$section"
+  small="$(grep '^| small ' <<<"$section")"
+  for name in "test first" "scripts/check.sh" "Refs:" "changelog bullet" "guide update" "quick review of the diff"; do
+    assert "REQ-123 the small path keeps: $name" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -qF "$2"' _ "$small" "$name"
+  done
+  for name in feature bugfix refactor; do
+    assert "REQ-123 the $name prompt points to the size table" grep -q 'AGENTS.md §9 (Size the task)' "$PROJECT/prompts/$name.md"
+  done
+}
+
 # REQ-122 assistants cite a requirement with epic, title and ID
 # shellcheck disable=SC2016 # the bash -c scripts read their file as $1
 test_cite_requirement_in_full() {
@@ -366,6 +387,7 @@ test_claude_permissions
 test_human_merges
 test_merge_rules_in_repo
 test_judgment_stays_human
+test_size_the_task
 test_cite_requirement_in_full
 test_prompt_workflow
 test_branch_rule
