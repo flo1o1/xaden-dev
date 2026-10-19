@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 ## [Unreleased]
 
 ### Added
+- Assistants name a requirement with its epic, title and ID, never the ID alone, when they mention it or ask for a decision about it, and say how to read it (AGENTS.md §0, REQ-122). Guidance only; nothing checks a reply.
 - A guide page maps the AI-Driven Development Manifesto's 4 values and 12 principles to Xaden's rules, with a status for each and what is not met yet, and a check that fails when a row is missing or cites a rule that does not exist (REQ-116). The page says Xaden implements the manifesto and claims no certification.
 - A decision record weighs the AIDD reference framework (`docs/decisions/0001-aidd-reference-framework.md`, accepted): copy nothing into Xaden, and offer it to projects as an opt-in add-on at a pinned version (REQ-115, REQ-118).
 - A pull request waits only for the checks its change can affect (REQ-114): CI runs each smoke area as its own job on both systems, selects the areas from the paths a change touches (`docs/smoke-areas.txt`, `scripts/select-smoke-areas.sh`; a shared file, an unknown path or an unreadable diff runs all areas, as does every merge into `main`), and the checks `check (ubuntu-latest)` and `check (macos-latest)` pass only when every job passed. `SMOKE=skip scripts/check-scaffold.sh` runs everything but the smoke suite.
