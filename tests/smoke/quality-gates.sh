@@ -480,8 +480,8 @@ test_area_selection() {
   selected "REQ-114 a second change in one area still selects only it" template/scripts/req.sh "requirements "
   # shellcheck disable=SC2016 # the bash -c script reads its file as $1
   assert "REQ-114 the skipped areas are named on stderr" bash -c '"$1" main probe 2>&1 >/dev/null | grep -q "skip adoption"' _ "$repo/$select"
-  selected "REQ-114 a script of one area plus the changelog selects that area and release-and-docs" "template/scripts/req.sh CHANGELOG.md" "requirements release-and-docs "
-  selected "REQ-114 a script, the changelog and the requirements index select two areas" "scripts/new-project.sh CHANGELOG.md docs/requirements/INDEX.md" "project-setup requirements release-and-docs "
+  selected "REQ-114 a script of one area plus the changelog selects that area, release-and-docs and adoption-versions (its fake release copies the changelog)" "template/scripts/req.sh CHANGELOG.md" "adoption-versions requirements release-and-docs "
+  selected "REQ-114 a script, the changelog and the requirements index select their areas" "scripts/new-project.sh CHANGELOG.md docs/requirements/INDEX.md" "adoption-versions project-setup requirements release-and-docs "
   selected "REQ-114 the requirements index alone selects requirements" docs/requirements/INDEX.md "requirements "
   selected "REQ-114 the third-party list and the site page list select release-and-docs" "THIRD-PARTY.md docs/site-pages.txt" "release-and-docs "
   selected "REQ-114 a guide of the admin folder selects release-and-docs and assistant-guidance" docs/guide/admin/install-xaden.md "assistant-guidance release-and-docs "
