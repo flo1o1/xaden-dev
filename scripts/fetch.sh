@@ -255,6 +255,26 @@ tools_for() {
   printf '%s' "$(versions_dir)/$version"
 }
 
+# ci_candidate <worktree> <tools> <version> <checksum> (REQ-129): the workflow a fresh adoption of <version> would write,
+# beside the project's own as xaden.yml-dist when the two differ. The project's file is never replaced, because a team
+# may have edited it; what an older one lacks (the signed-record step a signed-only project needs, the Python audit
+# tools) is for the team to merge.
+ci_candidate() {
+  local worktree=$1 tools=$2 version=$3 checksum=$4 workflow branch candidate
+  workflow="$worktree/.github/workflows/xaden.yml"
+  [ -f "$tools/scripts/adopt/ci.yml" ] && [ -f "$tools/scripts/adopt/ci-commit-step.yml" ] || return 0
+  branch="$(sed -n 's/^ *branches: \[\(.*\)\].*/\1/p' "$workflow" | head -n 1)"
+  candidate="$workflow-dist"
+  { sed -e "s/@VERSION@/$version/g" -e "s/@CHECKSUM@/$checksum/g" -e "s/@DEFAULT_BRANCH@/${branch:-main}/g" "$tools/scripts/adopt/ci.yml"
+    cat "$tools/scripts/adopt/ci-commit-step.yml"; } >"$candidate"
+  if cmp -s "$workflow" "$candidate"; then rm -f "$candidate"; return 0; fi
+  note_footprint "$worktree" file ".github/workflows/xaden.yml-dist"
+  warn "your CI workflow differs from the one Xaden $version generates; the new one is .github/workflows/xaden.yml-dist (merge what you need, then delete it): diff .github/workflows/xaden.yml .github/workflows/xaden.yml-dist"
+  if [ "$(conf_get "$worktree/xaden/xaden.conf" require-signature)" = true ] && ! grep -q '\.signed' "$workflow"; then
+    warn "require-signature = true: a fresh CI runner needs the step that records the pinned checksum (the .signed file in xaden.yml-dist), or the checks stop with 'no matching signature on record'"
+  fi
+}
+
 # pin_main [--check] [version]
 pin_main() {
   local check_only=0 target="" conf root pinned tools checksum branch worktree base
@@ -308,6 +328,7 @@ pin_main() {
     if ! grep -q 'verify-commits --ci' "$worktree/.github/workflows/xaden.yml" && [ -f "$tools/scripts/adopt/ci-commit-step.yml" ]; then
       cat "$tools/scripts/adopt/ci-commit-step.yml" >>"$worktree/.github/workflows/xaden.yml"
     fi
+    ci_candidate "$worktree" "$tools" "$target" "$checksum"
   fi
   git -C "$worktree" add -A
   git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "chore: upgrade Xaden from $pinned to $target" \

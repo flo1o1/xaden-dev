@@ -78,6 +78,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-108 | job | should | done | Adopting Xaden never switches the reference rule off without telling the team |
 | REQ-118 | job | should | done | I can switch on the AIDD framework in a Xaden project with one command |
 | REQ-128 | job | must | done | The AIDD installer never runs before my yes |
+| REQ-129 | job | should | done | A version change offers a CI workflow candidate for older installs |
 | REQ-130 | job | should | approved | I ask one command whether Xaden or my dependencies are outdated |
 
 ## Quality gates (`quality-gates`)
