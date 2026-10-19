@@ -113,7 +113,7 @@ or to the workflow therefore runs all areas. `SMOKE=skip scripts/check-scaffold.
 
 ## Using the project commands here (REQ-055)
 
-`/xaden-feature`, `/xaden-bugfix`, `/xaden-refactor`, `/xaden-review`, `/xaden-security`, `/xaden-requirements`,
+`/xaden-feature`, `/xaden-epic`, `/xaden-bugfix`, `/xaden-refactor`, `/xaden-review`, `/xaden-security`, `/xaden-requirements`,
 `/xaden-release` and `/xaden-persona` in `.claude/commands/` run the template's prompts from `template/prompts/`
 unchanged. `/xaden-kickoff` and `/xaden-docs` stay out on purpose (REQ-091): kickoff starts a new project, and
 docs was left out under REQ-055. `/xaden-release` runs

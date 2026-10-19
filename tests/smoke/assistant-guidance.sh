@@ -227,6 +227,23 @@ test_deferred_findings() {
   git -C "$PROJECT" checkout -q -- docs/deferred-work.md
 }
 
+# REQ-124 one approved epic can be built, checked and reviewed requirement by requirement
+# shellcheck disable=SC2016 # the bash -c scripts read their file as $1
+test_epic_loop() {
+  local prompt="$PROJECT/prompts/epic.md"
+  assert "REQ-124 /xaden-epic runs the epic prompt" grep -qx '@prompts/epic.md' "$PROJECT/.claude/commands/xaden-epic.md"
+  assert "REQ-124 the index lists the prompt" grep -q '^| \[\[epic\]\] .*`/xaden-epic`' "$PROJECT/prompts/00-index.md"
+  assert "REQ-124 the prompt is short enough for small models" test "$(wc -l <"$prompt" | tr -d ' ')" -le 60
+  assert "REQ-124 the list and the order are an approval point before the first change" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "Approval point:\*\* show me the requirements in the order.*Make no change before my go"' _ "$prompt"
+  assert "REQ-124 each requirement is a normal change with its own commit" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "own branch and worktree.*its own commit with .Refs: REQ-nnn.; never two requirements in one commit"' _ "$prompt"
+  assert "REQ-124 the loop stops on a red check, an approval point, a size change and a wrong criterion" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "Stop.* when a check is red.*approval point I have not given.*larger than its size.*acceptance criterion is wrong"' _ "$prompt"
+  assert "REQ-124 the retry rule applies before a second attempt" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "before a second attempt name which of scope, names, tests or context you change"' _ "$prompt"
+  assert "REQ-124 an approved requirement is never edited on its own" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "Never edit an approved requirement on your own"' _ "$prompt"
+  assert "REQ-124 it never pushes to main and never merges unasked" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "Never push to .main.. Never merge a pull request unless I tell you in this session"' _ "$prompt"
+  assert "REQ-124 the retro proposes drafts only" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "harder than it said.*acceptance criteria were wrong.*drafts in the chat only"' _ "$prompt"
+  assert "REQ-124 the review runs once at the end" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "At the end run .*code-review.* once over the whole epic"' _ "$prompt"
+}
+
 # REQ-122 assistants cite a requirement with epic, title and ID
 # shellcheck disable=SC2016 # the bash -c scripts read their file as $1
 test_cite_requirement_in_full() {
@@ -383,7 +400,7 @@ test_personas() {
 # REQ-055, REQ-091 maintainers use the project commands on the scaffold itself
 test_scaffold_commands() {
   local name prompt
-  for name in bugfix refactor review security feature requirements release persona; do
+  for name in bugfix refactor review security feature requirements release persona epic; do
     prompt="$(sed -n 's|^@template/prompts/\(.*\)$|\1|p' "$SCAFFOLD_ROOT/.claude/commands/xaden-$name.md")"
     assert "/$name includes an existing template prompt" test -n "$prompt" -a -f "$SCAFFOLD_ROOT/template/prompts/$prompt"
   done
@@ -424,6 +441,7 @@ test_merge_rules_in_repo
 test_judgment_stays_human
 test_size_the_task
 test_deferred_findings
+test_epic_loop
 test_cite_requirement_in_full
 test_prompt_workflow
 test_branch_rule
