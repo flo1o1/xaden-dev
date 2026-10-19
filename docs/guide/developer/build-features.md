@@ -56,6 +56,17 @@ Changed your mind during a feature? Say so; the assistant updates the requiremen
 
 At the start the assistant says whether a change is small, normal or large, with one line of reason. You can overrule it. A small change is covered by one approved requirement, touches at most 2 files and adds no dependency and no new input, auth, data, files or network surface. It skips the requirement draft, the library search, the plan and the security review, and keeps the test, `xaden check`, the `Refs:` trailer, the changelog bullet, the guide update and a quick review of the diff. If the change grows, the assistant stops and switches to the normal flow. A large change gets a plan in `docs/architecture.md`, split into steps that are each a normal change. The size is guidance: the hooks and the checks run the same for every size.
 
+## Keep the context small
+
+The assistant loads `AGENTS.md` and the requirements index in every session, so both stay under a byte budget however large the project grows (REQ-126):
+
+- `AGENTS.md` is at most 10240 bytes. It keeps the grounding rules, the clean-code rules `CC-01` to `CC-09`, the trust and approval rules, the size table and the judgment rules. The rest moved word for word to `docs/rules/` (requirements and tests, checks, security, git, documentation, working style), and `AGENTS.md` tells the assistant when to read each file. In a project with an `xaden/` folder the same text is printed by `xaden doc rules-<topic>`, for example `xaden doc rules-git`.
+- `docs/requirements/INDEX.md` lists only requirements that are not `done` or `dropped`; those are counted per epic. The full table is `docs/requirements/INDEX-full.md`, which no tool imports. With 500 requirements and 50 of them open the index stays under 6144 bytes.
+- `xaden req list --epic <epic> --status <status>` filters the list, and `xaden req show REQ-nnn --brief` prints the goal and the acceptance criteria only.
+- A hook or check that enforces a moved rule names the file that holds it in its message.
+
+A trigger line in `AGENTS.md` can be ignored by a model; the hooks and checks catch the result at commit or at "done", not before.
+
 ## Restart a session
 
 A long session can lose its coherence: the assistant repeats itself, forgets a rule or contradicts a requirement you approved. The rules ask it to say so and to suggest a fresh session; you can also call it yourself. Nothing is lost, because the work lives in files, not in the chat:

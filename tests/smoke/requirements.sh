@@ -34,11 +34,11 @@ test_job_stories() {
   # REQ-049 the scaffold uses the format it prescribes
   assert "scaffold's own requirements are finished job and quality files" \
     "$PROJECT/scripts/check-requirements.sh" --release "$SCAFFOLD_ROOT/docs/requirements"
-  assert "AGENTS.md defines the job story format" grep -q 'When <situation>, I want to <motivation>, so I can <expected' "$PROJECT/AGENTS.md"
+  assert "AGENTS.md defines the job story format" grep -q 'When <situation>, I want to <motivation>, so I can <expected' "$(rules_text "$PROJECT")"
   assert "kickoff writes requirements as jobs" grep -q 'Find the jobs my users hire the software for' "$PROJECT/prompts/kickoff.md"
   # REQ-006: requirement history comes from git, not from a hand-kept change log
-  assert "AGENTS.md points to git for requirement history" grep -q 'git log -- docs/requirements' "$PROJECT/AGENTS.md"
-  assert "no hand-kept requirements change log in new projects" bash -c "! grep -qi 'change.log' '$PROJECT/AGENTS.md' '$PROJECT/docs/requirements/README.md' '$PROJECT/prompts/requirements-update.md' '$PROJECT/prompts/feature.md'"
+  assert "AGENTS.md points to git for requirement history" grep -q 'git log -- docs/requirements' "$(rules_text "$PROJECT")"
+  assert "no hand-kept requirements change log in new projects" bash -c "! grep -qi 'change.log' '$PROJECT/AGENTS.md' '$PROJECT/docs/rules/requirements.md' '$PROJECT/docs/requirements/README.md' '$PROJECT/prompts/requirements-update.md' '$PROJECT/prompts/feature.md'"
 }
 
 # REQ-047 one file per requirement, epic folders, global IDs, generated index

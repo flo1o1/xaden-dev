@@ -12,6 +12,7 @@ SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${PROJECT_ROOT:-$(cd "$SCRIPTS/.." && pwd)}"
 # shellcheck source=SCRIPTDIR/lib.sh
 source "$SCRIPTS/lib.sh"
+layout_init "$ROOT"
 cd "$ROOT"
 
 # Test files: anything under a tests/test/__tests__ directory, or named *_test.*, *.test.*,
@@ -50,7 +51,7 @@ check_done_requirements_are_tested() {
   local id status
   while read -r id status; do
     if [ "$status" = "done" ] && ! grep -qx "$id" <<<"$2"; then
-      warn "$id is done but no test references it"
+      warn "$id is done but no test references it (rule: $(rule_file_hint requirements))"
       FAILURES=$((FAILURES + 1))
     fi
   done <<<"$1"
@@ -61,7 +62,7 @@ check_tests_cite_known_requirements() {
   local id
   while IFS= read -r id; do
     if [ -n "$id" ] && ! grep -q "^$id " <<<"$1"; then
-      warn "tests cite $id, which is not in docs/requirements"
+      warn "tests cite $id, which is not in docs/requirements (rule: $(rule_file_hint requirements))"
       FAILURES=$((FAILURES + 1))
     fi
   done <<<"$2"

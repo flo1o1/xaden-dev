@@ -145,6 +145,14 @@ main() {
 
   plan_and_apply
   if [ "$APPLY" = "1" ]; then
+    # REQ-126 the index of the new version lists only open work and has a full table beside it
+    if [ -f "$PROJECT/scripts/req.sh" ] && [ -d "$PROJECT/docs/requirements" ]; then
+      if PROJECT_ROOT="$PROJECT" bash "$PROJECT/scripts/req.sh" index >/dev/null; then
+        git -C "$PROJECT" add docs/requirements/INDEX.md docs/requirements/INDEX-full.md
+      else
+        warn "could not regenerate docs/requirements/INDEX.md; run scripts/req.sh index"
+      fi
+    fi
     record_new_state "$to"
     info "$CHANGES change(s) staged; review: git -C '$PROJECT' diff --cached"
     echo "Commit with: git commit -m \"chore(scaffold): update to v$to\""

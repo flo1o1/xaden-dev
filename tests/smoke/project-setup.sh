@@ -216,7 +216,7 @@ test_worktrees_folder() {
   git -C "$PROJECT" worktree add -q worktrees/probe -b chore/probe-worktree HEAD
   assert "a worktree in worktrees/ is ignored by git" git -C "$PROJECT" check-ignore -q worktrees/probe
   assert "worktrees contents never staged by add -A" test -z "$(git -C "$PROJECT" add -A --dry-run | grep worktrees/probe || true)"
-  assert "the guidance names worktrees/<slug>" grep -q 'git worktree add worktrees/<slug>' "$PROJECT/AGENTS.md"
+  assert "the guidance names worktrees/<slug>" grep -q 'git worktree add worktrees/<slug>' "$PROJECT/docs/rules/git.md"
   git -C "$PROJECT" worktree remove --force worktrees/probe && git -C "$PROJECT" branch -D chore/probe-worktree >/dev/null
 }
 
@@ -241,6 +241,23 @@ test_command_dist() {
   assert "the template ignores -dist files" grep -qxF '*-dist' "$SCAFFOLD_ROOT/template/.gitignore"
 }
 
+# REQ-126: a project from before docs/rules/ and the short index gets both through the update
+test_rules_folder_update() {
+  local old="$WORKDIR/variants/old-rules" out
+  rm -rf "$old" && mkdir -p "$WORKDIR/variants" && cp -R "$PROJECT" "$old"
+  rm -rf "$old/docs/rules" "$old/docs/requirements/INDEX-full.md"
+  printf '# Requirements index\n\n| REQ-001 | job | must | draft | Describe the first job |\n' >"$old/docs/requirements/INDEX.md"
+  grep -v 'docs/rules/' "$old/.scaffold/manifest" >"$old/.scaffold/manifest.new" && mv "$old/.scaffold/manifest.new" "$old/.scaffold/manifest"
+  git -C "$old" add -A && git -C "$old" commit -q -m "chore: layout of an older Xaden" --no-verify
+  out="$("$SCAFFOLD_ROOT/scripts/update-scaffold.sh" "$old" --apply)"
+  assert "REQ-126 the update adds the rule files" grep -q "docs/rules/git.md" <<<"$out"
+  assert "REQ-126 the rule files are in the project" test -f "$old/docs/rules/git.md" -a -f "$old/docs/rules/requirements.md"
+  assert "REQ-126 the update regenerates the index and adds the full table" bash -c "test -f '$old/docs/requirements/INDEX-full.md' \
+    && ! grep -q 'Describe the first job.*Describe' '$old/docs/requirements/INDEX.md' && '$old/scripts/check-requirements.sh' >/dev/null 2>&1"
+  assert "REQ-126 the update leaves AGENTS.md under the budget and does not duplicate the rules" \
+    bash -c "test \"\$(wc -c <'$old/AGENTS.md')\" -le 10240 && ! grep -q '^- Conventional Commits' '$old/AGENTS.md'"
+}
+
 test_license
 test_command_dist
 test_generation_safety
@@ -253,3 +270,4 @@ test_pack_script_removed
 test_update_safety
 test_xaden_command
 test_settings_update
+test_rules_folder_update
