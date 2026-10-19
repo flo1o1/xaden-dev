@@ -145,7 +145,7 @@ test_install_ways() {
   assert "guide explains xaden upgrade" grep -q '^xaden upgrade$' "$update"
   assert "contributing guide explains the clone update" grep -q 'git -C ~/.xaden pull' "$contributing/install-with-git.md"
   assert "contributing guide explains picking a release tag" grep -q 'git -C ~/.xaden checkout v' "$contributing/install-with-git.md"
-  assert "update guide points to the clone steps" grep -q 'contributing/install-with-git.md' "$update"
+  assert "admin guides do not cover installing with git (REQ-104)" test -z "$(grep -ln 'install-with-git' "$install" "$update" "$SCAFFOLD_ROOT/docs/guide/admin/uninstall.md" || true)"
 
   # The zip way: an archive has no .git; install.sh and xaden create must still work from it.
   version="$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"

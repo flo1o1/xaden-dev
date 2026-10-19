@@ -29,6 +29,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 - Files you edited are kept and the new version is written next to them as `<file>-dist`: for `xaden update` (instead of `<file>.scaffold-new`) and for the command files `xaden pin` brings up to date. `xaden doctor` names leftover `-dist` and `*.scaffold-new` files (REQ-100).
 
 ### Changed
+- The Admin Guide no longer describes installing, updating or removing a git clone (REQ-104): a clone is for maintainers, so the section "If you installed with git", the section "Install from a git clone" and the clone line of the uninstall page are gone. The Contributing page "Install with git" stays.
 - A pull request that changes one area plus the changelog, the requirements index, `THIRD-PARTY.md`, `GETTING-STARTED.md`, the admin or contributing guides or the site page list now runs only the areas whose tests read those files, no longer all of them (REQ-114).
 - The README calls Xaden a starter for AI-Driven Development instead of "vibe" coding and links the manifesto mapping (REQ-117).
 - The guides no longer describe downloading, verifying and extracting the release zip by hand: the install guide shows the one command (the installer verifies the zip itself). Everything about working on Xaden moved to a new Contributing section: Install with git (install, update and uninstall of a clone), Architecture, Work on Xaden, Release and sign Xaden, and Threat model and requirements; the website shows it below Reference (REQ-104).
