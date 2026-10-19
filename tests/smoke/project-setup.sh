@@ -78,8 +78,9 @@ test_xaden_command() {
   assert_fails_with "project command outside a project fails" "inside a project" \
     bash -c "cd '$elsewhere' && '$xaden' check"
 
-  assert_fails_with "xaden create --classic is an unknown option and creates nothing (REQ-001)" "classic" \
-    bash -c "cd '$elsewhere' && '$xaden' create --classic xaden-app 2>&1; test ! -e xaden-app"
+  assert_fails_with "xaden create --classic is an unknown option (REQ-001)" "unknown option: --classic" \
+    bash -c "cd '$elsewhere' && '$xaden' create --classic xaden-app"
+  assert "xaden create --classic creates nothing (REQ-001)" test ! -e "$elsewhere/xaden-app"
   assert "the maintainers' fixture makes a project with its own tooling" "$SCAFFOLD_ROOT/scripts/new-project.sh" xaden-app "$elsewhere/xaden-app"
   assert "new project has its first commit" git -C "$elsewhere/xaden-app" log -1 --format=%s
   assert "xaden new is an unknown command and creates nothing (REQ-130)" \
