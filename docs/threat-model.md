@@ -31,7 +31,7 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
 - CLI arguments: project name and target directory (`new-project.sh`), project directory and
   `--apply` (`update-scaffold.sh`), bump part (`release*.sh`),
   requirement IDs, epics and titles (`req.sh`), persona names (`persona.sh`); command and arguments of `xaden`, target
-  directory of `install.sh`; `adopt`, `remove`, `upgrade`, `fetch`, `update-check`, `hook`, `prompt`, `doc` and `new --autopilot`
+  directory of `install.sh`; `adopt`, `remove`, `upgrade`, `fetch`, `hook`, `prompt`, `doc` and `new --autopilot`
   with their options (`--check <kind>=<command>`, `--assistants`, `--mode`, `--stack`, version numbers).
 - Files the scripts read: `template/` (exported to projects), requirement files, commit message
   files, the old requirements table `docs/requirements/REQUIREMENTS.md` (`migrate-requirements.sh`),

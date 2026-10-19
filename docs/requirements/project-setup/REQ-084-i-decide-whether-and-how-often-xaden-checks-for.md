@@ -4,7 +4,7 @@ type: job
 epic: project-setup
 priority: should
 status: done
-updated: 2026-10-16
+updated: 2026-10-19
 ---
 
 # I decide whether and how often Xaden checks for updates
@@ -19,7 +19,7 @@ When a newer Xaden or newer dependencies exist for my project, I want to choose 
 - Given `update-check=<interval>` in `xaden/xaden.conf`, where the interval is `off` or a number with `h` or `d` (`12h`, `1d`, `7d`), when a command or session start runs and the last check is older than the interval, then one check runs and its result is cached in a git-ignored file.
 - Given an interval under `1h` or an unreadable value, then Xaden refuses it, names the allowed forms, and checks nothing.
 - Given the environment variable `XADEN_UPDATE_CHECK` (same values), then it overrides the project value for that person only, and `xaden doctor` shows which value is in effect and where it came from.
-- Given `xaden update-check` run by hand, then it checks now and ignores the interval; with the value `off` it refuses unless `--now` is given.
+- Given `xaden upgrade --check` run by hand, then it asks, checks now whatever the interval and the setting, prints the result and writes no cache (REQ-130); `xaden upgrade --check --if-due` is what scripts call: silent, only when the interval has passed, cached.
 - Given the pre-commit hook, `xaden doctor` or `context-status.sh`, then they only print the cached result and never use the network.
 - Given a cache entry, then it lists Xaden (pinned or installed vs latest) and the project's outdated dependencies (`npm outdated`, `pip list --outdated`) as separate lines.
 - Given an update, then Xaden only reports it: applying a Xaden update stays `xaden upgrade` on a branch (REQ-071), and dependency updates stay the user's.

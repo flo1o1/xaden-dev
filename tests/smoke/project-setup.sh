@@ -159,8 +159,8 @@ test_xaden_command() {
 
   assert "xaden create --classic creates the project in the current directory" bash -c "cd '$elsewhere' && '$xaden' create --classic xaden-app"
   assert "new project has its first commit" git -C "$elsewhere/xaden-app" log -1 --format=%s
-  assert "xaden new still creates a project and names xaden create" \
-    bash -c "cd '$elsewhere' && out=\$('$xaden' new old-name-app 2>&1) && test -d old-name-app/.git && grep -q 'xaden create' <<<\"\$out\""
+  assert "xaden new is an unknown command and creates nothing (REQ-130)" \
+    bash -c "cd '$elsewhere' && ! '$xaden' new old-name-app >/dev/null 2>&1 && test ! -e old-name-app"
   assert "project command runs from a subdirectory" \
     bash -c "cd '$elsewhere/xaden-app/docs' && '$xaden' req list | grep -q '^REQ-001 '"
   assert "xaden update runs for the surrounding project" \
