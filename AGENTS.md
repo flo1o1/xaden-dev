@@ -36,7 +36,9 @@ This repository **is the scaffold**. Read this before changing it.
 
 Nobody pushes to `main`, in any form. A change reaches it through a pull request, which replaces the
 push step of `template/AGENTS.md` §7 here; the branch and worktree rule stays. CI runs once for each
-commit on the pull request and once more on `main` after the merge. A GitHub ruleset on `main` accepts
+commit on the pull request and once more on `main` after the merge; a pull request runs the smoke areas its
+change can affect, a merge into `main` and a change to the selection or the workflow run all (REQ-114, "Smoke
+areas"). A GitHub ruleset on `main` accepts
 a merge only when both CI checks passed:
 
 ```bash
@@ -85,7 +87,17 @@ secret other than `GITHUB_TOKEN`: the scaffold holds no site credential and neve
 them. Pick the area by the requirement your change refers to (one area per epic under
 `docs/requirements/`, plus `adoption`); the paths are the scripts it exercises most. CI runs the full
 suite once for the pull request (REQ-093), so run only the areas you touched before opening it.
-`scripts/check-smoke-areas.sh` (part of `scripts/check-scaffold.sh`) fails when an area has no row here.
+`scripts/check-smoke-areas.sh` (part of `scripts/check-scaffold.sh`) fails when an area has no row here, or
+when a row's paths differ from `docs/smoke-areas.txt`, the machine-readable table CI reads (REQ-114).
+
+**What CI runs (REQ-114).** `scripts/select-smoke-areas.sh <base> [head]` maps the changed files of a pull
+request to areas: the paths below, plus `tests/smoke/<area>.sh` and `docs/requirements/<area>/`. Each selected
+area runs as its own job on both systems, with the offline checks and the commit-message check; the log names
+the skipped areas. All areas run when a changed path is in no row, when it is a shared file (the `*all*` line of
+the table: `template/scripts/lib.sh`, `scripts/xaden.sh`, `tests/smoke.sh`, `tests/smoke/lib.sh`,
+`scripts/check-scaffold.sh`, anything under `.github/`, the table and the selection script itself), when the diff
+is empty or unreadable, and on every merge into `main`. The selection is never "none". A change to the selection
+or to the workflow therefore runs all areas. `SMOKE=skip scripts/check-scaffold.sh` runs everything but the smoke suite.
 
 | Area | Requirements | Main paths |
 |------|--------------|------------|
