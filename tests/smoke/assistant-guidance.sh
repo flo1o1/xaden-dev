@@ -160,10 +160,22 @@ test_judgment_stays_human() {
   assert "REQ-111 it asks for an explanation and a way to check" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "Explain a non-trivial change.*one way to check it"' _ "$section"
   assert "REQ-111 it names what the assistant cannot evaluate" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "Say what you cannot evaluate"' _ "$section"
   assert "REQ-111 a second failed attempt is a signal" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "second failed attempt.*inspect scope, context, assumptions and tests"' _ "$section"
+  assert "REQ-119 a retry names what changes first and says what changed" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "Before you retry, name which of scope, names, tests or context you will change, and say in one line what you changed"' _ "$section"
+  assert "REQ-119 the rule is in the scaffold template too" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "name which of scope, names, tests or context you will change"' _ "$SCAFFOLD_ROOT/template/AGENTS.md"
+  assert "REQ-120 a session that lost coherence is named and restarted from the files" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "lost coherence: say so and propose a fresh session.*xaden context.*enough to resume"' _ "$section"
+  assert "REQ-120 the rule is in the scaffold template too" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "lost coherence: say so and propose a fresh session"' _ "$SCAFFOLD_ROOT/template/AGENTS.md"
+  assert "REQ-120 the guide explains how to restart a session" grep -q '^## Restart a session' "$SCAFFOLD_ROOT/docs/guide/developer/build-features.md"
   assert "REQ-111 lessons go to docs/decisions after approval" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "docs/decisions/.*only after the user approves"' _ "$section"
   for name in feature bugfix refactor; do
     assert "REQ-111 the $name prompt points to the section" grep -q 'AGENTS.md §9 (Judgment stays with the human)' "$PROJECT/prompts/$name.md"
   done
+}
+
+# REQ-122 assistants cite a requirement with epic, title and ID
+# shellcheck disable=SC2016 # the bash -c scripts read their file as $1
+test_cite_requirement_in_full() {
+  assert "REQ-122 the rules ask for epic, title and ID, never the ID alone" \
+    bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "Name a requirement with its epic, title and ID, never the ID alone"' _ "$PROJECT/AGENTS.md"
 }
 
 # REQ-035 one workflow and approval model across prompts
@@ -354,6 +366,7 @@ test_claude_permissions
 test_human_merges
 test_merge_rules_in_repo
 test_judgment_stays_human
+test_cite_requirement_in_full
 test_prompt_workflow
 test_branch_rule
 test_approve_before_branch

@@ -22,3 +22,4 @@ docs/guide/contributing/architecture.md
 docs/guide/contributing/work-on-xaden.md
 docs/guide/contributing/release-and-signing.md
 docs/guide/contributing/threat-model-and-requirements.md
+docs/guide/developer/xaden-and-the-aidd-manifesto.md

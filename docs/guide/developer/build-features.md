@@ -52,6 +52,15 @@ Claude Code, GitHub Copilot and Mistral Vibe have a slash command for each promp
 
 Changed your mind during a feature? Say so; the assistant updates the requirement first and then the code.
 
+## Restart a session
+
+A long session can lose its coherence: the assistant repeats itself, forgets a rule or contradicts a requirement you approved. The rules ask it to say so and to suggest a fresh session; you can also call it yourself. Nothing is lost, because the work lives in files, not in the chat:
+
+1. Commit or stash what is ready, so the branch holds the state.
+2. Start a new session in the same folder.
+3. Ask the assistant to read the rule files, run `xaden context` and say which requirement and branch it is working on, from the files.
+4. Check that it names the right ones before it continues.
+
 ## Next
 
 [Release a version](release-a-version.md).
