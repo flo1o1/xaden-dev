@@ -15,15 +15,12 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Project setup (`project-setup`)
 
-29 done.
+30 done.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-118 | job | should | approved | I can switch on the AIDD framework in a Xaden project with one command |
 
 ## Quality gates (`quality-gates`)
 
-21 done, 1 dropped.
+22 done, 1 dropped.
 
 | ID | Type | Priority | Status | Title |
 |----|------|----------|--------|-------|

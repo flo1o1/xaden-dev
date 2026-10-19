@@ -75,7 +75,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-099 | job | should | done | A project moves to another Xaden version with `xaden pin` |
 | REQ-100 | job | must | done | Files I edited are kept and the new version comes as `-dist` |
 | REQ-108 | job | should | done | Adopting Xaden never switches the reference rule off without telling the team |
-| REQ-118 | job | should | approved | I can switch on the AIDD framework in a Xaden project with one command |
+| REQ-118 | job | should | done | I can switch on the AIDD framework in a Xaden project with one command |
 
 ## Quality gates (`quality-gates`)
 
@@ -104,6 +104,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-107 | job | must | done | An adopted project's CI rejects commits whose references are wrong, even when the hooks were skipped |
 | REQ-109 | job | must | done | The CI commit check reads a range it can trust, and judges only the commits since the adoption |
 | REQ-114 | job | should | done | A pull request waits only for the checks its change can affect |
+| REQ-121 | job | should | done | A change to adoption waits for three short smoke areas, not one long one |
 
 ## Releases and documentation (`release-and-docs`)
 

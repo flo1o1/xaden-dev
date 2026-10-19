@@ -61,6 +61,8 @@ Inside a project that adopted Xaden:
   rules              regenerate xaden/RULES.md from the pinned version
   preset <python|node>
                      add Xaden's preset for a stack and map its checks
+  aidd <enable|status|disable|pin>
+                     switch the AI-Driven Development framework on at a pinned version, or off (asks before it downloads)
   prompt <name>      print a task prompt (kickoff, feature, bugfix, ...)
   doc <name>         print a guide (clean-code, security, optional-tools, local-llm)
   ignore-list        print the paths Xaden owns, for .dockerignore and archive excludes
@@ -269,6 +271,7 @@ adopted_project_command() {
       render_rules >"$root/xaden/RULES.md"
       ok "xaden/RULES.md regenerated from Xaden $(running_version); review the diff and commit it" ;;
     ignore-list) ignore_list_main "$root" ;;
+    aidd) "$SCAFFOLD_ROOT/scripts/aidd.sh" "$root" "$@" ;;
     preset) preset_main "$root" "${1:-}" ;;
   esac
 }
@@ -352,7 +355,7 @@ main() {
     upgrade) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" upgrade "$@" ;;
     pin) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" pin "$@" ;;
     update-check) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" update-check "$@" ;;
-    setup | check | req | context | persona | release | hook | verify-commits | prompt | doc | rules | ignore-list | preset)
+    setup | check | req | context | persona | release | hook | verify-commits | prompt | doc | rules | ignore-list | preset | aidd)
       root="$(project_root)"
       if is_adopted "$root"; then
         adopted_project_command "$command" "$root" "$@"
