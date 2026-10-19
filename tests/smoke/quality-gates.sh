@@ -427,10 +427,53 @@ test_smoke_area_list() {
   : >"$copy/tests/smoke/lib.sh"
   : >"$copy/tests/smoke/alpha.sh"
   # shellcheck disable=SC2016 # the backticks are literal Markdown, not a command substitution
-  printf '| `alpha` | REQ-001 | scripts/a.sh |\n' >"$copy/AGENTS.md"
+  printf '| `alpha` | REQ-001 | `scripts/a.sh` |\n' >"$copy/AGENTS.md"
+  mkdir -p "$copy/docs"
+  printf 'alpha|scripts/a.sh\n*all*|tests/smoke.sh\n' >"$copy/docs/smoke-areas.txt"
   assert "a listed area passes" "$check" "$copy"
+  printf 'alpha|scripts/other.sh\n' >"$copy/docs/smoke-areas.txt"
+  assert_fails_with "REQ-114 paths that differ between AGENTS.md and the area table fail and the area is named" 'area alpha' "$check" "$copy"
+  printf 'alpha|scripts/a.sh\n' >"$copy/docs/smoke-areas.txt"
   : >"$copy/tests/smoke/beta.sh"
   assert_fails_with "an area without a row fails and is named" 'beta' "$check" "$copy"
+}
+
+# REQ-114 a pull request runs the areas its change can affect, and all of them when unsure
+test_area_selection() {
+  local repo="$WORKDIR/select-repo" select="scripts/select-smoke-areas.sh" ci="$SCAFFOLD_ROOT/.github/workflows/scaffold-ci.yml"
+  mkdir -p "$repo/scripts" "$repo/docs"
+  cp "$SCAFFOLD_ROOT/$select" "$repo/scripts/"
+  cp "$SCAFFOLD_ROOT/docs/smoke-areas.txt" "$repo/docs/"
+  git -C "$repo" init -q -b main
+  git -C "$repo" add -A
+  git -C "$repo" commit -q --no-verify -m "chore: base"
+  # selected <description> <changed file> <expected output, one line>: a branch that changes one file
+  selected() {
+    git -C "$repo" checkout -q -B probe main
+    mkdir -p "$repo/$(dirname "$2")"
+    echo "$RANDOM" >>"$repo/$2"
+    git -C "$repo" add -A
+    git -C "$repo" commit -q --no-verify -m "chore: probe"
+    assert "$1" test "$("$repo/$select" main HEAD 2>/dev/null | tr '\n' ' ')" = "$3"
+  }
+  selected "REQ-114 a path of one area selects that area" template/scripts/req.sh "requirements "
+  selected "REQ-114 an area's requirement folder selects that area" docs/requirements/security/x.md "security "
+  selected "REQ-114 a shared file selects all areas" tests/smoke/lib.sh "all "
+  selected "REQ-114 anything under .github selects all areas" .github/workflows/other.yml "all "
+  selected "REQ-114 a path in no area selects all areas" some/new/file.txt "all "
+  selected "REQ-114 a path of one area and one in no area select all areas" README.md "all "
+  assert "REQ-114 an unknown base ref selects all areas" test "$("$repo/$select" nope HEAD 2>/dev/null)" = all
+  assert "REQ-114 a missing base ref selects all areas" test "$("$repo/$select" 2>/dev/null)" = all
+  assert "REQ-114 an empty diff selects all areas" test "$("$repo/$select" main main 2>/dev/null)" = all
+  selected "REQ-114 a second change in one area still selects only it" template/scripts/req.sh "requirements "
+  # shellcheck disable=SC2016 # the bash -c script reads its file as $1
+  assert "REQ-114 the skipped areas are named on stderr" bash -c '"$1" main probe 2>&1 >/dev/null | grep -q "skip adoption"' _ "$repo/$select"
+  # the workflow keeps REQ-088/REQ-093 and the gate names the ruleset on main requires
+  assert "REQ-114 the summary job is named check and runs for both systems" \
+    awk '/^  check:/{f=1} f&&/os: \[ubuntu-latest, macos-latest\]/{ok=1} END{exit !ok}' "$ci"
+  assert "REQ-114 the gate fails on a failed or cancelled area job" grep -q 'a smoke area did not pass' "$ci"
+  assert "REQ-114 the gate runs even when a needed job failed" awk '/^  check:/{f=1} f&&/if: always\(\)/{ok=1} END{exit !ok}' "$ci"
+  assert "REQ-114 a run on main runs all areas" grep -q 'EVENT_NAME" = pull_request' "$ci"
 }
 
 test_quiet_output
@@ -458,3 +501,4 @@ test_maintainer_hooks
 test_nested_run_guard
 test_classic_runs_what_adopted_lacks
 test_smoke_area_list
+test_area_selection
