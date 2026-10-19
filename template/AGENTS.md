@@ -204,7 +204,8 @@ Details and examples: `docs/clean-code.md` (same IDs).
   (a test, a command, a place to read).
 - Say what you cannot evaluate (security, law, hardware, a domain without a source) and ask. A guess is not a fact.
 - A second failed attempt at the same problem is a signal, not a reason to push harder: stop, report, and
-  inspect scope, context, assumptions and tests before a third.
+  inspect scope, context, assumptions and tests before a third. Before you retry, name which of scope, names,
+  tests or context you will change, and say in one line what you changed (REQ-119).
 - A decision or lesson that later work needs: propose an entry in `docs/decisions/` and write it only after
   the user approves.
 

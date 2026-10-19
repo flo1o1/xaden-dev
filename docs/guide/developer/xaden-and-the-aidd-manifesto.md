@@ -20,7 +20,7 @@ Xaden implements the manifesto as far as the table says. The manifesto is not a 
 | P06 | Capture learning for reuse | partly | The assistant proposes a decision record for what later work needs (REQ-111); no home for findings that are not fixed now, planned |
 | P07 | Own every shipped change | met | The assistant opens the pull request and stops; the person merges (REQ-110, REQ-112) |
 | P08 | Do not delegate what you cannot evaluate | partly | The assistant says what it cannot judge and asks (REQ-111); its security review is a checklist, not proof (REQ-005) |
-| P09 | Improve the system before forcing the model | not met | No rule yet; planned as REQ-119: fix scope, names, tests or context before a retry |
+| P09 | Improve the system before forcing the model | met | Before a retry the assistant names which of scope, names, tests or context it will change (REQ-119) |
 | P10 | Rebuild context when coherence drops | not met | No rule yet; planned as REQ-120: a sign that a session lost coherence and a restart from the files |
 | P11 | Treat AI failure as a signal | met | After a second failed attempt the assistant stops, reports and inspects scope, context, assumptions and tests (REQ-111) |
 | P12 | Make the practice transferable | met | One rule file, the same prompts as slash commands in each supported assistant (REQ-045, REQ-055, REQ-081) |
