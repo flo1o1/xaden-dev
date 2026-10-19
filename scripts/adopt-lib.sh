@@ -124,7 +124,7 @@ apply_migration() {
   move_team_content "$dir" docs/personas xaden/personas 0000-template.md
   move_team_content "$dir" docs/security-reviews xaden/security-reviews 0000-template.md
   move_team_content "$dir" docs/decisions xaden/decisions 0000-template.md
-  for path in security-exceptions threat-model architecture; do
+  for path in security-exceptions deferred-work threat-model architecture; do
     if [ -f "$dir/docs/$path.md" ]; then mkdir -p "$dir/xaden"; mv "$dir/docs/$path.md" "$dir/xaden/$path.md"; fi
   done
   while IFS="$(printf '\t')" read -r sum path; do
@@ -225,6 +225,7 @@ apply_core() {
   readme_text >"$dir/xaden/README.md"
   render_rules >"$dir/xaden/RULES.md"
   render_index "$dir/xaden/requirements" >"$dir/xaden/requirements/INDEX.md"
+  render_index "$dir/xaden/requirements" full >"$dir/xaden/requirements/INDEX-full.md"
   if [ -f "$dir/AGENTS.md" ]; then note_footprint "$dir" block AGENTS.md; else note_footprint "$dir" created-block AGENTS.md; fi
   set_block "$dir/AGENTS.md" "$BLOCK_BEGIN" "$BLOCK_END" "$(agents_block)"
   case ",$ADOPT_ASSISTANTS," in

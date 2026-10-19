@@ -26,6 +26,15 @@ OUTPUT="$WORKDIR/last-command.log"
 PASSED=0
 SKIPPED=0
 
+# rules_text <dir>: a file holding AGENTS.md and the files of docs/rules/ of a project or of the
+# template (REQ-126 moved most rule sections there); tests grep it for a rule wherever it lives.
+rules_text() {
+  local file
+  file="$(mktemp "$WORKDIR/rules-text.XXXXXX")"
+  cat "$1/AGENTS.md" "$1"/docs/rules/*.md >"$file"
+  printf '%s' "$file"
+}
+
 # show_output: prints the tail of the last command's output (diagnostics on failure).
 show_output() {
   echo "----- output of the failed command (last 40 lines) -----" >&2

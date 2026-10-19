@@ -53,8 +53,8 @@ test_clean_code_guidance() {
     assert "clean-code guide covers: $practice" grep -q "$practice" "$PROJECT/docs/clean-code.md"
   done
   # REQ-044 linter configuration only gets stricter without approval
-  assert "loosening linters is an approval point" grep -q 'raising a threshold, or adding an ignore or suppression is an \*\*Approval point' "$PROJECT/AGENTS.md"
-  assert "linter baselines may only shrink" grep -q 'it may only shrink' "$PROJECT/AGENTS.md"
+  assert "loosening linters is an approval point" grep -q 'raising a threshold, or adding an ignore or suppression is an \*\*Approval point' "$(rules_text "$PROJECT")"
+  assert "linter baselines may only shrink" grep -q 'it may only shrink' "$(rules_text "$PROJECT")"
   assert "presets require approval to relax" bash -c "grep -q \"user's approval\" '$PROJECT/presets/node/eslint.config.mjs' && grep -q \"user's approval\" '$PROJECT/presets/python/ruff.toml'"
   assert "ESLint preset forbids var" grep -q '"no-var": "error"' "$PROJECT/presets/node/eslint.config.mjs"
 }
@@ -192,6 +192,58 @@ test_size_the_task() {
   done
 }
 
+# REQ-125 a review finding that is not fixed in this change is recorded, not lost in the chat
+# shellcheck disable=SC2016 # the bash -c scripts read their file as $1
+test_deferred_findings() {
+  local rules="$PROJECT/docs/rules/findings.md" section file="$PROJECT/docs/deferred-work.md" check="$PROJECT/scripts/check-deferred-work.sh" name
+  local unknown="REQ-9""99" # split so that the traceability check does not read it as a citation
+  section="$(awk '/^### Findings not fixed now/ { on = 1; print; next } on && /^##/ { exit } on { print }' "$rules")"
+  assert "REQ-125 the rules have the section" test -n "$section"
+  assert "REQ-125 three routes, deferral only with the user's agreement" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "three routes, fix now, ask me, or defer. Defer only after the user agrees"' _ "$section"
+  assert "REQ-125 an entry has source, summary and evidence" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "source (a requirement ID or a branch), a one-sentence summary and the evidence"' _ "$section"
+  assert "REQ-125 the file is append only" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "append only.*becomes a requirement or is dropped, in a commit whose message says which"' _ "$section"
+  assert "REQ-125 a rule or requirement change is never applied silently" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "never applied silently: ask or defer"' _ "$section"
+  assert "REQ-125 security exceptions stay separate" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "stay in .docs/security-exceptions.md"' _ "$section"
+  for name in code-review security-review; do
+    assert "REQ-125 the $name prompt offers the three routes" grep -q 'AGENTS.md §9 (Findings not fixed now)' "$PROJECT/prompts/$name.md"
+  done
+  assert "REQ-125 a new project has the file with its columns" grep -q '^| Source | Summary | Evidence |' "$file"
+  assert "REQ-125 an empty file passes" "$check"
+  printf '%s\n' '| REQ-001 | Export ignores the time zone | test_zone fails outside UTC |' '| feat/login | Lockout is per IP only | unverified: ten requests from two IPs would show it |' >>"$file"
+  assert "REQ-125 complete rows pass" "$check"
+  assert "REQ-125 the full check runs it" bash -c "cd '$PROJECT' && scripts/check.sh 2>&1 | grep -q 'deferred work rows complete'"
+  git -C "$PROJECT" checkout -q -- docs/deferred-work.md
+  printf '%s\n' '| REQ-001 | Export ignores the time zone | |' >>"$file"
+  assert_fails_with "REQ-125 a row without evidence fails and is named" "Export ignores the time zone: no evidence" "$check"
+  git -C "$PROJECT" checkout -q -- docs/deferred-work.md
+  printf '%s\n' '| | Export ignores the time zone | test_zone fails |' >>"$file"
+  assert_fails_with "REQ-125 a row without source fails" "no source" "$check"
+  git -C "$PROJECT" checkout -q -- docs/deferred-work.md
+  printf '%s\n' '| REQ-001 | | test_zone fails |' >>"$file"
+  assert_fails_with "REQ-125 a row without summary fails" "no summary" "$check"
+  git -C "$PROJECT" checkout -q -- docs/deferred-work.md
+  printf '%s\n' "| $unknown | Export ignores the time zone | test_zone fails |" >>"$file"
+  assert_fails_with "REQ-125 an unknown requirement ID fails" "$unknown is not a requirement" "$check"
+  git -C "$PROJECT" checkout -q -- docs/deferred-work.md
+}
+
+# REQ-124 one approved epic can be built, checked and reviewed requirement by requirement
+# shellcheck disable=SC2016 # the bash -c scripts read their file as $1
+test_epic_loop() {
+  local prompt="$PROJECT/prompts/epic.md"
+  assert "REQ-124 /xaden-epic runs the epic prompt" grep -qx '@prompts/epic.md' "$PROJECT/.claude/commands/xaden-epic.md"
+  assert "REQ-124 the index lists the prompt" grep -q '^| \[\[epic\]\] .*`/xaden-epic`' "$PROJECT/prompts/00-index.md"
+  assert "REQ-124 the prompt is short enough for small models" test "$(wc -l <"$prompt" | tr -d ' ')" -le 60
+  assert "REQ-124 the list and the order are an approval point before the first change" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "Approval point:\*\* show me the requirements in the order.*Make no change before my go"' _ "$prompt"
+  assert "REQ-124 each requirement is a normal change with its own commit" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "own branch and worktree.*its own commit with .Refs: REQ-nnn.; never two requirements in one commit"' _ "$prompt"
+  assert "REQ-124 the loop stops on a red check, an approval point, a size change and a wrong criterion" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "Stop.* when a check is red.*approval point I have not given.*larger than its size.*acceptance criterion is wrong"' _ "$prompt"
+  assert "REQ-124 the retry rule applies before a second attempt" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "before a second attempt name which of scope, names, tests or context you change"' _ "$prompt"
+  assert "REQ-124 an approved requirement is never edited on its own" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "Never edit an approved requirement on your own"' _ "$prompt"
+  assert "REQ-124 it never pushes to main and never merges unasked" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "Never push to .main.. Never merge a pull request unless I tell you in this session"' _ "$prompt"
+  assert "REQ-124 the retro proposes drafts only" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "harder than it said.*acceptance criteria were wrong.*drafts in the chat only"' _ "$prompt"
+  assert "REQ-124 the review runs once at the end" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "At the end run .*code-review.* once over the whole epic"' _ "$prompt"
+}
+
 # REQ-122 assistants cite a requirement with epic, title and ID
 # shellcheck disable=SC2016 # the bash -c scripts read their file as $1
 test_cite_requirement_in_full() {
@@ -210,14 +262,16 @@ test_prompt_workflow() {
   assert_fails "feature prompt does not skip requirement approval" grep -q 'status .in-progress.) and' "$prompts/feature.md"
   assert "bugfix is regression-test first" grep -q 'Do not change production code before the test fails' "$prompts/bugfix.md"
   # REQ-036 truthful completion report
-  assert "AGENTS.md defines the completion report" bash -c "grep -q '^  COMPLETION REPORT' '$PROJECT/AGENTS.md' && grep -q 'Checks skipped:' '$PROJECT/AGENTS.md' && grep -q 'Acceptance evidence:' '$PROJECT/AGENTS.md'"
-  assert "skipped checks are never reported as passed" grep -q 'listed as skipped,' "$PROJECT/AGENTS.md"
+  local rules
+  rules="$(rules_text "$PROJECT")"
+  assert "AGENTS.md defines the completion report" bash -c "grep -q '^  COMPLETION REPORT' '$rules' && grep -q 'Checks skipped:' '$rules' && grep -q 'Acceptance evidence:' '$rules'"
+  assert "skipped checks are never reported as passed" grep -q 'listed as skipped,' "$(rules_text "$PROJECT")"
   for name in kickoff feature bugfix refactor requirements-update security-review release documentation; do
     assert "$name prompt ends with the completion report" grep -q 'Completion report given' "$prompts/$name.md"
   done
   # REQ-037 honest docs checks, operations guidance
   assert "docs check says it verifies structure only" grep -q 'structure only' <("$PROJECT/scripts/check-docs.sh")
-  assert "AGENTS.md says docs check is structure only" grep -q 'It checks structure only' "$PROJECT/AGENTS.md"
+  assert "AGENTS.md says docs check is structure only" grep -q 'It checks structure only' "$(rules_text "$PROJECT")"
   for topic in 'timeouts' 'bounded retries' 'graceful shutdown' 'health checks' 'no secrets or personal data' \
     'rollback path' 'actually tested'; do
     assert "documentation prompt asks for: $topic" grep -q "$topic" "$prompts/documentation.md"
@@ -251,14 +305,15 @@ test_branch_rule() {
   assert_fails_with "scaffold hook refuses commits on main" "git worktree add" \
     bash -c "cd '$empty' && ALLOW_MAIN_COMMIT=0 '$SCAFFOLD_ROOT/.githooks/pre-commit'"
   assert "AGENTS.md tells assistants to use a branch and worktree per change" \
-    grep -q 'git worktree add worktrees/<slug> -b <type>/<slug> main' "$PROJECT/AGENTS.md"
+    grep -q 'git worktree add worktrees/<slug> -b <type>/<slug> main' "$(rules_text "$PROJECT")"
 }
 
 # shellcheck disable=SC2016 # the bash -c scripts read their file as $1
 # REQ-082: a requirement is approved before any branch or worktree exists; the worktree starts sparse.
 test_approve_before_branch() {
-  local rules="$SCAFFOLD_ROOT/template/AGENTS.md" feature="$SCAFFOLD_ROOT/template/prompts/feature.md"
+  local rules feature="$SCAFFOLD_ROOT/template/prompts/feature.md"
   local draft add approval creation file repo="$WORKDIR/sparse-repo" tree="$WORKDIR/sparse-repo-req-001-x"
+  rules="$(rules_text "$SCAFFOLD_ROOT/template")"
   draft="$(grep -n 'Draft the requirement' "$rules" | head -n1 | cut -d: -f1)"
   add="$(grep -n 'worktree add --no-checkout' "$rules" | head -n1 | cut -d: -f1)"
   assert "the rules draft the requirement before they create the worktree" test -n "$draft" -a "${draft:-9}" -lt "${add:-0}"
@@ -300,7 +355,7 @@ test_look_before_build() {
   local item
   for item in 'Look before you build' 'search the web for a mature solution' 'name, one-line summary, license, website' \
     'No web access: say so'; do
-    assert "AGENTS.md rule covers: $item" grep -q -- "$item" "$PROJECT/AGENTS.md"
+    assert "AGENTS.md rule covers: $item" grep -q -- "$item" "$(rules_text "$PROJECT")"
   done
   assert "feature prompt applies the rule" grep -q 'Look before you build (AGENTS.md' "$PROJECT/prompts/feature.md"
 }
@@ -336,7 +391,7 @@ test_personas() {
   assert_fails_with "persona.sh refuses a dangling symbolic link" 'exists already' "$copy/scripts/persona.sh" new Mallory
   assert_fails "nothing is written through the link" test -e "$WORKDIR/outside-persona"
   rm "$copy/docs/personas/mallory.md"
-  assert "AGENTS.md checks solutions against personas" grep -q 'against each one; name the persona it fails' "$PROJECT/AGENTS.md"
+  assert "AGENTS.md checks solutions against personas" grep -q 'against each one; name the persona it fails' "$(rules_text "$PROJECT")"
   for name in kickoff feature code-review; do
     assert "$name prompt uses the personas" grep -q 'docs/personas\|\[\[persona\]\]' "$PROJECT/prompts/$name.md"
   done
@@ -348,7 +403,7 @@ test_personas() {
 # REQ-055, REQ-091 maintainers use the project commands on the scaffold itself
 test_scaffold_commands() {
   local name prompt
-  for name in bugfix refactor review security feature requirements release persona; do
+  for name in bugfix refactor review security feature requirements release persona epic; do
     prompt="$(sed -n 's|^@template/prompts/\(.*\)$|\1|p' "$SCAFFOLD_ROOT/.claude/commands/xaden-$name.md")"
     assert "/$name includes an existing template prompt" test -n "$prompt" -a -f "$SCAFFOLD_ROOT/template/prompts/$prompt"
   done
@@ -378,6 +433,36 @@ test_xaden_in_scaffold() {
   rm -rf "$lookalike"
 }
 
+# REQ-126 the rules loaded in every session stay small; the rest is read when a task needs it
+test_small_context() {
+  local rules="$PROJECT/AGENTS.md" file topic before after message copy
+  assert "REQ-126 AGENTS.md stays under 10240 bytes" test "$(wc -c <"$rules")" -le 10240
+  for topic in checks docs findings git requirements security working-style; do
+    assert "REQ-126 AGENTS.md names docs/rules/$topic.md with a trigger" grep -Eq "^(- )?Before .*read \`docs/rules/$topic\.md\`" "$rules"
+    assert "REQ-126 docs/rules/$topic.md exists" test -s "$PROJECT/docs/rules/$topic.md"
+  done
+  for file in "$PROJECT"/docs/rules/*.md; do
+    assert "REQ-126 ${file##*/} is named in AGENTS.md" grep -q "docs/rules/$(basename "$file")" "$rules"
+  done
+  assert "REQ-126 the rules that stay in AGENTS.md keep their IDs and wording" bash -c "grep -q '^- \*\*CC-09\*\*' '$rules' \
+    && grep -q 'Ask the user first' '$rules' && grep -q '^### Judgment stays with the human' '$rules' && grep -q '^### Size the task' '$rules' \
+    && grep -q 'never merges it' '$rules' && grep -q 'is an \*\*Approval point' '$rules'"
+  assert "REQ-126 the moved text is wording unchanged" bash -c "grep -q 'Lifecycle: .draft. (idea)' '$PROJECT/docs/rules/requirements.md' \
+    && grep -q 'it may only shrink' '$PROJECT/docs/rules/checks.md' && grep -q 'Conventional Commits' '$PROJECT/docs/rules/git.md'"
+  copy="$WORKDIR/variants/rules-fingerprint"
+  rm -rf "$copy" && mkdir -p "$WORKDIR/variants" && cp -R "$PROJECT" "$copy"
+  before="$("$copy/scripts/context-status.sh")"
+  before="${before%%$'\n'*}" # the CONTEXT CHECK line; head would break the pipe of the script
+  printf '\n' >>"$copy/docs/rules/git.md"
+  after="$("$copy/scripts/context-status.sh")"
+  after="${after%%$'\n'*}"
+  assert "REQ-126 a change in docs/rules/ reaches the context fingerprint" test "$before" != "$after"
+  message="$WORKDIR/unknown-ref-message"
+  printf 'feat: x\n\nRefs: REQ-%s\n' 999 >"$message" # an ID no requirement has; spelled in parts so traceability does not read it as a citation
+  assert_fails_with "REQ-126 a failing commit check names the file that holds the rule" 'docs/rules/git.md' \
+    bash -c "cd '$PROJECT' && scripts/verify-refs.sh '$message'"
+}
+
 test_template_contents
 test_clean_code_guidance
 test_assistant_trust_rules
@@ -388,6 +473,8 @@ test_human_merges
 test_merge_rules_in_repo
 test_judgment_stays_human
 test_size_the_task
+test_deferred_findings
+test_epic_loop
 test_cite_requirement_in_full
 test_prompt_workflow
 test_branch_rule
@@ -398,3 +485,4 @@ test_personas
 test_scaffold_commands
 test_xaden_in_scaffold
 test_no_context_pack
+test_small_context

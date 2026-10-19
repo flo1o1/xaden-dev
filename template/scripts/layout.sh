@@ -21,9 +21,11 @@ layout_init() {
     PERSONAS_DIR="$TEAM_DIR/personas"
     REVIEWS_DIR="$TEAM_DIR/security-reviews"
     EXCEPTIONS_FILE="$TEAM_DIR/security-exceptions.md"
+    DEFERRED_FILE="$TEAM_DIR/deferred-work.md"
     THREAT_MODEL_FILE="$TEAM_DIR/threat-model.md"
     RULES_FILE="${RULES_FILE:-$TEAM_DIR/RULES.md}"
     CLEAN_CODE_FILE="$TOOLS_DIR/docs/clean-code.md"
+    RULES_DIR="$TOOLS_DIR/docs/rules"
     SECURITY_GUIDE_FILE="$TOOLS_DIR/docs/security.md"
   else
     LAYOUT=classic
@@ -32,11 +34,19 @@ layout_init() {
     PERSONAS_DIR="$root/docs/personas"
     REVIEWS_DIR="$root/docs/security-reviews"
     EXCEPTIONS_FILE="$root/docs/security-exceptions.md"
+    DEFERRED_FILE="$root/docs/deferred-work.md"
     THREAT_MODEL_FILE="$root/docs/threat-model.md"
     RULES_FILE="${RULES_FILE:-$root/AGENTS.md}"
     CLEAN_CODE_FILE="$(dirname "$RULES_FILE")/docs/clean-code.md"
+    RULES_DIR="$(dirname "$RULES_FILE")/docs/rules"
     SECURITY_GUIDE_FILE="$root/docs/security.md"
   fi
+}
+
+# rule_file_hint <topic>: where the rule of a topic is read, for messages (REQ-126): the file
+# docs/rules/<topic>.md of a classic project, the command of an adopted one.
+rule_file_hint() {
+  if [ "${LAYOUT:-classic}" = "adopted" ]; then printf 'xaden doc rules-%s' "$1"; else printf 'docs/rules/%s.md' "$1"; fi
 }
 
 # TOOLS_DIR: the template folder the running scripts belong to (the installed Xaden, or the
@@ -112,23 +122,22 @@ adopted_text() {
     -e 's#docs/personas#xaden/personas#g' \
     -e 's#docs/security-reviews#xaden/security-reviews#g' \
     -e 's#docs/security-exceptions\.md#xaden/security-exceptions.md#g' \
+    -e 's#docs/deferred-work\.md#xaden/deferred-work.md#g' \
     -e 's#docs/threat-model\.md#xaden/threat-model.md#g' \
     -e 's#docs/architecture\.md#xaden/architecture.md#g' \
     -e 's#docs/decisions/#xaden/decisions/#g' \
     -e 's#docs/clean-code\.md#`xaden doc clean-code`#g' \
     -e 's#docs/security\.md#`xaden doc security`#g' \
     -e 's#docs/optional-tools\.md#`xaden doc optional-tools`#g' \
+    -e 's#docs/rules/\([a-z-]*\)\.md#xaden doc rules-\1#g' \
     -e 's#`prompts/\([a-z0-9-]*\)\.md`#`xaden prompt \1`#g' \
     -e 's#prompts/\([a-z0-9-]*\)\.md#`xaden prompt \1`#g'
 }
 
+# adopted_rules_text: filter; the sections of the rules that need files an adopted project does not
+# have (the guides, the drop zone, the release script) are replaced, then the paths are rewritten.
 # shellcheck disable=SC2016 # backticks are Markdown, not command substitution
-# render_rules: the content of xaden/RULES.md, from the rules of the Xaden that
-# is running: the template's AGENTS.md for an adopted project. Sections that need files an
-# adopted project does not have (the guides, the drop zone, the release script) are replaced.
-render_rules() {
-  printf '<!-- Generated from Xaden %s by `xaden adopt` and `xaden pin`. Generated, do not edit: change the rules by upgrading Xaden. -->\n\n' \
-    "$(tr -d '[:space:]' <"$TOOLS_DIR/../VERSION" 2>/dev/null || tr -d '[:space:]' <"$TOOLS_DIR/VERSION")"
+adopted_rules_text() {
   awk '
     /^## 8\./ { skipping = 1
       print "## 8. Documentation (mandatory)\n"
@@ -138,13 +147,31 @@ render_rules() {
       next }
     /^## / { skipping = 0 }
     skipping { next }
+    /^Before you finish a feature, read `docs\/rules\/docs\.md`/ { next }
     /^- Semantic Versioning in `VERSION`/ { getline; next }
     /^- Prompts live in `prompts\/`/ { getline
       print "- Task prompts: `xaden prompt <name>` prints one (kickoff, feature, bugfix, refactor, code-review,"
       print "  security-review, release, requirements-update, persona, documentation). A prompt of the same name in"
       print "  `xaden/prompts/` overrides the default. Follow the printed prompt."; next }
     /^- `inbox\/` is the user/ { getline; getline; next }
-    { print }' "$TOOLS_DIR/AGENTS.md" | adopted_text "this project"
+    { print }' | adopted_text "this project"
+}
+
+# shellcheck disable=SC2016 # backticks are Markdown, not command substitution
+# render_rules: the content of xaden/RULES.md, from the rules of the Xaden that
+# is running: the template's AGENTS.md for an adopted project. The topics moved to docs/rules/
+# (REQ-126) are read with `xaden doc rules-<topic>`, which applies the same filter.
+render_rules() {
+  printf '<!-- Generated from Xaden %s by `xaden adopt` and `xaden pin`. Generated, do not edit: change the rules by upgrading Xaden. -->\n\n' \
+    "$(tr -d '[:space:]' <"$TOOLS_DIR/../VERSION" 2>/dev/null || tr -d '[:space:]' <"$TOOLS_DIR/VERSION")"
+  adopted_rules_text <"$TOOLS_DIR/AGENTS.md"
+}
+
+# render_rule_topic <topic>: one file of docs/rules/ for an adopted project (xaden doc rules-<topic>).
+render_rule_topic() {
+  printf '%s' "$1" | grep -Eq '^[a-z-]+$' || die "invalid rules topic: $1"
+  [ -f "$TOOLS_DIR/docs/rules/$1.md" ] || die "no such rules topic: $1"
+  adopted_rules_text <"$TOOLS_DIR/docs/rules/$1.md"
 }
 
 # resolve_prompt <name>: path of the prompt for an adopted project: the team's own in

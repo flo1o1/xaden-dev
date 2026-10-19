@@ -14,6 +14,7 @@ Every prompt has frontmatter (`status`, `version`, `works-with`) visible in Obsi
 | [[kickoff]] | New project: capture goals, requirements, stack | `/xaden-kickoff` |
 | [[persona]] | Add a user persona that solutions are checked against | `/xaden-persona` |
 | [[feature]] | Build a new capability | `/xaden-feature` |
+| [[epic]] | Build all approved requirements of one epic in order | `/xaden-epic` |
 | [[bugfix]] | Fix a defect | `/xaden-bugfix` |
 | [[refactor]] | Improve structure, same behaviour | `/xaden-refactor` |
 | [[requirements-update]] | Scope changed mid-session | `/xaden-requirements` |

@@ -64,7 +64,7 @@ check_cited_ids() {
   local id
   while IFS= read -r id; do
     case "$id" in
-      REQ-*) grep -q "^$id " <<<"$REQUIREMENTS_LIST" || die "commit cites unknown requirement $id" ;;
+      REQ-*) grep -q "^$id " <<<"$REQUIREMENTS_LIST" || die "commit cites unknown requirement $id (rule: $(rule_file_hint git))" ;;
       CC-*) printf '%s\n' "$RULES_TEXT" | grep -Eq "^- \*\*$id\*\*" || die "commit cites unknown rule $id" ;;
     esac
   done < <(grep -oE 'REQ-[0-9]{3,}|CC-[0-9]{2}' "$CLEAN_MESSAGE_FILE" | sort -u)
@@ -83,7 +83,7 @@ check_referenced_status() {
     status="$(requirement_status "$id")"
     case "$status" in
       approved | in-progress | done) ;;
-      *) die "$id has status '$status'; feat/fix may only reference approved, in-progress or done requirements" ;;
+      *) die "$id has status '$status'; feat/fix may only reference approved, in-progress or done requirements (rule: $(rule_file_hint git))" ;;
     esac
   done
 }
@@ -95,8 +95,8 @@ check_required_trailer() {
   # Only real git trailers count (last paragraph), not "Refs:" lines in prose (REQ-022).
   refs=$(git interpret-trailers --parse <"$CLEAN_MESSAGE_FILE" | grep -E '^Refs:' || true)
   case "$type" in
-    feat) printf '%s' "$refs" | grep -Eq 'REQ-[0-9]{3,}' || die "feat commits need a 'Refs: REQ-nnn' trailer" ;;
-    fix) printf '%s' "$refs" | grep -Eq 'REQ-[0-9]{3,}|^Refs:[[:space:]]*none[[:space:]]*$' || die "fix commits need 'Refs: REQ-nnn' or 'Refs: none'" ;;
+    feat) printf '%s' "$refs" | grep -Eq 'REQ-[0-9]{3,}' || die "feat commits need a 'Refs: REQ-nnn' trailer (rule: $(rule_file_hint git))" ;;
+    fix) printf '%s' "$refs" | grep -Eq 'REQ-[0-9]{3,}|^Refs:[[:space:]]*none[[:space:]]*$' || die "fix commits need 'Refs: REQ-nnn' or 'Refs: none' (rule: $(rule_file_hint git))" ;;
   esac
   case "$type" in feat | fix) check_referenced_status "$refs" ;; esac
 }

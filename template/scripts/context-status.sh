@@ -17,10 +17,11 @@ source "$SCRIPTS/update-check-lib.sh"
 # Where the CC-nn rules are defined (RULES_FILE) and the clean-code guide (CLEAN_CODE_FILE).
 layout_init "$ROOT"
 
-# rule_and_requirement_files: the rule files plus every Markdown file of the requirements,
-# in a fixed order so the fingerprint is the same on every machine.
+# rule_and_requirement_files: the rule files (REQ-126: the files of docs/rules/ too) plus every
+# Markdown file of the requirements, in a fixed order so the fingerprint is the same on every machine.
 rule_and_requirement_files() {
   printf '%s\n' "$RULES_FILE" "$CLEAN_CODE_FILE"
+  [ ! -d "$RULES_DIR" ] || find "$RULES_DIR" -type f -name '*.md' | LC_ALL=C sort
   find "$REQ_DIR" -type f -name '*.md' | LC_ALL=C sort
 }
 

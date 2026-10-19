@@ -2,7 +2,7 @@
 title: Security review
 type: prompt
 status: stable
-version: 1.1.0
+version: 1.2.0
 works-with: [claude-code, chatgpt, local-llm]
 tags: [prompt, security, review]
 ---
@@ -58,6 +58,7 @@ Works with any assistant; Claude Code runs it as `/xaden-security`.
 6. **Approval point:** show me the findings and proposed fixes. Then apply fixes with a
    regression test each; commit `fix(security): <summary>`. Update each finding's status in
    the report.
+7. For a finding that is not fixed in this change, offer the three routes of AGENTS.md §9 (Findings not fixed now): fix now, ask me, or defer. A finding you accept with an owner and an expiry goes to `docs/security-exceptions.md`, not to the deferred work.
 
 ## Done when
 - [ ] Every entry point reviewed or explicitly out of scope

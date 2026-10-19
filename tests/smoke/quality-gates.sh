@@ -25,7 +25,16 @@ test_quiet_output() {
   assert "SMOKE_VERBOSE=1 prints passed assertions" test "$(SMOKE_VERBOSE=1 pass probe)" = "ok   probe"
   # one area can run alone: tests/smoke.sh <area>
   assert "smoke test lists its areas" test "$("$SCAFFOLD_ROOT/tests/smoke.sh" --list | tr '\n' ' ')" = \
-    "adoption assistant-guidance project-setup quality-gates requirements security release-and-docs "
+    "adoption-setup adoption-versions adoption-checks assistant-guidance project-setup quality-gates requirements security release-and-docs "
+  # REQ-121 every test function of the adoption library's areas is called in exactly one of them
+  local adoption_files="$SCAFFOLD_ROOT/tests/smoke/adoption-setup.sh $SCAFFOLD_ROOT/tests/smoke/adoption-versions.sh $SCAFFOLD_ROOT/tests/smoke/adoption-checks.sh"
+  # shellcheck disable=SC2086 # the three file names hold no spaces
+  assert "REQ-121 each adoption test function is defined and called in exactly one area" test -z "$(
+    {
+      grep -h '^test_[a-z_]*() {' $adoption_files | sed 's/() {//' | sort -u
+      grep -h '^test_[a-z_]*$' $adoption_files
+    } | sort | uniq -c | grep -v '^ *2 ' | grep .
+  )"
   assert_fails_with "smoke test rejects an unknown area" 'unknown area' "$SCAFFOLD_ROOT/tests/smoke.sh" no-such-area
 }
 
@@ -318,7 +327,7 @@ test_optional_tools() {
   assert "staged check lints staged workflows" bash -c "cd '$PROJECT' && printf '# staged edit\\n' >>.github/workflows/ci.yml && git add .github/workflows/ci.yml && PATH='$fakes:$PATH' scripts/check.sh --staged 2>&1 | grep -q 'workflows: zizmor failed'"
   git -C "$PROJECT" reset -q --hard && git -C "$PROJECT" clean -qfd
 
-  assert "AGENTS.md says how to handle tips" grep -q 'install nothing without approval' "$PROJECT/AGENTS.md"
+  assert "AGENTS.md says how to handle tips" grep -q 'install nothing without approval' "$PROJECT/docs/rules/checks.md"
   assert "optional tools are a managed document" grep -q 'docs/optional-tools.md' "$PROJECT/.scaffold/manifest"
   assert "setup points to the optional tools" bash -c "'$PROJECT/scripts/setup.sh' --tools-only 2>&1 | grep -q 'docs/optional-tools.md'"
   assert "clean-code guide covers property and mutation testing" bash -c "grep -q 'property-based tests' '$PROJECT/docs/clean-code.md' && grep -q 'Mutation testing' '$PROJECT/docs/clean-code.md'"
@@ -471,8 +480,8 @@ test_area_selection() {
   selected "REQ-114 a second change in one area still selects only it" template/scripts/req.sh "requirements "
   # shellcheck disable=SC2016 # the bash -c script reads its file as $1
   assert "REQ-114 the skipped areas are named on stderr" bash -c '"$1" main probe 2>&1 >/dev/null | grep -q "skip adoption"' _ "$repo/$select"
-  selected "REQ-114 a script of one area plus the changelog selects that area and release-and-docs" "template/scripts/req.sh CHANGELOG.md" "requirements release-and-docs "
-  selected "REQ-114 a script, the changelog and the requirements index select two areas" "scripts/new-project.sh CHANGELOG.md docs/requirements/INDEX.md" "project-setup requirements release-and-docs "
+  selected "REQ-114 a script of one area plus the changelog selects that area, release-and-docs and adoption-versions (its fake release copies the changelog)" "template/scripts/req.sh CHANGELOG.md" "adoption-versions requirements release-and-docs "
+  selected "REQ-114 a script, the changelog and the requirements index select their areas" "scripts/new-project.sh CHANGELOG.md docs/requirements/INDEX.md" "adoption-versions project-setup requirements release-and-docs "
   selected "REQ-114 the requirements index alone selects requirements" docs/requirements/INDEX.md "requirements "
   selected "REQ-114 the third-party list and the site page list select release-and-docs" "THIRD-PARTY.md docs/site-pages.txt" "release-and-docs "
   selected "REQ-114 a guide of the admin folder selects release-and-docs and assistant-guidance" docs/guide/admin/install-xaden.md "assistant-guidance release-and-docs "
