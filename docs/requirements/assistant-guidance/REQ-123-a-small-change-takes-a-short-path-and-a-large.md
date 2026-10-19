@@ -2,8 +2,8 @@
 id: REQ-123
 type: job
 epic: assistant-guidance
-priority: should
-status: draft
+priority: must
+status: approved
 updated: 2026-10-19
 ---
 
