@@ -21,6 +21,7 @@ layout_init() {
     PERSONAS_DIR="$TEAM_DIR/personas"
     REVIEWS_DIR="$TEAM_DIR/security-reviews"
     EXCEPTIONS_FILE="$TEAM_DIR/security-exceptions.md"
+    DEFERRED_FILE="$TEAM_DIR/deferred-work.md"
     THREAT_MODEL_FILE="$TEAM_DIR/threat-model.md"
     RULES_FILE="${RULES_FILE:-$TEAM_DIR/RULES.md}"
     CLEAN_CODE_FILE="$TOOLS_DIR/docs/clean-code.md"
@@ -33,6 +34,7 @@ layout_init() {
     PERSONAS_DIR="$root/docs/personas"
     REVIEWS_DIR="$root/docs/security-reviews"
     EXCEPTIONS_FILE="$root/docs/security-exceptions.md"
+    DEFERRED_FILE="$root/docs/deferred-work.md"
     THREAT_MODEL_FILE="$root/docs/threat-model.md"
     RULES_FILE="${RULES_FILE:-$root/AGENTS.md}"
     CLEAN_CODE_FILE="$(dirname "$RULES_FILE")/docs/clean-code.md"
@@ -120,6 +122,7 @@ adopted_text() {
     -e 's#docs/personas#xaden/personas#g' \
     -e 's#docs/security-reviews#xaden/security-reviews#g' \
     -e 's#docs/security-exceptions\.md#xaden/security-exceptions.md#g' \
+    -e 's#docs/deferred-work\.md#xaden/deferred-work.md#g' \
     -e 's#docs/threat-model\.md#xaden/threat-model.md#g' \
     -e 's#docs/architecture\.md#xaden/architecture.md#g' \
     -e 's#docs/decisions/#xaden/decisions/#g' \

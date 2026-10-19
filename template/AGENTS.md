@@ -104,6 +104,11 @@ A change that starts small and then touches a third file, adds a dependency, or 
 network: stop, say the size changed and switch to the normal flow. A request with two or more independently
 shippable goals: list them, recommend a first one and ask whether to split or keep all; the user decides.
 
+### Findings not fixed now (REQ-125)
+
+Before you answer a review finding that this change does not fix, read `docs/rules/findings.md`: offer three routes
+(fix now, ask me, defer) and defer only after the user agrees.
+
 ### Judgment stays with the human (REQ-111)
 
 - Explain a non-trivial change before you ask for acceptance: what changed, why, and one way to check it

@@ -66,6 +66,9 @@ The assistant loads `AGENTS.md` and the requirements index in every session, so 
 - A hook or check that enforces a moved rule names the file that holds it in its message.
 
 A trigger line in `AGENTS.md` can be ignored by a model; the hooks and checks catch the result at commit or at "done", not before.
+## Findings that are not fixed now
+
+When a review finds a real problem that the change did not cause or that is too big to fix now, the assistant offers three routes: fix now, ask you, or defer. It defers only after you agree, as one row in `docs/deferred-work.md` (in an adopted project `xaden/deferred-work.md`, created with the first deferral) with its source (a requirement ID or a branch), a one-sentence summary and the evidence that it is real. The file is append only: a row leaves it when it becomes a requirement or is dropped, and the commit message says which. `xaden check` fails on a row with a part missing or an unknown requirement ID. Accepted vulnerabilities with an owner and an expiry stay in `docs/security-exceptions.md`.
 
 ## Restart a session
 
