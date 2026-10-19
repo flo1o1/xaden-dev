@@ -1,6 +1,6 @@
 # 0001. The AIDD reference framework: an opt-in, pinned add-on for projects
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-19
 - Requirements: REQ-115, REQ-118
 
@@ -86,4 +86,4 @@ products are not used: no trademark statement was found in the files read, and t
 
 - Positive: full AIDD workflow where the environment supports it; no change to Xaden's bash-only core; the person decides, per project.
 - Negative: two rule sources in one project need the mapping block and a clear precedence; the add-on needs Node and `git` and depends on the framework's release cadence (v5.12.0 after eight months); the check that the pin holds adds work.
-- Follow-up: REQ-118 is approved and not implemented. Before implementing, verify whether the plugins can be pinned (the first acceptance criterion that fails stops the work). This record stays `proposed` until the maintainer approves it.
+- Follow-up: REQ-118 is approved and not implemented. Before implementing, verify whether the plugins can be pinned (the first acceptance criterion that fails stops the work). The maintainer accepted this record on 2026-10-19.
