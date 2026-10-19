@@ -37,6 +37,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-119 | job | should | approved | The assistant fixes scope, names, tests and context before it retries |
 | REQ-120 | job | could | approved | I can tell when a session lost its coherence and restart it from the files |
 | REQ-123 | job | should | draft | A small change takes a short path and a large change takes the full one |
+| REQ-124 | job | could | draft | One approved epic can be built, checked and reviewed requirement by requirement |
 
 ## Project setup (`project-setup`)
 
