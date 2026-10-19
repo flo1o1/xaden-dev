@@ -34,9 +34,12 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-111 | job | must | done | The assistant explains what it did and says what it cannot judge |
 | REQ-112 | job | should | done | Merge and site-follow-up rules live in each repository's own rule file |
 | REQ-115 | job | should | done | Xaden weighs the AIDD reference framework before it takes anything from it |
-| REQ-119 | job | should | approved | The assistant fixes scope, names, tests and context before it retries |
-| REQ-120 | job | could | approved | I can tell when a session lost its coherence and restart it from the files |
+| REQ-119 | job | should | done | The assistant fixes scope, names, tests and context before it retries |
+| REQ-120 | job | could | done | I can tell when a session lost its coherence and restart it from the files |
 | REQ-122 | job | should | done | Assistants cite a requirement with its epic, title and ID |
+| REQ-123 | job | should | draft | A small change takes a short path and a large change takes the full one |
+| REQ-124 | job | could | draft | One approved epic can be built, checked and reviewed requirement by requirement |
+| REQ-125 | job | could | draft | A review finding that is not fixed in this change is recorded, not lost in the chat |
 
 ## Project setup (`project-setup`)
 
