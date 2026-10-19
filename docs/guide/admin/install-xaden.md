@@ -38,11 +38,6 @@ xaden version
 
 - `xaden version`: prints the installed Xaden version.
 
-## Install from a git clone
-
-Clone Xaden only to read its history, contribute or work on it. The clone also holds the files Xaden's maintainers work with (tests,
-requirements, signing scripts). The steps are in [Install with git](../contributing/install-with-git.md) in the Contributing section.
-
 ## Verify what you downloaded
 
 The installer checks the signature of the release zip before it opens it. Check that `xaden version` prints the version you expect, and read

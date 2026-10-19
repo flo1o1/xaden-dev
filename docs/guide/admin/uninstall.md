@@ -24,7 +24,5 @@ rm -r ~/.local/share/xaden
 - `~/.local/share/xaden/current/scripts/install.sh --uninstall`: removes the `xaden` link, but only if it points to a Xaden.
 - `rm -r ~/.local/share/xaden`: deletes every installed version. If you set `XADEN_HOME`, delete that folder instead.
 
-A clone is removed as described in [Install with git](../contributing/install-with-git.md).
-
 Projects created with Xaden keep working without it, except that their hooks print `xaden not found` and skip the checks until you remove
 the hook blocks (`xaden remove` does that).

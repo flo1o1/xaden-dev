@@ -23,10 +23,6 @@ nothing to overwrite. Without a terminal nothing downloads and the command exits
 If `xaden upgrade` says your Xaden does not live in `~/.local/share/xaden`, you installed it before this layout existed: install once
 with [the one command](install-xaden.md), then use `xaden upgrade` from then on.
 
-## If you installed with git
-
-A clone is updated with `git pull`: see [Install with git](../contributing/install-with-git.md). `xaden upgrade` refuses to touch a clone and names that command.
-
 ## Read what changed
 
 `CHANGELOG.md` in the Xaden folder lists the changes of every version. Projects created with `xaden create --classic` are updated with
