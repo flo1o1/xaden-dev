@@ -25,7 +25,16 @@ test_quiet_output() {
   assert "SMOKE_VERBOSE=1 prints passed assertions" test "$(SMOKE_VERBOSE=1 pass probe)" = "ok   probe"
   # one area can run alone: tests/smoke.sh <area>
   assert "smoke test lists its areas" test "$("$SCAFFOLD_ROOT/tests/smoke.sh" --list | tr '\n' ' ')" = \
-    "adoption assistant-guidance project-setup quality-gates requirements security release-and-docs "
+    "adoption-setup adoption-versions adoption-checks assistant-guidance project-setup quality-gates requirements security release-and-docs "
+  # REQ-121 every test function of the adoption library's areas is called in exactly one of them
+  local adoption_files="$SCAFFOLD_ROOT/tests/smoke/adoption-setup.sh $SCAFFOLD_ROOT/tests/smoke/adoption-versions.sh $SCAFFOLD_ROOT/tests/smoke/adoption-checks.sh"
+  # shellcheck disable=SC2086 # the three file names hold no spaces
+  assert "REQ-121 each adoption test function is defined and called in exactly one area" test -z "$(
+    {
+      grep -h '^test_[a-z_]*() {' $adoption_files | sed 's/() {//' | sort -u
+      grep -h '^test_[a-z_]*$' $adoption_files
+    } | sort | uniq -c | grep -v '^ *2 ' | grep .
+  )"
   assert_fails_with "smoke test rejects an unknown area" 'unknown area' "$SCAFFOLD_ROOT/tests/smoke.sh" no-such-area
 }
 
