@@ -34,6 +34,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-111 | job | must | done | The assistant explains what it did and says what it cannot judge |
 | REQ-112 | job | should | done | Merge and site-follow-up rules live in each repository's own rule file |
 | REQ-115 | job | should | done | Xaden weighs the AIDD reference framework before it takes anything from it |
+| REQ-119 | job | should | approved | The assistant fixes scope, names, tests and context before it retries |
 
 ## Project setup (`project-setup`)
 
