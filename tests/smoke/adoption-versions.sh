@@ -70,8 +70,6 @@ test_versions_and_downloads() {
   x_in "$worktree" doctor
   assert "an installed newer version changes nothing in the project" test -z "$(git -C "$worktree" status --porcelain)"
 
-  test_pin_offers_ci_candidate
-
   # a pinned version that is missing
   rm -rf "$home"
   x_in "$upgraded" check
@@ -423,7 +421,7 @@ test_signed_only_in_generated_ci() {
 # beside it; under require-signature = true the candidate step also warns (the fake release cannot be signed, so
 # that part calls ci_candidate directly)
 test_pin_offers_ci_candidate() {
-  local worktree upgraded
+  local worktree upgraded releases="$WORKDIR/ci-candidate-releases" home="$WORKDIR/ci-candidate-home"
   worktree="$(adopted_copy ci-old)"
   # drop the signed-record lines and the audit step the way an older workflow lacked them
   grep -v -e 'versions/\${XADEN_VERSION}.signed' -e 'mkdir -p "\${XDG_DATA_HOME' "$worktree/.github/workflows/xaden.yml" |
@@ -431,8 +429,9 @@ test_pin_offers_ci_candidate() {
   cp "$WORKDIR/old-ci.yml" "$worktree/.github/workflows/xaden.yml"
   assert "the older workflow lacks the signed-record step" bash -c '! grep -q "\.signed" "$1"' _ "$worktree/.github/workflows/xaden.yml"
   git -C "$worktree" add -A && git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "test: older workflow, signed only"
-  x_answers y "$worktree" pin 9.9.9 # installed by the test before; XADEN_HOME and XADEN_RELEASES_URL are still exported
-  upgraded="$worktree-upgrade-xaden-9.9.9"
+  fake_release "$releases" 9.9.8
+  XADEN_RELEASES_URL="file://$releases" XADEN_HOME="$home" x_answers y "$worktree" pin 9.9.8
+  upgraded="$worktree-upgrade-xaden-9.9.8"
   assert "REQ-129 pin writes the generated workflow beside the project's" test -f "$upgraded/.github/workflows/xaden.yml-dist"
   assert "REQ-129 the candidate has the signed-record step" grep -q '\.signed' "$upgraded/.github/workflows/xaden.yml-dist"
   assert "REQ-129 the project's workflow is not replaced" bash -c '! grep -q "\.signed" "$1"' _ "$upgraded/.github/workflows/xaden.yml"
@@ -442,7 +441,7 @@ test_pin_offers_ci_candidate() {
   printf 'require-signature = true\n' >>"$upgraded/xaden/xaden.conf"
   sed -e '/^command_name=/,$d' -e 's|^SCAFFOLD_ROOT=.*|SCAFFOLD_ROOT=${SCAFFOLD_ROOT:?}|' "$SCAFFOLD_ROOT/scripts/fetch.sh" >"$WORKDIR/fetch-functions.sh"
   XRC=0
-  SCAFFOLD_ROOT="$SCAFFOLD_ROOT" bash -c 'source "$1"; ci_candidate "$2" "$SCAFFOLD_ROOT" 9.9.9 abc' _ "$WORKDIR/fetch-functions.sh" "$upgraded" >"$XOUT" 2>&1 || XRC=$?
+  SCAFFOLD_ROOT="$SCAFFOLD_ROOT" bash -c 'source "$1"; ci_candidate "$2" "$SCAFFOLD_ROOT" 9.9.8 abc' _ "$WORKDIR/fetch-functions.sh" "$upgraded" >"$XOUT" 2>&1 || XRC=$?
   assert "REQ-129 under signed-only the warning names the fresh runner's refusal" grep -q 'no matching signature on record' "$XOUT"
   assert "REQ-129 the warning does not fail pin" test "$XRC" -eq 0
 }
@@ -450,4 +449,5 @@ test_pin_offers_ci_candidate() {
 test_versions_and_downloads
 test_self_upgrade
 test_signed_only_in_generated_ci
+test_pin_offers_ci_candidate
 test_update_check
