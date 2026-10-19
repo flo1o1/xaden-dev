@@ -14,6 +14,9 @@ lists them, and `INDEX-full.md` holds the full table.
 
 30 done.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-129 | job | should | approved | A version change offers a CI workflow candidate for older installs |
 
 ## Quality gates (`quality-gates`)
 
