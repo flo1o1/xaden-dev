@@ -31,7 +31,7 @@ Start an AI session by pointing the tool at this folder, then run the kickoff pr
 | `CHANGELOG.md`, `VERSION` | SemVer history |
 | `worktrees/` | One folder per change in progress (`git worktree add worktrees/<slug> ...`); contents are git-ignored |
 | `inbox/` | Local drop zone for your files; contents are git-ignored and never committed |
-| `.scaffold/` | Scaffold version and managed-file manifest (used by the scaffold's `update-scaffold.sh`) |
+| `.scaffold/` | Scaffold version and managed-file manifest |
 
 ## Release
 

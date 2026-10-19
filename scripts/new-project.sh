@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Creates a new project from template/ in a fresh directory with its own git repo.
+# Maintainers' test fixture, not reachable through `xaden` (REQ-001): creates a project from template/ that keeps
+# its own copy of the tooling, the layout the smoke suite runs against.
 # Usage: scripts/new-project.sh <project-name> [target-dir]
 #   project-name: lowercase letters, digits, hyphens (2-51 chars), starts with a letter
 #   target-dir:   defaults to ../<project-name>; must not exist yet

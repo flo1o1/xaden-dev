@@ -28,8 +28,7 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
 
 ## Entry points
 
-- CLI arguments: project name and target directory (`new-project.sh`), project directory and
-  `--apply` (`update-scaffold.sh`), bump part (`release*.sh`),
+- CLI arguments: project name and target directory (`new-project.sh`), bump part (`release*.sh`),
   requirement IDs, epics and titles (`req.sh`), persona names (`persona.sh`); command and arguments of `xaden`, target
   directory of `install.sh`; `adopt`, `remove`, `upgrade`, `fetch`, `hook`, `prompt`, `doc` and `new --autopilot`
   with their options (`--check <kind>=<command>`, `--assistants`, `--mode`, `--stack`, version numbers).
@@ -56,7 +55,7 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
 ## Trust boundaries
 
 - Untracked or ignored files in `template/` vs. the reviewed, tracked template content.
-- A project's own files vs. the files the scaffold manages there (`update-scaffold.sh`).
+- A project's own files vs. the files the scaffold manages there (`xaden pin`, `-dist` files).
 - Pull-request and push data (branch names, commit messages) vs. the CI shell.
 - Downloads from GitHub, PyPI and Homebrew vs. the CI runner.
 - A release archive from the network vs. the installed versions folder (`fetch.sh`): checked for unsafe members,
@@ -69,8 +68,7 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
 
 - Contributor sending a pull request: controls branch names, commit messages and file contents.
 - Contributor to a generated project, or the author of a project cloned from elsewhere: controls
-  its tracked files, including symbolic links and `.scaffold/manifest`, which
-  `update-scaffold.sh` reads and writes next to.
+  its tracked files, including symbolic links.
 - Compromised upstream tool or action: code runs in CI with the job's permissions (read-only
   repository token).
 - Malicious file in `inbox/` or pasted content: tries to make the assistant run commands or
@@ -135,8 +133,6 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
 - `xaden setup|check|req|release` run the current repository's own `scripts/*.sh`, the
   same trust as running them by hand; use them only in projects you trust (review
   2026-10-11-xaden-command #1).
-- `update-scaffold.sh` changes a project's Claude Code permissions (`.claude/settings.json`,
-  REQ-059) when the project left the file unchanged; edited files are kept.
 - The macOS CI job installs Homebrew's current shellcheck, semgrep, ruff and gitleaks without
   pinning; the Linux job is the pinned reference.
 - semgrep and ruff are pinned by version from PyPI, not by hash.

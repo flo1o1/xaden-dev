@@ -475,7 +475,9 @@ test_new_project_layout() {
   assert "a failed creation fails" test "$XRC" -ne 0
   assert "a failed creation leaves no partial folder" test ! -e "$base/fails"
   x_in "$base" create --classic classic
-  assert "--classic keeps the copied layout" test -f "$base/classic/scripts/check.sh" -a ! -e "$base/classic/xaden"
+  assert "--classic is an unknown option and creates nothing (REQ-001)" test "$XRC" -ne 0 -a ! -e "$base/classic"
+  x_in "$base" update
+  assert "xaden update is an unknown command (REQ-001)" test "$XRC" -ne 0
 
   # a stack that appears later is noticed, and the preset can be added
   printf '{ "name": "demo" }\n' >"$project/package.json"

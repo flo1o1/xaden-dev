@@ -10,7 +10,7 @@ template/             the product: copied 1:1 into every new project
   prompts/            prompt library (open template/ or a project as Obsidian vault)
   docs/               user-guide, admin-guide, requirements, ADRs, clean-code, security, local-llm
   scripts/            setup, check, release, hooks, req, context-status, stacks/
-scripts/              scaffold tools: xaden, install, get-xaden (the one-line installer), new-project, update-scaffold,
+scripts/              scaffold tools: xaden, install, get-xaden (the one-line installer), new-project (test fixture),
                       adopt (+ adopt-scan, adopt-lib), fetch (downloads, pin, upgrade), autopilot, setup,
                       check-scaffold, release-scaffold
 docs/guide/           the guides; they are also the source of the pages on the website
@@ -25,10 +25,9 @@ AGENTS.md CLAUDE.md   rules for maintaining the scaffold
 - **`scripts/` holds the tools of the scaffold itself:** creating, adopting, updating, fetching versions and releasing. The scripts a project runs every day (check, req, release, hooks) live in `template/scripts/`.
 - **Nothing project-specific lives at the root,** and nothing of the scaffold's maintenance lives in `template/`.
 
-## Two kinds of project
+## Project layout
 
-- **Adopted projects** (`xaden create`, `xaden adopt`) keep their team's content in an `xaden/` folder and no copy of the tooling. `xaden/xaden.conf` pins the Xaden version and its checksum.
-- **Classic projects** (`xaden create --classic`) carry their own copy of the scripts. `.scaffold/` records the version and a manifest, and `xaden update` compares three versions of every managed file (the recorded one, the project's and the new one) so edits are kept.
+Projects (`xaden create`, `xaden adopt`) keep their team's content in an `xaden/` folder and no copy of the tooling. `xaden/xaden.conf` pins the Xaden version and its checksum. `scripts/new-project.sh` is the maintainers' test fixture: a project with its own copy of the tooling that the smoke suite runs against; `xaden` does not reach it.
 
 ## The `xaden` command and versions
 

@@ -21,6 +21,6 @@ When I want to know what is outdated, I want one command with one verb, so I can
 - Given `xaden upgrade --check --if-due`, then it is silent, checks only when the interval has passed, writes the cache, and exits `0` when the network is down.
 - Given `xaden update-check` or `xaden new`, then Xaden answers like for any unknown command; no alias or notice stays behind. The setting `update-check` and `XADEN_UPDATE_CHECK` keep their names.
 - Given an outdated dependency whose newest version has a higher major number than the installed one, then the `Dependencies:` line marks its name `(major)`.
-- Given `xaden help`, then it lists no `update-check` and no `new`, and `xaden update` stays as it is.
+- Given `xaden help`, then it lists no `update-check` and no `new`.
 - Given `xaden upgrade <version>` anywhere, including inside a project, then it installs that Xaden version on the machine and does not touch the project; after it, a project is told to move with `xaden pin <version>`. Without a version it installs the newest release.
 - Given an update, then Xaden still only reports: no dependency is changed (REQ-084).

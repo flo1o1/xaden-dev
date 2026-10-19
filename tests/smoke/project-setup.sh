@@ -63,85 +63,6 @@ test_setup_and_commit_checks() {
   git -C "$PROJECT" reset -q --hard HEAD~2
 }
 
-# REQ-017 update path for existing projects
-test_scaffold_update() {
-  local newer="$WORKDIR/newer-scaffold"
-  assert "project records scaffold version" test -f "$PROJECT/.scaffold/version"
-  assert "manifest lists managed files" grep -q 'prompts/feature.md' "$PROJECT/.scaffold/manifest"
-  assert "manifest excludes project files" test -z "$(grep 'docs/requirements/' "$PROJECT/.scaffold/manifest" || true)"
-  assert "fresh project is up to date" bash -c "'$SCAFFOLD_ROOT/scripts/update-scaffold.sh' '$PROJECT' | grep -q '0 change(s) planned'"
-  git -C "$PROJECT" worktree add -q "$WORKDIR/worktree" -b worktree-branch
-  assert "update runs in a git worktree" bash -c "'$SCAFFOLD_ROOT/scripts/update-scaffold.sh' '$WORKDIR/worktree' | grep -q '0 change(s) planned'"
-  git -C "$PROJECT" worktree remove "$WORKDIR/worktree" && git -C "$PROJECT" branch -q -D worktree-branch
-
-  # A newer scaffold: one changed prompt, one new prompt, one prompt changed on both sides.
-  export_template "$SCAFFOLD_ROOT" "$newer"
-  printf '9.9.9\n' >"$newer/VERSION"
-  printf '\nUpstream improvement.\n' >>"$newer/template/prompts/bugfix.md"
-  printf -- '---\ntitle: New\n---\n# New prompt\n' >"$newer/template/prompts/new-prompt.md"
-  printf '\nUpstream change.\n' >>"$newer/template/prompts/feature.md"
-  printf '\nMy local tweak.\n' >>"$PROJECT/prompts/feature.md"
-  printf '\nProject requirement edit.\n' >>"$PROJECT/docs/requirements/README.md"
-  git -C "$PROJECT" commit -q -am "docs: local prompt tweak and requirement edit" --no-verify
-
-  assert "dry run changes nothing" bash -c "'$newer/scripts/update-scaffold.sh' '$PROJECT' >/dev/null && test -z \"\$(git -C '$PROJECT' status --porcelain)\""
-  assert "update applies" "$newer/scripts/update-scaffold.sh" "$PROJECT" --apply
-  assert "unmodified prompt updated" grep -q 'Upstream improvement.' "$PROJECT/prompts/bugfix.md"
-  assert "new prompt added" test -f "$PROJECT/prompts/new-prompt.md"
-  assert "local tweak kept on conflict" grep -q 'My local tweak.' "$PROJECT/prompts/feature.md"
-  assert "conflict candidate written" grep -q 'Upstream change.' "$PROJECT/prompts/feature.md-dist"
-  assert "project requirements untouched" grep -q 'Project requirement edit.' "$PROJECT/docs/requirements/README.md"
-  assert "version recorded" test "$(cat "$PROJECT/.scaffold/version")" = "9.9.9"
-  git -C "$PROJECT" reset -q --hard HEAD~1 && git -C "$PROJECT" clean -qfdx
-}
-
-# REQ-079: an update removes the managed pack script of an older scaffold and leaves the user's own files.
-test_pack_script_removed() {
-  local old="$WORKDIR/variants/legacy-pack" dash=- out script notes
-  script="scripts/pack${dash}context.sh" notes="context${dash}pack.md" # spelled in parts so the guard in assistant-guidance.sh passes
-  rm -rf "$old" && mkdir -p "$WORKDIR/variants" && cp -R "$PROJECT" "$old"
-  printf '#!/usr/bin/env bash\necho old\n' >"$old/$script" && chmod +x "$old/$script"
-  printf '%s\t%s\n' "$(content_sum <"$old/$script")" "$script" >>"$old/.scaffold/manifest"
-  printf 'my notes\n' >"$old/$notes"
-  printf '%s\n' "$notes" >>"$old/.git/info/exclude" # an older scaffold ignored it, so it does not block the update
-  git -C "$old" add "$script" .scaffold/manifest && git -C "$old" commit -q -m "chore: old pack script" --no-verify
-  out="$("$SCAFFOLD_ROOT/scripts/update-scaffold.sh" "$old" --apply)"
-  assert "the update reports the removed script" grep -q "^remove .*$script" <<<"$out"
-  assert_fails "the old script is gone" test -e "$old/$script"
-  assert "the user's own file stays" grep -qx 'my notes' "$old/$notes"
-}
-
-# REQ-017: an update stays inside the project and only touches managed files, whatever the
-# project's committed files say (security review 2026-10-11, findings 1 and 2).
-test_update_safety() {
-  local outside="$WORKDIR/outside.txt"
-  printf 'keep me\n' >"$outside"
-  printf '\nlocal edit\n' >>"$PROJECT/.clinerules"
-  grep -v "$(printf '\t').clinerules\$" "$PROJECT/.scaffold/manifest" >"$WORKDIR/manifest" &&
-    cp "$WORKDIR/manifest" "$PROJECT/.scaffold/manifest"
-  ln -s "$outside" "$PROJECT/.clinerules-dist"
-  git -C "$PROJECT" add -A && git -C "$PROJECT" commit -qn -m "chore: symlinked conflict file"
-  assert_fails_with "update refuses to write through a symlink" "symbolic link" \
-    "$SCAFFOLD_ROOT/scripts/update-scaffold.sh" "$PROJECT" --apply
-  assert "file behind the symlink unchanged" test "$(cat "$outside")" = "keep me"
-  git -C "$PROJECT" reset -q --hard HEAD~1 && git -C "$PROJECT" clean -qfdx
-
-  mkdir -p "$PROJECT/src" && printf 'print(1)\n' >"$PROJECT/src/app.py"
-  printf '%s\tsrc/app.py\n' "$(content_sum <"$PROJECT/src/app.py")" >>"$PROJECT/.scaffold/manifest"
-  git -C "$PROJECT" add -A && git -C "$PROJECT" commit -qn -m "chore: manifest lists a project file"
-  assert "update applies with a foreign manifest entry" "$SCAFFOLD_ROOT/scripts/update-scaffold.sh" "$PROJECT" --apply
-  assert "project file listed in the manifest kept" test -f "$PROJECT/src/app.py"
-  git -C "$PROJECT" reset -q --hard HEAD~1 && git -C "$PROJECT" clean -qfdx
-
-  # A manifest path that climbs out of a managed folder is a project file too.
-  mkdir -p "$PROJECT/src" && printf 'print(1)\n' >"$PROJECT/src/app.py"
-  printf '%s\tscripts/../src/app.py\n' "$(content_sum <"$PROJECT/src/app.py")" >>"$PROJECT/.scaffold/manifest"
-  git -C "$PROJECT" add -A && git -C "$PROJECT" commit -qn -m "chore: manifest path climbs out of scripts/"
-  assert "update applies with a climbing manifest entry" "$SCAFFOLD_ROOT/scripts/update-scaffold.sh" "$PROJECT" --apply
-  assert "project file behind a climbing manifest path kept" test -f "$PROJECT/src/app.py"
-  git -C "$PROJECT" reset -q --hard HEAD~1 && git -C "$PROJECT" clean -qfdx
-}
-
 # REQ-056: `xaden` runs the scaffold's and the current project's scripts from any directory.
 test_xaden_command() {
   local bin="$WORKDIR/xaden-bin" elsewhere="$WORKDIR/elsewhere" xaden
@@ -157,14 +78,17 @@ test_xaden_command() {
   assert_fails_with "project command outside a project fails" "inside a project" \
     bash -c "cd '$elsewhere' && '$xaden' check"
 
-  assert "xaden create --classic creates the project in the current directory" bash -c "cd '$elsewhere' && '$xaden' create --classic xaden-app"
+  assert_fails_with "xaden create --classic is an unknown option (REQ-001)" "unknown option: --classic" \
+    bash -c "cd '$elsewhere' && '$xaden' create --classic xaden-app"
+  assert "xaden create --classic creates nothing (REQ-001)" test ! -e "$elsewhere/xaden-app"
+  assert "the maintainers' fixture makes a project with its own tooling" "$SCAFFOLD_ROOT/scripts/new-project.sh" xaden-app "$elsewhere/xaden-app"
   assert "new project has its first commit" git -C "$elsewhere/xaden-app" log -1 --format=%s
   assert "xaden new is an unknown command and creates nothing (REQ-130)" \
     bash -c "cd '$elsewhere' && ! '$xaden' new old-name-app >/dev/null 2>&1 && test ! -e old-name-app"
   assert "project command runs from a subdirectory" \
     bash -c "cd '$elsewhere/xaden-app/docs' && '$xaden' req list | grep -q '^REQ-001 '"
-  assert "xaden update runs for the surrounding project" \
-    bash -c "cd '$elsewhere/xaden-app/docs' && '$xaden' update | grep -q '0 change(s) planned'"
+  assert "xaden update is an unknown command (REQ-001)" \
+    bash -c "cd '$elsewhere/xaden-app/docs' && ! '$xaden' update >/dev/null 2>&1"
 
   mkdir -p "$WORKDIR/other-bin" && ln -s /bin/echo "$WORKDIR/other-bin/xaden"
   assert_fails "uninstall keeps a xaden link to something else" "$SCAFFOLD_ROOT/scripts/install.sh" --uninstall "$WORKDIR/other-bin"
@@ -175,30 +99,6 @@ test_xaden_command() {
   rm "$elsewhere/xaden-app/prompts/leftover.md-dist"
   assert "uninstall removes the link" "$SCAFFOLD_ROOT/scripts/install.sh" --uninstall "$bin"
   assert_fails "link gone after uninstall" test -L "$xaden"
-}
-
-# REQ-059: .claude/settings.json follows scaffold updates; a project's own edits are kept.
-test_settings_update() {
-  local newer="$WORKDIR/newer-settings" settings="$PROJECT/.claude/settings.json"
-  export_template "$SCAFFOLD_ROOT" "$newer"
-  edit_file "$newer/template/.claude/settings.json" 's/"Bash(git log:\*)"/"Bash(git log:*)", "Bash(git show:*)"/'
-  assert "update applies a new settings.json" "$newer/scripts/update-scaffold.sh" "$PROJECT" --apply
-  assert "unedited settings.json updated" grep -q 'git show' "$settings"
-  git -C "$PROJECT" reset -q --hard && git -C "$PROJECT" clean -qfdx
-
-  edit_file "$settings" 's/"Bash(git log:\*)"/"Bash(git log:*)", "Bash(make test:*)"/'
-  git -C "$PROJECT" commit -qn -am "chore: own permission"
-  assert "update applies with an edited settings.json" "$newer/scripts/update-scaffold.sh" "$PROJECT" --apply
-  assert "project's own permission kept" grep -q 'make test' "$settings"
-  assert "new settings offered for merging" grep -q 'git show' "$settings-dist"
-  git -C "$PROJECT" reset -q --hard HEAD~1 && git -C "$PROJECT" clean -qfdx
-
-  grep -v "$(printf '\t').claude/settings.json\$" "$PROJECT/.scaffold/manifest" >"$WORKDIR/manifest" &&
-    cp "$WORKDIR/manifest" "$PROJECT/.scaffold/manifest"
-  git -C "$PROJECT" commit -qn -am "chore: manifest from before settings.json was managed"
-  assert "update applies for an older project" "$newer/scripts/update-scaffold.sh" "$PROJECT" --apply
-  assert "older project's settings offered for merging" test -f "$settings-dist"
-  git -C "$PROJECT" reset -q --hard HEAD~1 && git -C "$PROJECT" clean -qfdx
 }
 
 # REQ-001 generation ignores a PROJECT_ROOT that the caller's environment already carries
@@ -239,23 +139,6 @@ test_command_dist() {
   assert "the new command text comes as -dist" grep -q 'Newer title' "$dir/$file-dist"
   assert "the -dist file is in the footprint, so remove takes it out" grep -qxF "file $file-dist" "$dir/$FOOTPRINT_FILE"
   assert "the template ignores -dist files" grep -qxF '*-dist' "$SCAFFOLD_ROOT/template/.gitignore"
-}
-
-# REQ-126: a project from before docs/rules/ and the short index gets both through the update
-test_rules_folder_update() {
-  local old="$WORKDIR/variants/old-rules" out
-  rm -rf "$old" && mkdir -p "$WORKDIR/variants" && cp -R "$PROJECT" "$old"
-  rm -rf "$old/docs/rules" "$old/docs/requirements/INDEX-full.md"
-  printf '# Requirements index\n\n| REQ-001 | job | must | draft | Describe the first job |\n' >"$old/docs/requirements/INDEX.md"
-  grep -v 'docs/rules/' "$old/.scaffold/manifest" >"$old/.scaffold/manifest.new" && mv "$old/.scaffold/manifest.new" "$old/.scaffold/manifest"
-  git -C "$old" add -A && git -C "$old" commit -q -m "chore: layout of an older Xaden" --no-verify
-  out="$("$SCAFFOLD_ROOT/scripts/update-scaffold.sh" "$old" --apply)"
-  assert "REQ-126 the update adds the rule files" grep -q "docs/rules/git.md" <<<"$out"
-  assert "REQ-126 the rule files are in the project" test -f "$old/docs/rules/git.md" -a -f "$old/docs/rules/requirements.md"
-  assert "REQ-126 the update regenerates the index and adds the full table" bash -c "test -f '$old/docs/requirements/INDEX-full.md' \
-    && ! grep -q 'Describe the first job.*Describe' '$old/docs/requirements/INDEX.md' && '$old/scripts/check-requirements.sh' >/dev/null 2>&1"
-  assert "REQ-126 the update leaves AGENTS.md under the budget and does not duplicate the rules" \
-    bash -c "test \"\$(wc -c <'$old/AGENTS.md')\" -le 10240 && ! grep -q '^- Conventional Commits' '$old/AGENTS.md'"
 }
 
 # REQ-118 the AIDD framework is switched on, checked and off again through its own CLI, pinned. The CLI is a stub
@@ -361,10 +244,5 @@ test_generation_ignores_project_root
 test_inbox
 test_worktrees_folder
 test_setup_and_commit_checks
-test_scaffold_update
-test_pack_script_removed
-test_update_safety
 test_xaden_command
-test_settings_update
-test_rules_folder_update
 test_aidd_framework

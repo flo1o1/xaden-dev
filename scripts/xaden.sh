@@ -41,12 +41,9 @@ Start and keep (any directory):
                      create a project in ./<name>, or in <dir>, with the xaden/ layout
   create --autopilot --stack python|node <name>
                      create it with the recommended setup after one confirmation
-  create --classic <name> [dir]
-                     create a project that keeps its own copy of the tooling (update it with `xaden update`)
   adopt [--scan|--plan]
                      add Xaden to the repository you are in, on a branch (scan and plan change nothing)
   remove             take Xaden out of the repository you are in
-  update [--apply]   bring a project created by `create` to this Xaden version (dry run without --apply)
   version            print the installed Xaden version
   upgrade [--check] [version]
                      update Xaden itself to the newest release or to <version> (asks first; older versions stay installed);
@@ -133,12 +130,12 @@ run_tool_script() {
   PROJECT_ROOT="$root" exec "$TOOLS/$script" "$@"
 }
 
-# report_leftover_dist <root>: names the <file>-dist and <file>.scaffold-new files an update left to merge (REQ-100).
+# report_leftover_dist <root>: names the <file>-dist files a pin left to merge (REQ-100).
 report_leftover_dist() {
   local file
   find "$1" \( -name .git -o -name node_modules -o -name .venv -o -name worktrees \) -prune -o \
-    -type f \( -name '*-dist' -o -name '*.scaffold-new' \) -print | sort | while IFS= read -r file; do
-    warn "merge or delete this leftover of an update: ${file#"$1"/}"
+    -type f -name '*-dist' -print | sort | while IFS= read -r file; do
+    warn "merge or delete this leftover of a pin: ${file#"$1"/}"
   done
 }
 
@@ -333,20 +330,10 @@ main() {
   [ "$#" -gt 0 ] && shift
   case "$command" in
     create)
-      if [ "${1:-}" = "--classic" ]; then
-        shift
-        [ -n "${1:-}" ] || die "usage: xaden create --classic <name> [dir]"
-        exec "$SCAFFOLD_ROOT/scripts/new-project.sh" "$1" "${2:-$PWD/$1}"
-      fi
       exec "$SCAFFOLD_ROOT/scripts/create.sh" "$@"
       ;;
     adopt) exec "$SCAFFOLD_ROOT/scripts/adopt.sh" "$@" ;;
     remove) exec "$SCAFFOLD_ROOT/scripts/adopt.sh" __remove "$@" ;;
-    update)
-      root="$(project_root)"
-      if is_adopted "$root"; then die "this project pins its Xaden version; move it with: xaden pin"; fi
-      exec "$SCAFFOLD_ROOT/scripts/update-scaffold.sh" "$root" "$@"
-      ;;
     version) tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION" && echo ;;
     help | -h | --help) usage ;;
     doctor) doctor_main ;;
