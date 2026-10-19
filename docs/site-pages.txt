@@ -11,7 +11,6 @@ docs/guide/admin/install-xaden.md
 docs/guide/admin/pin-one-version-per-project.md
 docs/guide/admin/requirements-and-platforms.md
 docs/guide/admin/uninstall.md
-docs/guide/admin/update-a-classic-project.md
 docs/guide/admin/update-xaden.md
 docs/guide/admin/verify-releases.md
 template/docs/security.md

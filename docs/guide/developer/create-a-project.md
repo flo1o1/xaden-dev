@@ -64,12 +64,6 @@ run with skipped checks ends with a warning, never a success sign.
 Autopilot never pushes, publishes or downloads anything, and a package added later needs its own approval. A folder that
 already holds code, a build file or history stops with a pointer to [Add Xaden to a repository](add-xaden-to-a-repository.md).
 
-## Keep the old layout
-
-`xaden create --classic my-app` creates a project that keeps its own copy of the scripts, prompts and guides, with Claude Code slash
-commands. You update it with `xaden update` (see [Update a classic project](../admin/update-a-classic-project.md)). New work should
-use the default layout.
-
 ## Next
 
 [Kick off with your assistant](kick-off-with-your-assistant.md).

@@ -31,7 +31,6 @@ the pages on https://xaden.dev. Nothing here assumes a particular person's machi
 - [Pin one Xaden version per project](docs/guide/admin/pin-one-version-per-project.md)
 - [Verify releases](docs/guide/admin/verify-releases.md)
 - [Optional tools and assistant plugins](template/docs/optional-tools.md)
-- [Update a classic project](docs/guide/admin/update-a-classic-project.md)
 - [Uninstall](docs/guide/admin/uninstall.md)
 
 ## Contributing

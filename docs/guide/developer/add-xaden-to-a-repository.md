@@ -109,12 +109,6 @@ xaden remove
 `xaden ignore-list` prints `xaden/`, `AGENTS.md` and, when present, `CLAUDE.md`, one per line, for `.dockerignore`, `.npmignore` and archive
 excludes.
 
-## A project with its own copy of the tooling
-
-A project created with `xaden create --classic` (it has a `.scaffold/` folder) moves to this layout with the same command. Its
-requirements, personas and reviews move into `xaden/`, the copied files you did not edit are removed, and the ones you edited stay and
-are listed.
-
 ## Working with assistants afterwards
 
 Claude Code, GitHub Copilot and Mistral Vibe users get a slash command for each prompt (`/xaden-kickoff`, `/xaden-feature`, `/xaden-bugfix` and so on), and

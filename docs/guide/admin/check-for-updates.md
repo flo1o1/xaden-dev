@@ -65,4 +65,3 @@ They, the commit hooks and the pre-commit checks never use the network.
 One request for the newest release goes to the GitHub release API, the same one `xaden pin --check` and `xaden upgrade --check` use. `npm outdated` and
 `pip list --outdated` contact the registries your project already uses. Nothing else leaves your machine.
 
-Projects created with `xaden create --classic` have no `xaden/xaden.conf`; use `XADEN_UPDATE_CHECK` there.

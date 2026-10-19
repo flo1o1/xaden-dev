@@ -2,28 +2,27 @@
 
 Read this before you trust a green result: which checks ran, which did not, and what you can change.
 
-A project made by `xaden create` (the classic layout) and a repository that adopted Xaden (the adopted layout) do not run the same
-checks. The classic layout has built-in checks for Python and Node. The adopted layout keeps your own tests and linters: it runs
-only the commands you map with `check.<kind>` in `xaden/xaden.conf`, plus Xaden's own checks.
+A project keeps your own tests and linters: Xaden runs only the commands you map with `check.<kind>` in `xaden/xaden.conf`,
+plus Xaden's own checks.
 
 ## The checks
 
-| Check | Classic project | Adopted project | If the tool is missing | Network | Pre-commit hook |
-|-------|-----------------|-----------------|------------------------|---------|-----------------|
-| Requirements format, traceability, documentation structure | yes | yes (no guides to check) | no tool | no | yes, except expired security exceptions |
-| `gitleaks` secret scan | yes | yes | skipped; fails with `--strict` and in CI | no | yes |
-| `semgrep` with local rules | yes | yes, rules from the pinned Xaden | skipped; fails with `--strict` and in CI | no | yes |
-| `shellcheck` on shell files | yes | yes, under the mode and baseline | skipped; fails with `--strict` and in CI | no | yes |
-| `actionlint` on workflows | yes, optional | yes, optional, under the mode and baseline | not run | no | yes |
-| `zizmor` on workflows | yes, optional | yes, optional, under the mode and baseline | not run | no | yes |
-| `jscpd` duplication | only with `.jscpd.json` | only with `.jscpd.json` | skipped | no | no |
-| `ruff` (Python lint and format) | built in, required | only what `check.lint` maps | fails | no | yes |
-| `mypy` (Python types) | built in, required | only what `check.typecheck` maps | fails | no | no |
-| `pytest` (Python tests) | built in, required | only what `check.test` maps | fails | no | no |
-| `npm run` (Node lint, typecheck, test) | built in, required | only what the same three keys map | fails | no | lint only |
-| `bandit` (Python security) | yes | **unless mapped**: `check.security` | skipped; fails with `--strict` and in CI | no | no |
-| `pip-audit` (Python dependencies) | yes | **unless mapped**: `check.audit` | skipped; fails with `--strict` and in CI | yes | no |
-| `npm audit` (Node dependencies) | yes | **unless mapped**: `check.audit` | skipped; fails with `--strict` and in CI | yes | no |
+| Check | Adopted project | If the tool is missing | Network | Pre-commit hook |
+|-------|-----------------|------------------------|---------|-----------------|
+| Requirements format, traceability, documentation structure | yes (no guides to check) | no tool | no | yes, except expired security exceptions |
+| `gitleaks` secret scan | yes | skipped; fails with `--strict` and in CI | no | yes |
+| `semgrep` with local rules | yes, rules from the pinned Xaden | skipped; fails with `--strict` and in CI | no | yes |
+| `shellcheck` on shell files | yes, under the mode and baseline | skipped; fails with `--strict` and in CI | no | yes |
+| `actionlint` on workflows | yes, optional, under the mode and baseline | not run | no | yes |
+| `zizmor` on workflows | yes, optional, under the mode and baseline | not run | no | yes |
+| `jscpd` duplication | only with `.jscpd.json` | skipped | no | no |
+| `ruff` (Python lint and format) | only what `check.lint` maps | fails | no | yes |
+| `mypy` (Python types) | only what `check.typecheck` maps | fails | no | no |
+| `pytest` (Python tests) | only what `check.test` maps | fails | no | no |
+| `npm run` (Node lint, typecheck, test) | only what the same three keys map | fails | no | lint only |
+| `bandit` (Python security) | **unless mapped**: `check.security` | skipped; fails with `--strict` and in CI | no | no |
+| `pip-audit` (Python dependencies) | **unless mapped**: `check.audit` | skipped; fails with `--strict` and in CI | yes | no |
+| `npm audit` (Node dependencies) | **unless mapped**: `check.audit` | skipped; fails with `--strict` and in CI | yes | no |
 
 A skipped check makes the run INCOMPLETE, never a success. The three audit rows are check kinds of an adopted project like `test` and
 `lint`: `check.audit` (every stack) and `check.security` (Bandit, Python only). `xaden adopt` finds an existing command (a Makefile
@@ -36,7 +35,7 @@ fails in `changed-files` and `strict` and warns in `advisory`.
 
 A new adoption expects the audits: `expect` names `audit` (and `security` for Python), so an unmapped one is a gap until you map it. An
 adoption from before keeps its `expect` line; `xaden upgrade` and `xaden pin` never add to it, so no run turns red by an update. Its full run
-prints a `NOT COVERED:` line for each check the classic layout runs for your stack and nothing
+prints a `NOT COVERED:` line for each check Xaden knows for your stack and nothing
 maps, and names the key that would map it:
 
 ```

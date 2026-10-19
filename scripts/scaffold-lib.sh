@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Scaffold-level helpers shared by new-project.sh and update-scaffold.sh. Source it.
+# Scaffold-level helpers shared by new-project.sh, create.sh and fetch.sh. Source it.
 # Requires template/scripts/lib.sh to be sourced first.
 
 # Files the scaffold owns in generated projects (prefix match when ending in "/").
