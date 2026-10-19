@@ -64,7 +64,7 @@ need_prerequisites() {
 pick_tools() {
   local conf=$1 override=$2 list name picked=""
   list="${override:-$(conf_get "$conf" assistants)}"
-  [ -n "$list" ] && [ "$list" != none ] || die "no assistant is recorded in xaden/xaden.conf; name them with --ai, for example --ai claude"
+  if [ -z "$list" ] || [ "$list" = none ]; then die "no assistant is recorded in xaden/xaden.conf; name them with --ai, for example --ai claude"; fi
   for name in $(printf '%s' "$list" | tr ',' ' '); do
     case " $AIDD_TOOLS " in
       *" $name "*) picked="$picked${picked:+,}$name" ;;
