@@ -35,7 +35,7 @@ A judgment on a skill's quality is therefore out of reach of this record.
 ## What Xaden lacks
 
 - An orchestrating skill that runs the whole cycle from one command (see the epic-loop idea in `inbox/2026-10-18-draft-right-sized-process.md`).
-- Token telemetry per task (`aidd-telemetry`); Xaden has `xaden context`, which only reports size.
+- Token telemetry per task (`aidd-telemetry`); Xaden has no token reporting; `xaden context` prints a consistency fingerprint of the rule files, not usage.
 - A CLI that translates one set of capabilities into the layouts of many tools beyond slash commands.
 
 ## What conflicts
