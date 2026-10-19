@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Checks the scaffold repository itself: its own requirements, the template's integrity,
 # shell lint, secret scan, SAST (local rules + rule tests) and the end-to-end smoke test.
-# Usage: [STRICT=1] scripts/check-scaffold.sh [--staged]   (STRICT=1: missing tools fail, as in CI)
+# Usage: [STRICT=1] [SMOKE=skip] scripts/check-scaffold.sh [--staged]   (STRICT=1: missing tools fail, as in CI)
+#   SMOKE=skip leaves out tests/smoke.sh (CI runs it area by area, REQ-114); everything else runs as usual
 #   (default)  full run incl. semgrep rule tests and tests/smoke.sh
 #   --staged   pre-commit run: staged files only, offline, no smoke test
 set -euo pipefail
@@ -71,7 +72,11 @@ if [ "$MODE" = "full" ]; then
   else
     record_missing_tool "semgrep rule tests" semgrep
   fi
-  run_tool "smoke test" "$ROOT/tests/smoke.sh"
+  if [ "${SMOKE:-}" = "skip" ]; then
+    info "smoke test skipped (SMOKE=skip)"
+  else
+    run_tool "smoke test" "$ROOT/tests/smoke.sh"
+  fi
 fi
 
 finish_checks

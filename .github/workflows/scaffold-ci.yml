@@ -14,8 +14,84 @@ concurrency:
   group: scaffold-ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# REQ-114: `plan` picks the smoke areas; each area runs as its own job (`smoke`), the offline checks run
+# in parallel (`fast`), and `check` is the gate the ruleset on main requires: `check (ubuntu-latest)` and
+# `check (macos-latest)`. It passes only when plan, fast and every area job passed.
 jobs:
-  check:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      areas: ${{ steps.areas.outputs.areas }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false # later steps run project code; keep the job token out of .git/config
+      - id: areas
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # A merge into main runs everything (REQ-088); a pull request runs what its change can affect.
+          selected=all
+          if [ "$EVENT_NAME" = pull_request ]; then
+            selected="$(scripts/select-smoke-areas.sh "origin/$BASE_REF" HEAD)" || selected=all
+          fi
+          [ -n "$selected" ] || selected=all
+          [ "$selected" != all ] || selected="$(tests/smoke.sh --list)"
+          areas="$(printf '%s\n' "$selected" | jq -R . | jq -sc .)"
+          echo "areas=$areas" >> "$GITHUB_OUTPUT"
+          echo "Smoke areas to run: $areas" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  smoke:
+    needs: plan
+    if: needs.plan.outputs.areas != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        area: ${{ fromJSON(needs.plan.outputs.areas) }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false # later steps run project code; keep the job token out of .git/config
+      - name: Install analysis tools (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          . .github/shellcheck.version
+          archive="shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          curl -fsSLO "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/${archive}"
+          echo "${SHELLCHECK_SHA256}  ${archive}" | sha256sum -c -
+          tar -xJf "$archive" && sudo install "shellcheck-v${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck
+          pipx install "semgrep==1.180.0"
+          pipx install "ruff==0.16.10"
+          archive="gitleaks_8.30.1_linux_x64.tar.gz"
+          curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/${archive}"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" gitleaks && sudo install gitleaks /usr/local/bin/gitleaks
+      - name: Install analysis tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install shellcheck semgrep ruff gitleaks # Homebrew versions; Linux job is the pinned reference
+      - name: Smoke area ${{ matrix.area }}
+        env:
+          AREA: ${{ matrix.area }}
+          GIT_AUTHOR_NAME: ci
+          GIT_AUTHOR_EMAIL: ci@example.invalid
+          GIT_COMMITTER_NAME: ci
+          GIT_COMMITTER_EMAIL: ci@example.invalid
+          SMOKE_REQUIRE_TOOLS: "1"
+          SMOKE_VERBOSE: "1" # full assertion log in CI; locally only failures and the total
+          STRICT: "1"
+        run: |
+          status=0
+          tests/smoke.sh "$AREA" || status=$?
+          echo "smoke area $AREA on $RUNNER_OS: $SECONDS s (exit $status)" | tee -a "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+  fast:
+    needs: plan
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -42,7 +118,7 @@ jobs:
       - name: Install analysis tools (macOS)
         if: runner.os == 'macOS'
         run: brew install shellcheck semgrep ruff gitleaks # Homebrew versions; Linux job is the pinned reference
-      - name: Scaffold checks incl. smoke test
+      - name: Scaffold checks without the smoke suite
         env:
           GIT_AUTHOR_NAME: ci
           GIT_AUTHOR_EMAIL: ci@example.invalid
@@ -51,6 +127,7 @@ jobs:
           SMOKE_REQUIRE_TOOLS: "1"
           SMOKE_VERBOSE: "1" # full assertion log in CI; locally only failures and the total
           STRICT: "1"
+          SMOKE: skip # the areas run in the smoke job
         run: scripts/check-scaffold.sh
       # The registry rules are not pinned on purpose: new rules catch new vulnerability patterns,
       # so a finding can appear without a code change (template/docs/security.md).
@@ -63,3 +140,26 @@ jobs:
           BEFORE_SHA: ${{ github.event.before }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: PROJECT_ROOT="$PWD" RULES_FILE="$PWD/template/AGENTS.md" template/scripts/verify-commits.sh --ci
+
+  # The gate. It runs on ubuntu for both names (it only reads job results); a failed or cancelled job of
+  # any system fails both. A skipped smoke job counts as passed only when the plan selected no areas.
+  check:
+    needs: [plan, fast, smoke]
+    if: always()
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every needed job passed
+        env:
+          PLAN: ${{ needs.plan.result }}
+          FAST: ${{ needs.fast.result }}
+          SMOKE: ${{ needs.smoke.result }}
+          AREAS: ${{ needs.plan.outputs.areas }}
+        run: |
+          echo "plan=$PLAN fast=$FAST smoke=$SMOKE areas=$AREAS"
+          [ "$PLAN" = success ] || { echo "plan did not pass" >&2; exit 1; }
+          [ "$FAST" = success ] || { echo "the offline checks did not pass" >&2; exit 1; }
+          if [ "$SMOKE" = skipped ] && [ "$AREAS" = '[]' ]; then exit 0; fi
+          [ "$SMOKE" = success ] || { echo "a smoke area did not pass (result: $SMOKE)" >&2; exit 1; }
