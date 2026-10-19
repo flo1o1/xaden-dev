@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 ## [Unreleased]
 
 ### Added
+- The rules tell the assistant to say when a session lost its coherence and to propose a fresh one, and the developer guide explains how to restart a session from the files (REQ-120, AIDD principle 10).
 - The rules tell the assistant to name which of scope, names, tests or context it will change before it retries, and to say what it changed (REQ-119, AIDD principle 09).
 - A guide page maps the AI-Driven Development Manifesto's 4 values and 12 principles to Xaden's rules, with a status for each and what is not met yet, and a check that fails when a row is missing or cites a rule that does not exist (REQ-116). The page says Xaden implements the manifesto and claims no certification.
 - A decision record weighs the AIDD reference framework (`docs/decisions/0001-aidd-reference-framework.md`, accepted): copy nothing into Xaden, and offer it to projects as an opt-in add-on at a pinned version (REQ-115, REQ-118).

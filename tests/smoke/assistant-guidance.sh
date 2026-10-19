@@ -162,6 +162,9 @@ test_judgment_stays_human() {
   assert "REQ-111 a second failed attempt is a signal" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "second failed attempt.*inspect scope, context, assumptions and tests"' _ "$section"
   assert "REQ-119 a retry names what changes first and says what changed" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "Before you retry, name which of scope, names, tests or context you will change, and say in one line what you changed"' _ "$section"
   assert "REQ-119 the rule is in the scaffold template too" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "name which of scope, names, tests or context you will change"' _ "$SCAFFOLD_ROOT/template/AGENTS.md"
+  assert "REQ-120 a session that lost coherence is named and restarted from the files" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "lost coherence: say so and propose a fresh session.*xaden context.*enough to resume"' _ "$section"
+  assert "REQ-120 the rule is in the scaffold template too" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "lost coherence: say so and propose a fresh session"' _ "$SCAFFOLD_ROOT/template/AGENTS.md"
+  assert "REQ-120 the guide explains how to restart a session" grep -q '^## Restart a session' "$SCAFFOLD_ROOT/docs/guide/developer/build-features.md"
   assert "REQ-111 lessons go to docs/decisions after approval" bash -c 'tr -s "[:space:]" " " <<<"$1" | grep -q "docs/decisions/.*only after the user approves"' _ "$section"
   for name in feature bugfix refactor; do
     assert "REQ-111 the $name prompt points to the section" grep -q 'AGENTS.md §9 (Judgment stays with the human)' "$PROJECT/prompts/$name.md"

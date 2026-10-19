@@ -35,7 +35,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-112 | job | should | done | Merge and site-follow-up rules live in each repository's own rule file |
 | REQ-115 | job | should | done | Xaden weighs the AIDD reference framework before it takes anything from it |
 | REQ-119 | job | should | done | The assistant fixes scope, names, tests and context before it retries |
-| REQ-120 | job | could | approved | I can tell when a session lost its coherence and restart it from the files |
+| REQ-120 | job | could | done | I can tell when a session lost its coherence and restart it from the files |
 
 ## Project setup (`project-setup`)
 

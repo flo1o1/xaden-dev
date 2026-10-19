@@ -206,6 +206,9 @@ Details and examples: `docs/clean-code.md` (same IDs).
 - A second failed attempt at the same problem is a signal, not a reason to push harder: stop, report, and
   inspect scope, context, assumptions and tests before a third. Before you retry, name which of scope, names,
   tests or context you will change, and say in one line what you changed (REQ-119).
+- A session that repeats itself, drops a rule or contradicts an approved requirement has lost coherence: say so and
+  propose a fresh session. The rule files, `xaden context` and the requirement and branch you name are enough to
+  resume (REQ-120).
 - A decision or lesson that later work needs: propose an entry in `docs/decisions/` and write it only after
   the user approves.
 
