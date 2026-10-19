@@ -3,7 +3,7 @@ id: REQ-114
 type: job
 epic: quality-gates
 priority: should
-status: in-progress
+status: done
 updated: 2026-10-19
 ---
 

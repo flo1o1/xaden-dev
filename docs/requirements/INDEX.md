@@ -99,7 +99,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-105 | job | should | done | I see which checks my project's layout runs and which it does not |
 | REQ-107 | job | must | done | An adopted project's CI rejects commits whose references are wrong, even when the hooks were skipped |
 | REQ-109 | job | must | done | The CI commit check reads a range it can trust, and judges only the commits since the adoption |
-| REQ-114 | job | should | in-progress | A pull request waits only for the checks its change can affect |
+| REQ-114 | job | should | done | A pull request waits only for the checks its change can affect |
 
 ## Releases and documentation (`release-and-docs`)
 
