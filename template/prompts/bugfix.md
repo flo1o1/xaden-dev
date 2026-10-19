@@ -2,7 +2,7 @@
 title: Fix a bug
 type: prompt
 status: stable
-version: 1.2.0
+version: 1.3.0
 works-with: [claude-code, chatgpt, local-llm]
 tags: [prompt, development]
 ---
@@ -18,6 +18,7 @@ Fix the root cause, prove it with a regression test.
 
 ## Steps
 1. Read `AGENTS.md` (CC rule details: `docs/clean-code.md`). Find which `REQ-nnn` the correct behaviour belongs to; if none, ask me.
+   Then state the size as AGENTS.md §9 (Size the task) says; on a small change skip the steps it names.
 2. Reproduce with a failing test. Do not change production code before the test fails for the right reason.
 3. Find the root cause (state it in one sentence). No symptom patches. **Approval point** if
    the fix touches more than 2 files, changes a requirement or adds a dependency.
