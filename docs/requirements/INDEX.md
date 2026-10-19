@@ -33,6 +33,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-110 | job | must | done | A human owns and merges every change an assistant prepares |
 | REQ-111 | job | must | done | The assistant explains what it did and says what it cannot judge |
 | REQ-112 | job | should | done | Merge and site-follow-up rules live in each repository's own rule file |
+| REQ-115 | job | should | approved | Xaden weighs the AIDD reference framework before it takes anything from it |
 
 ## Project setup (`project-setup`)
 
