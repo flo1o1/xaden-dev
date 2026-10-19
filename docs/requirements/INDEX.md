@@ -95,7 +95,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-107 | job | must | done | An adopted project's CI rejects commits whose references are wrong, even when the hooks were skipped |
 | REQ-109 | job | must | done | The CI commit check reads a range it can trust, and judges only the commits since the adoption |
 | REQ-114 | job | should | approved | A pull request waits only for the checks its change can affect |
-| REQ-121 | job | should | approved | A change to adoption waits for three short smoke areas, not one long one |
+| REQ-121 | job | should | done | A change to adoption waits for three short smoke areas, not one long one |
 
 ## Releases and documentation (`release-and-docs`)
 
