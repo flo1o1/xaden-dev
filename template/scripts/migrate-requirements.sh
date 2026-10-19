@@ -87,6 +87,7 @@ main() {
   write_readme
   rm "$TABLE"
   render_index "$DIR" >"$DIR/$INDEX_FILE"
+  render_index "$DIR" full >"$DIR/$INDEX_FULL_FILE"
   info "next: rewrite each TODO job story, sort requirements into epics, run scripts/req.sh index"
   info "and scripts/check-requirements.sh, then commit docs/requirements/"
 }

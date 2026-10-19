@@ -136,10 +136,12 @@ check_release_blockers() {
   fi
 }
 
-# check_index: INDEX.md must equal what req.sh index would write.
+# check_index: INDEX.md and INDEX-full.md must equal what req.sh index would write.
 check_index() {
-  if ! render_index "$DIR" | cmp -s - "$DIR/$INDEX_FILE"; then
-    warn "$INDEX_FILE is missing or stale; run scripts/req.sh index"
+  # compared as text, not through a pipe: cmp stops at the first difference and would break the pipe
+  if [ "$(render_index "$DIR")" != "$(cat "$DIR/$INDEX_FILE" 2>/dev/null)" ] ||
+    [ "$(render_index "$DIR" full)" != "$(cat "$DIR/$INDEX_FULL_FILE" 2>/dev/null)" ]; then
+    warn "$INDEX_FILE or $INDEX_FULL_FILE is missing or stale; run scripts/req.sh index"
     FAILURES=$((FAILURES + 1))
   fi
 }
