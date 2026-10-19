@@ -28,3 +28,20 @@ When I open a pull request that changes little, I want CI to run the checks that
 - Given a pull request with several pushes, then the cancel rule of REQ-093 still holds, and a cancelled run is not a pass
 - Given the root `AGENTS.md`, then "Smoke areas" and "Landing a change on main" describe the selection and say that a change to the selection or to the workflow itself runs all areas
 - Given a repository that is private, then the minutes of a run count against the plan (macOS minutes count ten times); the public repository pays nothing, and the selection exists for speed, not for cost
+
+## Measured
+
+Before (REQ-093, one serial job per system): the step "Scaffold checks incl. smoke test" took 585 s on ubuntu and 801 s on macOS, so a run took 10 to 13 minutes.
+
+After REQ-114, REQ-121 and the mapping of common files, a full run (every area, both systems; the run of pull request #51 on 2026-10-19) took about 5 minutes of wall time. The longest jobs, ubuntu / macOS:
+
+- `adoption-setup` 2m50s / 4m42s
+- `release-and-docs` 2m58s / 4m28s
+- `quality-gates` 3m00s / 2m47s
+- `adoption-versions` 1m55s / 3m41s
+- `adoption-checks` 1m42s / 3m25s
+- `project-setup` 1m51s / 2m42s
+- `security` 54s / 1m24s, `requirements` 38s / 49s, `assistant-guidance` 33s / 1m04s
+- `fast` 1m08s / 51s, the two `check` gates 2 s each
+
+The area `adoption` alone took 5m46s / 9m29s before REQ-121. Times on macOS vary by about 30 seconds between runs.
