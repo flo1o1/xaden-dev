@@ -3,7 +3,7 @@ id: REQ-117
 type: job
 epic: release-and-docs
 priority: should
-status: approved
+status: done
 updated: 2026-10-19
 ---
 

@@ -252,6 +252,21 @@ test_aidd_mapping() {
   assert_fails_with "a missing license link fails" "license link" "$check" "$copy"
 }
 
+# REQ-117: the README names AI-Driven Development, links the mapping page and no longer calls Xaden "vibe" coding.
+test_readme_wording() {
+  assert "the README says AI-Driven Development" grep -q 'starter for AI-Driven Development' "$SCAFFOLD_ROOT/README.md"
+  assert "the README links the manifesto mapping" grep -qF 'docs/guide/developer/xaden-and-the-aidd-manifesto.md' "$SCAFFOLD_ROOT/README.md"
+  assert "the README does not call Xaden vibe coding" test -z "$(grep -i 'vibe) coding\|vibe coding' "$SCAFFOLD_ROOT/README.md" || true)"
+}
+
+# REQ-115: the assessment of the AIDD reference framework is a decision record that stays proposed until approved.
+test_aidd_decision_record() {
+  local record="$SCAFFOLD_ROOT/docs/decisions/0001-aidd-reference-framework.md"
+  assert "the decision record exists with a status" grep -qE '^- Status: (proposed|accepted)' "$record"
+  assert "the decision record names license and maturity" grep -q 'MIT' "$record"
+  assert "the archive leaves out the maintainer decision records" grep -qx '/docs/decisions export-ignore' "$SCAFFOLD_ROOT/.gitattributes"
+}
+
 # The guides link to each other with relative paths (the website turns them into page links): every target exists.
 test_guide_links() {
   local file link target broken=""
@@ -348,6 +363,8 @@ test_guide_links
 test_site_pages
 test_third_party
 test_aidd_mapping
+test_readme_wording
+test_aidd_decision_record
 test_scaffold_release_failures
 test_scaffold_release_check_option
 test_sign_release
