@@ -52,6 +52,7 @@ info "check mode: $MODE"
 run_tool "scaffold requirements" "$TEMPLATE_SCRIPTS/check-requirements.sh" --release "$ROOT/docs/requirements" # REQ-049: no TODO: left
 run_tool "scaffold traceability" env PROJECT_ROOT="$ROOT" "$TEMPLATE_SCRIPTS/check-traceability.sh"
 run_tool "site pages" "$ROOT/scripts/check-site-pages.sh" "$ROOT" # REQ-064
+run_tool "third-party credits" "$ROOT/scripts/check-third-party.sh" "$ROOT" # REQ-113
 run_tool "release archive" "$ROOT/scripts/check-release-archive.sh" "$REAL_ROOT" # REQ-094
 run_tool "smoke areas" "$ROOT/scripts/check-smoke-areas.sh" "$ROOT" # REQ-092
 run_tool "template requirements format" env PROJECT_ROOT="$ROOT/template" ALLOW_TEMPLATE_PLACEHOLDERS=1 "$TEMPLATE_SCRIPTS/check-requirements.sh"

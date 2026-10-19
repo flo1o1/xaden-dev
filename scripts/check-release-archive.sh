@@ -12,7 +12,7 @@ ROOT="${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "$ROOT/template/scripts/lib.sh"
 
 # Every file of an archive matches one of these (extended regular expressions on the full path).
-SHIPPED_PATHS='^(CHANGELOG\.md|GETTING-STARTED\.md|LICENSE|README\.md|VERSION|release-signers)$
+SHIPPED_PATHS='^(CHANGELOG\.md|GETTING-STARTED\.md|LICENSE|README\.md|THIRD-PARTY\.md|VERSION|release-signers)$
 ^docs/assets/[^/]+$
 ^docs/guide/(admin|contributing|developer)/[^/]+\.md$
 ^template/
