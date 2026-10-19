@@ -228,6 +228,45 @@ test_third_party() {
   assert "the file says the Semgrep rules are not LGPL" grep -q 'Semgrep Rules License v1.0.*not LGPL' "$SCAFFOLD_ROOT/THIRD-PARTY.md"
 }
 
+# REQ-116: the AIDD mapping page has a row for each value and principle, cites only rules that exist and claims no certification.
+test_aidd_mapping() {
+  local copy="$WORKDIR/aidd-mapping" check="$SCAFFOLD_ROOT/scripts/check-aidd-mapping.sh" page ghost="REQ-""999"
+  assert "the real mapping page passes" "$check" "$SCAFFOLD_ROOT"
+  page="$copy/docs/guide/developer/xaden-and-the-aidd-manifesto.md"
+  mkdir -p "$copy/docs/guide/developer" "$copy/template/scripts"
+  cp "$SCAFFOLD_ROOT/template/scripts/lib.sh" "$SCAFFOLD_ROOT/template/scripts/layout.sh" "$SCAFFOLD_ROOT/template/scripts/gate.sh" "$copy/template/scripts/"
+  cp -R "$SCAFFOLD_ROOT/docs/requirements" "$copy/docs/" && cp -R "$SCAFFOLD_ROOT/template/AGENTS.md" "$copy/template/" && cp "$SCAFFOLD_ROOT/THIRD-PARTY.md" "$copy/"
+  cp "$SCAFFOLD_ROOT/docs/guide/developer/xaden-and-the-aidd-manifesto.md" "$page"
+  assert "a copy of the page passes" "$check" "$copy"
+  grep -v '^| P09 |' "$SCAFFOLD_ROOT/docs/guide/developer/xaden-and-the-aidd-manifesto.md" >"$page"
+  assert_fails_with "a missing principle row fails" "P09" "$check" "$copy"
+  sed 's/| partly | A human approves/| mostly | A human approves/' "$SCAFFOLD_ROOT/docs/guide/developer/xaden-and-the-aidd-manifesto.md" >"$page"
+  assert_fails_with "an unknown status fails" "mostly" "$check" "$copy"
+  sed "s/REQ-110, REQ-112/REQ-110, $ghost/" "$SCAFFOLD_ROOT/docs/guide/developer/xaden-and-the-aidd-manifesto.md" >"$page"
+  assert_fails_with "a cited requirement that does not exist fails" "$ghost" "$check" "$copy"
+  sed "s#\`template/AGENTS.md\`, REQ-045#\`template/nothing.md\`, REQ-045#" "$SCAFFOLD_ROOT/docs/guide/developer/xaden-and-the-aidd-manifesto.md" >"$page"
+  assert_fails_with "a cited path that does not exist fails" "template/nothing.md" "$check" "$copy"
+  { cat "$SCAFFOLD_ROOT/docs/guide/developer/xaden-and-the-aidd-manifesto.md"; printf 'Xaden is officially certified.\n'; } >"$page"
+  assert_fails_with "a certification claim fails" "certified" "$check" "$copy"
+  sed 's#https://creativecommons.org/licenses/by/4.0/#x#' "$SCAFFOLD_ROOT/docs/guide/developer/xaden-and-the-aidd-manifesto.md" >"$page"
+  assert_fails_with "a missing license link fails" "license link" "$check" "$copy"
+}
+
+# REQ-117: the README names AI-Driven Development, links the mapping page and no longer calls Xaden "vibe" coding.
+test_readme_wording() {
+  assert "the README says AI-Driven Development" grep -q 'starter for AI-Driven Development' "$SCAFFOLD_ROOT/README.md"
+  assert "the README links the manifesto mapping" grep -qF 'docs/guide/developer/xaden-and-the-aidd-manifesto.md' "$SCAFFOLD_ROOT/README.md"
+  assert "the README does not call Xaden vibe coding" test -z "$(grep -i 'vibe) coding\|vibe coding' "$SCAFFOLD_ROOT/README.md" || true)"
+}
+
+# REQ-115: the assessment of the AIDD reference framework is a decision record that stays proposed until approved.
+test_aidd_decision_record() {
+  local record="$SCAFFOLD_ROOT/docs/decisions/0001-aidd-reference-framework.md"
+  assert "the decision record exists with a status" grep -qE '^- Status: (proposed|accepted)' "$record"
+  assert "the decision record names license and maturity" grep -q 'MIT' "$record"
+  assert "the archive leaves out the maintainer decision records" grep -qx '/docs/decisions export-ignore' "$SCAFFOLD_ROOT/.gitattributes"
+}
+
 # The guides link to each other with relative paths (the website turns them into page links): every target exists.
 test_guide_links() {
   local file link target broken=""
@@ -323,6 +362,9 @@ test_bump_version
 test_guide_links
 test_site_pages
 test_third_party
+test_aidd_mapping
+test_readme_wording
+test_aidd_decision_record
 test_scaffold_release_failures
 test_scaffold_release_check_option
 test_sign_release
