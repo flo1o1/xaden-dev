@@ -32,6 +32,7 @@ check_project_files() {
   run_tool "requirements format" "$SCRIPTS/check-requirements.sh"
   run_tool "documentation structure" "$SCRIPTS/check-docs.sh"
   run_tool "requirement traceability" "$SCRIPTS/check-traceability.sh"
+  run_tool "deferred work rows complete" "$SCRIPTS/check-deferred-work.sh"
   # Date-dependent: full run only, so a commit's hook result does not change with the day.
   if [ "$MODE" = "full" ]; then run_tool "security exceptions not expired" "$SCRIPTS/check-security-exceptions.sh"; fi
 }
