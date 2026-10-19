@@ -140,16 +140,18 @@ enable_main() {
   release=$AIDD_DEFAULT_RELEASE
   need_prerequisites
   tools="$(pick_tools "$conf" "$override")"
-  # the pin must be enforceable: the pinned CLI has to take a release tag
-  aidd_run "$cli" setup --help 2>/dev/null | grep -q -- '--release' ||
-    die "the framework's CLI $cli cannot be held to release $release (its setup has no --release option); nothing was installed"
   plan="npx @ai-driven-dev/cli@$cli setup --source remote --ai $tools --plugins recommended --release $release --yes"
   info "Xaden will run the framework's installer, pinned (source: $AIDD_SOURCE, license: MIT):"
   echo "  $plan"
+  echo "  On your yes, npx first downloads the CLI and asks it whether it can hold the release (setup --help); then it installs."
   echo "  It writes .aidd/ and the assistant's own settings into this project, downloads the plugins of release $release"
   echo "  and, for Claude Code, registers the marketplace 'aidd-framework' in your Claude Code user settings (shared by every"
   echo "  project on this machine; 'xaden aidd disable' leaves that registration, like the framework's own clean)."
   ask "Install the AIDD framework now?" || die "nothing was installed (it needs your yes in a terminal)"
+  # the pin must be enforceable: the pinned CLI has to take a release tag. Running its --help is running the
+  # framework's CLI (npx downloads it), so it waits for the yes above (REQ-128).
+  aidd_run "$cli" setup --help 2>/dev/null | grep -q -- '--release' ||
+    die "the framework's CLI $cli cannot be held to release $release (its setup has no --release option); nothing was installed"
   before="$(changed_files "$root")"
   (cd "$root" && aidd_run "$cli" setup --source remote --ai "$tools" --plugins recommended --release "$release" --yes) ||
     die "the framework's installer failed; see its output above. Undo what it wrote with: xaden aidd disable"
@@ -203,12 +205,12 @@ pin_main() {
   old_release="$(conf_get "$conf" aidd-release)"
   [ "$cli" != "$old_cli" ] || [ "$release" != "$old_release" ] || { ok "the project is pinned to CLI $cli, release $release already"; return 0; }
   need_prerequisites
-  aidd_run "$cli" setup --help 2>/dev/null | grep -q -- '--release' || die "the framework's CLI $cli cannot be held to a release (its setup has no --release option)"
   base="$(git -C "$root" symbolic-ref -q --short HEAD)" || die "check out a branch first"
   branch="chore/pin-aidd-$release"
   worktree="$(dirname "$root")/$(basename "$root")-pin-aidd-$release"
   [ ! -e "$worktree" ] || die "$worktree exists already; remove it first (git worktree remove)"
-  ask "Run the framework's installer, CLI $cli at release $release, on a new branch? It downloads from $AIDD_SOURCE" || die "nothing was changed"
+  ask "Run the framework's installer, CLI $cli at release $release, on a new branch? npx downloads the CLI first (setup --help), then it installs from $AIDD_SOURCE" || die "nothing was changed"
+  aidd_run "$cli" setup --help 2>/dev/null | grep -q -- '--release' || die "the framework's CLI $cli cannot be held to a release (its setup has no --release option); nothing was changed"
   git -C "$root" worktree add -q -b "$branch" "$worktree" "$base"
   (cd "$worktree" && aidd_run "$cli" setup --source remote --ai "$(conf_get "$conf" aidd-assistants)" --plugins recommended --release "$release" --yes) ||
     die "the framework's installer failed in $worktree; remove it with: git worktree remove --force $worktree"
