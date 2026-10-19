@@ -115,6 +115,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-104 | job | should | done | Contributors find working on Xaden in a Contributing section, apart from using it |
 | REQ-113 | job | should | approved | Xaden credits the tools it runs and says under which license |
 | REQ-116 | job | should | approved | I see how Xaden maps to the AIDD Manifesto, including what it does not meet |
+| REQ-117 | job | should | approved | Xaden calls itself AI-Driven Development, not vibe coding |
 
 ## Requirements (`requirements`)
 
