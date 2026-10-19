@@ -3,7 +3,7 @@ id: REQ-126
 type: quality
 epic: assistant-guidance
 priority: must
-status: approved
+status: done
 updated: 2026-10-19
 ---
 
