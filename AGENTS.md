@@ -49,7 +49,7 @@ gh pr merge --merge --delete-branch      # the maintainer, when both checks are 
 ```
 
 The maintainer merges (REQ-110): the assistant opens the pull request and stops, unless the person tells it in that
-session to merge that one (REQ-112). Never ask for a merge before both CI checks are green. With several named
+session to merge that one (REQ-112). Never ask for a merge before both CI checks are green. `mergeable: UNKNOWN` is not ready: fetch `main` and read `gh pr view <n> --json mergeable` right before asking, because another merge can make the pull request conflict while CI runs. With several named
 pull requests, merge in dependency order and re-check `gh pr view <n> --json mergeable` before each; if an earlier
 merge makes the next one conflict, merge `main` into that branch, push, wait for CI and ask again. A failed merge
 (conflicts, red CI) is fixed at its cause and reported; never use `--admin`. Before opening the pull request run the checks "Before the pull request" names above (REQ-093); CI runs the
