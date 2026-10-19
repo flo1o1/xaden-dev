@@ -176,6 +176,10 @@ show_tips() {
 
 if [ "$MODE" = "staged" ]; then
   enter_staged_snapshot "$ROOT" # checks see exactly the staged content (REQ-020)
+  # Xaden's own files present but untracked (a foreign repository): read them from the working tree.
+  if [ ! -e "$SNAPSHOT/$TEAM_DIR_NAME/$CONF_NAME" ] && [ -f "$GIT_REPO/$TEAM_DIR_NAME/$CONF_NAME" ]; then
+    ln -s "$GIT_REPO/$TEAM_DIR_NAME" "$SNAPSHOT/$TEAM_DIR_NAME"
+  fi
   ROOT="$SNAPSHOT"
   layout_init "$ROOT"
 fi
