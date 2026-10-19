@@ -3,7 +3,7 @@ id: REQ-124
 type: job
 epic: assistant-guidance
 priority: must
-status: approved
+status: done
 updated: 2026-10-19
 ---
 
@@ -28,6 +28,6 @@ When an epic has several approved requirements, I want the assistant to work thr
 
 Approved 2026-10-19 for release 0.6.0 with REQ-123 and REQ-125. Build it after REQ-123 is merged: the loop stops on a size change, which needs that rule.
 
-Open questions for the approval: does the loop live in a prompt only, or does it need a script (`scripts/epic.sh`) that lists the next approved requirement of an epic? A script is cheap; unattended running is not, because the approval points exist for a reason (`template/AGENTS.md` §10). Does the loop open the pull requests itself or leave them to the person?
+Decided at implementation (2026-10-19): the loop lives in a prompt only (`template/prompts/epic.md`, `/xaden-epic`); no `scripts/epic.sh`, because a script invites unattended running, and the approval points exist for a reason (`template/AGENTS.md` §10). The assistant opens each pull request itself; the go to the list covers it, and the merge stays with the person.
 
 Idea sources, in shape only and no code: BMAD-METHOD skills `bmad-build-auto` (one iteration is one unit with a frozen intent; Xaden's equivalent is the approved requirement) and `bmad-retrospective` (compares the acceptance criteria with the diff and writes action items as drafts only). The opt-in AIDD framework add-on (REQ-118, decision 0001) has its own one-command cycle; this loop stays prompt-only and tool-agnostic, and where both are installed the project's rules win (decision 0001, point 5).

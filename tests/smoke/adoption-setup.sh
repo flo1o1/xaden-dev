@@ -182,7 +182,7 @@ test_claude_commands() {
   assert "an existing command file is not overwritten" test "$(cat "$wt/.claude/commands/xaden-feature.md")" = "my own feature command"
   assert "a skipped file is not in the footprint" bash -c '! grep -q "commands/xaden-feature.md" "$1"' _ "$wt/xaden/footprint.txt"
   assert "the footprint lists a created file" grep -qx 'file .claude/commands/xaden-bugfix.md' "$wt/xaden/footprint.txt"
-  assert "adopt creates exactly the new command files" test "$(git -C "$wt" diff --name-only main HEAD | grep -c '^\.claude/commands/')" -eq 9
+  assert "adopt creates exactly the new command files" test "$(git -C "$wt" diff --name-only main HEAD | grep -c '^\.claude/commands/')" -eq 10
 
   x_in "$wt" remove --yes
   assert "remove deletes the files Xaden created" test ! -e "$wt/.claude/commands/xaden-bugfix.md" -a ! -e "$wt/.claude/commands/xaden-release.md"
@@ -225,8 +225,8 @@ test_other_assistant_commands() {
   assert "an existing Copilot prompt is not overwritten" test "$(cat "$wt/.github/prompts/xaden-feature.prompt.md")" = "my own feature prompt"
   assert "a skipped file is not in the footprint" bash -c '! grep -q "prompts/xaden-feature.prompt.md" "$1"' _ "$wt/xaden/footprint.txt"
   assert "the footprint lists a created skill once, although Vibe and Codex share it" test "$(grep -cx 'file .agents/skills/xaden-bugfix/SKILL.md' "$wt/xaden/footprint.txt")" -eq 1
-  assert "adopt creates exactly the new Copilot prompts" test "$(git -C "$wt" diff --name-only main HEAD | grep -c '^\.github/prompts/')" -eq 9
-  assert "adopt creates one skill for each prompt" test "$(git -C "$wt" diff --name-only main HEAD | grep -c '^\.agents/skills/')" -eq 10
+  assert "adopt creates exactly the new Copilot prompts" test "$(git -C "$wt" diff --name-only main HEAD | grep -c '^\.github/prompts/')" -eq 10
+  assert "adopt creates one skill for each prompt" test "$(git -C "$wt" diff --name-only main HEAD | grep -c '^\.agents/skills/')" -eq 11
   assert "without Claude there are no Claude files" test ! -e "$wt/CLAUDE.md" -a ! -e "$wt/.claude"
 
   x_in "$wt" remove --yes

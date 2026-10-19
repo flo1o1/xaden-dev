@@ -7,11 +7,8 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Assistant guidance (`assistant-guidance`)
 
-32 done, 1 dropped.
+33 done, 1 dropped.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-124 | job | must | approved | One approved epic can be built, checked and reviewed requirement by requirement |
 
 ## Project setup (`project-setup`)
 
