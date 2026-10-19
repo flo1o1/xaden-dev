@@ -22,7 +22,7 @@ changed a file, the new version is written next to yours as `<file>-dist`. Proje
 
 ## Update from before 0.6.0: rules folder and short index
 
-`xaden update --apply` adds `docs/rules/` (the rule sections that moved out of `AGENTS.md`, REQ-126) and regenerates `docs/requirements/INDEX.md`
+`xaden update --apply` adds `docs/rules/` (the rule sections that moved out of `AGENTS.md`) and regenerates `docs/requirements/INDEX.md`
 in its short form, with the full table beside it in `INDEX-full.md`; both are staged with the rest. If you edited `AGENTS.md`, your file stays and the
 new one comes as `AGENTS.md-dist`: until you merge it, your `AGENTS.md` still holds the old text that `docs/rules/` now repeats.
 
