@@ -53,6 +53,7 @@ takes precedence over them (§10). Install from the named sources only.
 | [claude-mem](https://github.com/thedotmack/claude-mem) | Memory of past sessions: records sessions, compresses them with a model and adds relevant memories to new ones. License: Apache-2.0 | `/plugin marketplace add thedotmack/claude-mem`, then `/plugin install claude-mem` |
 | [impeccable](https://github.com/pbakaus/impeccable) | For a web UI: design guidance, critique and 59 deterministic checks for AI-generated frontend design (`npx impeccable detect` runs them without a model). License: Apache-2.0 | `/plugin marketplace add pbakaus/impeccable`, then `/plugin install impeccable@impeccable` |
 | [obsidian-skills](https://github.com/kepano/obsidian-skills) | Obsidian Flavored Markdown, Bases, JSON Canvas and the Obsidian CLI, for editing the prompt library in `prompts/` (an Obsidian vault). License: MIT | `/plugin marketplace add kepano/obsidian-skills`, then `/plugin install obsidian@obsidian-skills` |
+| [AI-Driven Dev framework](https://github.com/ai-driven-dev/framework) | The full AI-Driven Development workflow: skills and agents from spec to review, next to Xaden's rules and checks. Needs Node 22.12 or later. License: MIT | `xaden aidd enable` (pinned version; asks before it downloads) |
 
 Before installing one, read its notes:
 

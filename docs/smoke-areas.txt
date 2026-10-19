@@ -5,7 +5,7 @@
 # A changed path in no line below, or in the *all* line, runs every area in CI.
 adoption|scripts/xaden.sh scripts/fetch.sh template/scripts/lib.sh
 assistant-guidance|template/scripts/persona.sh template/scripts/check-deferred-work.sh template/AGENTS.md template/prompts/ GETTING-STARTED.md docs/guide/admin/ docs/guide/contributing/
-project-setup|scripts/new-project.sh scripts/update-scaffold.sh scripts/install.sh scripts/setup.sh
+project-setup|scripts/new-project.sh scripts/update-scaffold.sh scripts/install.sh scripts/setup.sh scripts/aidd.sh
 quality-gates|template/scripts/check.sh scripts/check-scaffold.sh template/scripts/verify-commits.sh template/scripts/verify-refs.sh
 requirements|template/scripts/req.sh template/scripts/check-requirements.sh template/scripts/check-traceability.sh docs/requirements/INDEX.md
 security|template/scripts/check-security-exceptions.sh template/.semgrep/
