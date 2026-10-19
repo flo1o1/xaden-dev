@@ -65,6 +65,19 @@ The assistant loads `AGENTS.md` and the requirements index in every session, so 
 - `xaden req list --epic <epic> --status <status>` filters the list, and `xaden req show REQ-nnn --brief` prints the goal and the acceptance criteria only.
 - A hook or check that enforces a moved rule names the file that holds it in its message.
 
+### Find the requirements for the files you change
+
+In a large project the assistant need not read every requirement (REQ-127). Add an optional `paths:` line to the front matter of a requirement, with files, folders or globs separated by commas:
+
+```yaml
+paths: src/billing/, tests/billing_*.py, docs/export.md
+```
+
+- `xaden req for <path>...` lists the requirements whose `paths:` cover the files you plan to change: an entry ending in `/` covers the folder, a glob such as `tests/*.py` matches the whole path (a `*` also crosses `/`), anything else is one file. A requirement without `paths:` never matches.
+- `xaden req find <word>...` lists the requirements whose title or text holds every word, one line each.
+- `xaden check` warns, and does not fail, about a `paths:` entry that matches no file or folder, because a stale entry hides its requirement.
+- A folder can have its own `AGENTS.md` with its purpose, conventions, public API and where its tests are; the assistant reads it when it works there. A `CLAUDE.md` next to it holding the line `@AGENTS.md` lets Claude Code load it. `xaden adopt` adds none of these; the team writes them, one folder at a time.
+
 A trigger line in `AGENTS.md` can be ignored by a model; the hooks and checks catch the result at commit or at "done", not before.
 
 ## Build a whole epic

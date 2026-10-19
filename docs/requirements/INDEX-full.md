@@ -41,7 +41,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-124 | job | must | done | One approved epic can be built, checked and reviewed requirement by requirement |
 | REQ-125 | job | must | done | A review finding that is not fixed in this change is recorded, not lost in the chat |
 | REQ-126 | quality | must | done | The always-loaded context stays small however many requirements a project has |
-| REQ-127 | job | must | approved | Assistants load only the requirements and conventions that touch the code they change |
+| REQ-127 | job | must | done | Assistants load only the requirements and conventions that touch the code they change |
 
 ## Project setup (`project-setup`)
 

@@ -86,6 +86,7 @@ test_adopt_and_remove() {
   assert "the existing workflow is untouched" cmp -s "$repo/.github/workflows/ci.yml" "$worktree/.github/workflows/ci.yml"
   assert "CLAUDE.md is one line for Claude users" test "$(cat "$worktree/CLAUDE.md")" = "@AGENTS.md"
   assert "AGENTS.md keeps the team's own text" grep -q 'Skip tests when in a hurry' "$worktree/AGENTS.md"
+  assert "REQ-127 adopt adds no scoped AGENTS.md in a folder" test -z "$(cd "$worktree" && find . -name AGENTS.md -not -path './AGENTS.md' -not -path './.git/*' | head -n 1)"
   assert "AGENTS.md gets one marked block" test "$(grep -c 'xaden:begin' "$worktree/AGENTS.md")" = "1"
   assert "team content is plain Markdown plus one settings file (REQ-070)" test -f "$worktree/xaden/xaden.conf" -a -f "$worktree/xaden/requirements/INDEX.md" -a -d "$worktree/xaden/personas" -a -d "$worktree/xaden/security-reviews"
   assert "no editor specific files" test -z "$(find "$worktree/xaden" -name '.obsidian' -o -name '.vscode')"

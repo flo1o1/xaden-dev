@@ -7,11 +7,8 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Assistant guidance (`assistant-guidance`)
 
-33 done, 1 dropped.
+34 done, 1 dropped.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-127 | job | must | approved | Assistants load only the requirements and conventions that touch the code they change |
 
 ## Project setup (`project-setup`)
 
