@@ -51,13 +51,13 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-009 | quality | must | done | Run on Linux and macOS; Windows optional |
 | REQ-012 | job | must | done | Usable by people other than the author |
 | REQ-013 | job | must | done | Separate scaffold maintenance files from the project template |
-| REQ-017 | job | should | done | Existing projects can adopt newer scaffold versions |
+| REQ-017 | job | should | dropped | Existing projects can adopt newer scaffold versions |
 | REQ-018 | job | must | done | Project generation copies only reviewed template content |
 | REQ-026 | job | should | done | Local drop zone for files that must never be committed |
 | REQ-038 | job | should | done | The scaffold is published under the MIT license |
 | REQ-045 | job | must | done | The scaffold depends on no personal tools, skills or accounts |
 | REQ-056 | job | should | done | Run Xaden as one command from anywhere |
-| REQ-059 | job | should | done | Existing projects receive assistant permission updates without losing their edits |
+| REQ-059 | job | should | dropped | Existing projects receive assistant permission updates without losing their edits |
 | REQ-066 | job | must | done | A team adds Xaden to an existing repository without changing its build |
 | REQ-067 | job | should | done | Adopting Xaden shows exactly what it would change before it changes anything |
 | REQ-069 | job | should | done | Xaden reuses the repository's tests, linters, hooks and CI instead of replacing them |
