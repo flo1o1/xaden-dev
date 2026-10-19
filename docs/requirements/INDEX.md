@@ -33,6 +33,9 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-110 | job | must | done | A human owns and merges every change an assistant prepares |
 | REQ-111 | job | must | done | The assistant explains what it did and says what it cannot judge |
 | REQ-112 | job | should | done | Merge and site-follow-up rules live in each repository's own rule file |
+| REQ-115 | job | should | done | Xaden weighs the AIDD reference framework before it takes anything from it |
+| REQ-119 | job | should | approved | The assistant fixes scope, names, tests and context before it retries |
+| REQ-120 | job | could | approved | I can tell when a session lost its coherence and restart it from the files |
 | REQ-122 | job | should | done | Assistants cite a requirement with its epic, title and ID |
 
 ## Project setup (`project-setup`)
@@ -68,6 +71,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-099 | job | should | done | A project moves to another Xaden version with `xaden pin` |
 | REQ-100 | job | must | done | Files I edited are kept and the new version comes as `-dist` |
 | REQ-108 | job | should | done | Adopting Xaden never switches the reference rule off without telling the team |
+| REQ-118 | job | should | approved | I can switch on the AIDD framework in a Xaden project with one command |
 
 ## Quality gates (`quality-gates`)
 
@@ -115,6 +119,8 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-103 | job | should | done | A team can require that every Xaden it runs came from a signed release |
 | REQ-104 | job | should | done | Contributors find working on Xaden in a Contributing section, apart from using it |
 | REQ-113 | job | should | approved | Xaden credits the tools it runs and says under which license |
+| REQ-116 | job | should | done | I see how Xaden maps to the AIDD Manifesto, including what it does not meet |
+| REQ-117 | job | should | done | Xaden calls itself AI-Driven Development, not vibe coding |
 
 ## Requirements (`requirements`)
 

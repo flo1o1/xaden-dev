@@ -107,7 +107,7 @@ or to the workflow therefore runs all areas. `SMOKE=skip scripts/check-scaffold.
 | `quality-gates` | epic `quality-gates` | `template/scripts/check.sh`, `scripts/check-scaffold.sh`, `template/scripts/verify-commits.sh`, `template/scripts/verify-refs.sh` |
 | `requirements` | epic `requirements` | `template/scripts/req.sh`, `template/scripts/check-requirements.sh`, `template/scripts/check-traceability.sh` |
 | `security` | epic `security` | `template/scripts/check-security-exceptions.sh`, `template/.semgrep/` |
-| `release-and-docs` | epic `release-and-docs` | `scripts/release-scaffold.sh`, `template/scripts/release.sh`, `scripts/sign-release.sh`, `scripts/check-site-pages.sh`, `scripts/check-third-party.sh`, `scripts/check-release-archive.sh`, `.gitattributes` |
+| `release-and-docs` | epic `release-and-docs` | `scripts/release-scaffold.sh`, `template/scripts/release.sh`, `scripts/sign-release.sh`, `scripts/check-site-pages.sh`, `scripts/check-third-party.sh`, `scripts/check-aidd-mapping.sh`, `scripts/check-release-archive.sh`, `.gitattributes` |
 
 ## Using the project commands here (REQ-055)
 

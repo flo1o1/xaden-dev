@@ -15,6 +15,7 @@
 /tests export-ignore
 /docs/requirements export-ignore
 /docs/security-reviews export-ignore
+/docs/decisions export-ignore
 /docs/release-signing.md export-ignore
 /docs/site-pages.txt export-ignore
 /docs/smoke-areas.txt export-ignore

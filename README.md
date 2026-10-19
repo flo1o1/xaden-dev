@@ -2,9 +2,11 @@
 
 # Xaden
 
-A tool-agnostic starter for AI-assisted ("vibe") coding that keeps quality, security and
+A tool-agnostic starter for AI-Driven Development that keeps quality, security and
 traceability under control. Works with Claude Code, ChatGPT, Aider, Cline, Continue,
 Cursor, Codex, Copilot and local models (Ollama, LM Studio).
+
+How Xaden maps to the [AI-Driven Development Manifesto](docs/guide/developer/xaden-and-the-aidd-manifesto.md), and where it does not.
 
 Everything a new project receives lives in [`template/`](template/). Paths in the table are
 relative to it.
