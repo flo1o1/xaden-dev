@@ -24,6 +24,9 @@ This repository **is the scaffold**. Read this before changing it.
   when the change touches no row of the area table in "Smoke areas" (for example the workflow or
   `scripts/check-scaffold.sh` itself).
 - Template changes must work on Linux and macOS (bash 3.2, POSIX awk/sed/tar, no GNU-only flags).
+- Size budget (REQ-126): `template/AGENTS.md` and the `xaden/RULES.md` an adopted project renders from it are each at most 10240 bytes.
+  The adopted file comes out longer, because its paths are rewritten (100 bytes over once). A rule added there needs another one
+  shortened or moved to `template/docs/rules/`; `tests/smoke/assistant-guidance.sh` and `adoption-setup.sh` fail when either is over.
 - Release archives hold no maintainer files (REQ-094): a new root-level path that is not for users needs an
   `export-ignore` line in `.gitattributes`; `scripts/check-release-archive.sh` lists what an archive may hold.
 - Never put scaffold-maintenance content into `template/`, and never put project content at the root.
@@ -47,6 +50,9 @@ gh pr create --base main --head <type>/<slug>
 gh pr checks --watch                     # one run of each check per commit
 gh pr merge --merge --delete-branch      # the maintainer, when both checks are green
 ```
+
+Stacked pull requests: a pull request whose base is another unmerged branch is closed when that branch is deleted by its merge
+(`--delete-branch`), and GitHub then refuses a new base. Base such a change on `main` once the first one is merged, or open a replacement.
 
 The maintainer merges (REQ-110): the assistant opens the pull request and stops, unless the person tells it in that
 session to merge that one (REQ-112). Never ask for a merge before both CI checks are green. `mergeable: UNKNOWN` is not ready: fetch `main` and read `gh pr view <n> --json mergeable` right before asking, because another merge can make the pull request conflict while CI runs. With several named
