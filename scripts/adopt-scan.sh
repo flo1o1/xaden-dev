@@ -92,6 +92,14 @@ scan_python() {
   if repo_has "$repo" pytest.ini || repo_grep "$repo" '^\[tool\.pytest|^\[tool:pytest\]|^\[pytest\]' $project_files tox.ini; then
     set_command test "pytest"
   fi
+  # unittest, only with evidence: a test file in tests/ or test/ that imports it. pytest (above) wins; `python3 -m`
+  # puts the root on sys.path, so `discover -s <dir>` runs from the repository root.
+  local dir
+  for dir in tests test; do
+    if [ -z "$SCAN_TEST" ] && grep -Eqs '^(import unittest|from unittest )' "$repo/$dir"/test*.py; then
+      set_command test "python3 -m unittest discover -s $dir"
+    fi
+  done
   # shellcheck disable=SC2086
   if repo_has "$repo" ruff.toml || repo_has "$repo" .ruff.toml || repo_grep "$repo" '^\[tool\.ruff' $project_files; then
     set_command lint "ruff check ."
