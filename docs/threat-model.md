@@ -46,9 +46,9 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
   branch (pre-commit branch guard); in CI `EVENT_NAME`, `BASE_REF`,
   `BEFORE_SHA`, `DEFAULT_BRANCH`, filled from GitHub event data.
 - Release archives of Xaden itself from GitHub (`fetch.sh`, only after a person's yes) and the release API
-  (`xaden pin --check` and `xaden upgrade --check`, same). The update check (REQ-084) asks the same API without a yes each time, but only when
+  (`xaden pin --check` and `xaden upgrade --check`, same). The update check (REQ-084, run as `xaden upgrade --check --if-due`, REQ-130) asks the same API without a yes each time, but only when
   the person set `update-check` in `xaden/xaden.conf` or `XADEN_UPDATE_CHECK` (off by default); it also runs `npm outdated` and
-  `pip list --outdated` in the project. Its result is cached in `.git/xaden-update-check` and printed by `doctor` and
+  `pip list --outdated` in the project (`upgrade --check` asks for a yes and runs them too). Its result is cached in `.git/xaden-update-check` and printed by `doctor` and
   `context-status.sh`, which an assistant reads: names are filtered to package-name characters before they are cached.
 - Downloaded tools in CI: gitleaks archive, semgrep and ruff from PyPI, GitHub Actions, Homebrew.
 - `inbox/`: files dropped by the user, untrusted by definition.

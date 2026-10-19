@@ -350,6 +350,27 @@ test_update_check() {
   PATH="$(path_without curl)" XADEN_LATEST_URL="file://$latest" x_in "$worktree" doctor
   assert "doctor started no check" test ! -e "$cache"
 
+  # REQ-130: one command, one verb
+  stub_tool "$stubs" npm $'Package Current Wanted Latest\nleft-pad 1.0.0 1.3.0 1.3.0\nbig-lib 1.4.0 1.4.0 2.0.0\nnew-lib MISSING 1.0.0 3.0.0'
+  x_answers y "$worktree" upgrade --check
+  assert "upgrade --check in a project reports the newest Xaden" grep -q '9\.9\.7' "$XOUT"
+  assert "upgrade --check lists the outdated dependencies, majors marked" grep -q 'Dependencies: npm: left-pad, big-lib (major), new-lib$' "$XOUT"
+  assert "upgrade --check changes nothing" test ! -e "$cache"
+  conf_set "$conf" update-check off
+  x_answers y "$worktree" upgrade --check
+  assert "upgrade --check checks although the setting is off" grep -q '^Dependencies' "$XOUT"
+  conf_set "$conf" update-check 1d
+  x_in "$worktree" upgrade --check --if-due
+  assert "upgrade --check --if-due fills the cache without a word" test "$XRC" -eq 0 -a -s "$cache" -a ! -s "$XOUT"
+  x_in "$worktree" update-check --now
+  assert "update-check names the new form" grep -q 'xaden upgrade --check' "$XOUT"
+  x_in "$worktree" update-check --if-due
+  assert "update-check --if-due stays silent" test "$XRC" -eq 0 -a ! -s "$XOUT"
+  x_in "$worktree" help
+  assert "help marks update-check as deprecated" grep -q 'deprecated: use .xaden upgrade --check' "$XOUT"
+  x_answers y "$WORKDIR" upgrade --check
+  assert "outside a project upgrade --check reports the Xaden line only" bash -c '! grep -q "^Dependencies" "$1"' _ "$XOUT"
+
   # the update is reported, never applied; user-owned files stay
   local releases="$WORKDIR/update-releases" base_commit
   fake_release "$releases" 9.9.9

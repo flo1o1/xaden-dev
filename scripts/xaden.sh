@@ -48,7 +48,8 @@ Start and keep (any directory):
   remove             take Xaden out of the repository you are in
   update [--apply]   bring a project created by `create` to this Xaden version (dry run without --apply)
   version            print the installed Xaden version
-  upgrade [--check]  update Xaden itself to the newest release (asks first; older versions stay installed)
+  upgrade [--check]  update Xaden itself to the newest release (asks first; older versions stay installed);
+                     --check only reports: the newest Xaden and, in a project, its outdated dependencies
   help               show this list
 
 Inside a project that adopted Xaden:
@@ -57,7 +58,7 @@ Inside a project that adopted Xaden:
   pin [--check] [version]
                      move the project to another Xaden version on a branch for a pull request
   update-check [--now]
-                     look for a newer Xaden and outdated dependencies (the setting update-check decides whether and how often)
+                     deprecated: use `xaden upgrade --check` (the setting update-check still decides how often --if-due looks)
   rules              regenerate xaden/RULES.md from the pinned version
   preset <python|node>
                      add Xaden's preset for a stack and map its checks

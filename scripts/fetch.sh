@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # The only script of Xaden that talks to the network (REQ-072), and the version changes built on it.
 # Usage: xaden fetch <version>             install the version this project pins, after you confirm
-#        xaden upgrade [--check]           update Xaden itself: install the newest release, switch `current` (REQ-097)
+#        xaden upgrade [--check [--if-due]] update Xaden itself: install the newest release, switch `current` (REQ-097);
+#                                          --check only reports Xaden and the project's outdated dependencies (REQ-130)
 #        xaden pin [--check] [version]     move the project to another Xaden on a branch (REQ-071, REQ-099)
-#        xaden update-check [--if-due|--now] look for a newer Xaden and outdated dependencies (REQ-084)
+#        xaden update-check [--if-due|--now] deprecated: use `xaden upgrade --check` (REQ-084, REQ-130)
 # Nothing downloads without a person's yes: the question shows version, source and checksum, ends
 # the output, and anything but yes means no. Without a terminal nothing downloads and the command
 # exits with code 3 and prints the command to run. A yes is not remembered. A download is installed
@@ -359,12 +360,13 @@ upgrade_main() {
 # `current` to it (REQ-097). Download, signature and checksum are install_release's; the switch is the
 # last step, so any failure leaves the old version active.
 self_upgrade_main() {
-  local check_only=0 target="" arg installed
+  local check_only=0 target="" arg installed root question
   for arg in "$@"; do
     case "$arg" in
       --check) check_only=1 ;;
+      --if-due) update_check_main --if-due; return ;;
       --self) ;;
-      -*) die "usage: xaden upgrade [--check] [version]" ;;
+      -*) die "usage: xaden upgrade [--check [--if-due]] [version]" ;;
       *) target=$arg ;;
     esac
   done
@@ -374,11 +376,16 @@ self_upgrade_main() {
       warn "No terminal, so Xaden did not look for a newer release. Run 'xaden upgrade --check' in a terminal, or name the version: xaden upgrade <version>"
       exit "$EXIT_NO_TERMINAL"
     fi
-    ask "Look up the newest Xaden release on github.com? Nothing else is sent." || { echo "Nothing was looked up."; exit 1; }
+    root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+    [ "$check_only" = 1 ] && [ -f "$root/xaden/xaden.conf" ] || root=""
+    question="Look up the newest Xaden release on github.com? Nothing else is sent."
+    [ -z "$root" ] || question="Look up the newest Xaden release on github.com and ask npm and pip which dependencies are outdated? Nothing else is sent."
+    ask "$question" || { echo "Nothing was looked up."; exit 1; }
     target="$(latest_version)"
     [ -n "$target" ] || die "could not read the newest version from $LATEST_URL"
     if [ "$check_only" = 1 ]; then
       if [ "$target" = "$installed" ]; then ok "Xaden $installed is the newest release"; else info "Xaden $installed is installed, newest release is $target (xaden upgrade)"; fi
+      [ -z "$root" ] || outdated_dependencies "$root"
       return 0
     fi
   fi
@@ -400,13 +407,23 @@ self_upgrade_main() {
   changelog_between "$(versions_dir)/$target/CHANGELOG.md" "$installed" "$target"
 }
 
+# outdated_names: reads "name current newest" lines and prints the names as "a, b (major)". A name that is no
+# package name is left out; (major) marks a newest version with a higher major number (REQ-130).
+outdated_names() {
+  awk '$1 ~ /^[A-Za-z0-9@\/._-]+$/ {
+    split($2, current, "."); split($3, newest, ".")
+    printf "%s%s%s", separator, $1, ($2 ~ /^[0-9]/ && newest[1] + 0 > current[1] + 0) ? " (major)" : ""
+    separator = ", "
+  } END { if (separator != "") print "" }'
+}
+
 # outdated_dependencies <root>: one line about the project's own dependencies. Reports only; never
 # updates anything. shortcut: npm and pip only, no timeout around them; add more stacks on request.
 outdated_dependencies() {
   local root=$1 parts="" names
   if [ -f "$root/package.json" ]; then
     if command -v npm >/dev/null 2>&1; then
-      names="$(cd "$root" && { npm outdated || true; } 2>/dev/null | awk 'NR > 1 { print $1 }' | { grep -E '^[A-Za-z0-9@/._-]+$' || true; } | paste -sd, - | sed 's/,/, /g')"
+      names="$(cd "$root" && { npm outdated || true; } 2>/dev/null | awk 'NR > 1 { print $1, $2, $4 }' | outdated_names)"
       parts="npm: ${names:-up to date}"
     else
       parts="npm: not checked (npm is not installed)"
@@ -414,7 +431,7 @@ outdated_dependencies() {
   fi
   if [ -f "$root/pyproject.toml" ] || ls "$root"/requirements*.txt >/dev/null 2>&1; then
     if command -v pip >/dev/null 2>&1; then
-      names="$(cd "$root" && { pip list --outdated --format=freeze || true; } 2>/dev/null | sed 's/==.*//' | { grep -E '^[A-Za-z0-9@/._-]+$' || true; } | paste -sd, - | sed 's/,/, /g')"
+      names="$(cd "$root" && { pip list --outdated --format=columns || true; } 2>/dev/null | awk 'NR > 2 { print $1, $2, $3 }' | outdated_names)"
       parts="${parts:+$parts; }pip: ${names:-up to date}"
     else
       parts="${parts:+$parts; }pip: not checked (pip is not installed)"
@@ -434,6 +451,7 @@ update_check_main() {
     --now) mode=now ;;
     *) die "usage: xaden update-check [--if-due|--now]" ;;
   esac
+  [ "$mode" = due ] || warn "xaden update-check is deprecated; use: xaden upgrade --check (xaden upgrade --check --if-due for scripts)"
   root="$(git rev-parse --show-toplevel 2>/dev/null)" || die "run this inside a project (no git repository here)"
   conf="$root/xaden/xaden.conf"
   setting="$(update_check_setting "$conf")"
@@ -474,5 +492,5 @@ case "$command_name" in
   upgrade) upgrade_main "$@" ;;
   pin) pin_main "$@" ;;
   update-check) update_check_main "$@" ;;
-  *) die "usage: fetch.sh fetch <version> | upgrade [--check] [version] | pin [--check] [version] | update-check [--if-due|--now]" ;;
+  *) die "usage: fetch.sh fetch <version> | upgrade [--check [--if-due]] [version] | pin [--check] [version] | update-check [--if-due|--now]" ;;
 esac

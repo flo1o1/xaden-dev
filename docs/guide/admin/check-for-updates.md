@@ -31,23 +31,29 @@ export XADEN_UPDATE_CHECK=7d
 ## Look now
 
 ```bash
-xaden update-check
+xaden upgrade --check
 ```
 
-- `xaden update-check`: checks now, whatever the interval, and prints the result. While the setting is `off` it refuses; add `--now` to look anyway.
-- `xaden update-check --if-due`: checks only when the interval has passed, prints nothing and exits 0 when the network is down.
+- `xaden upgrade --check`: asks, checks now whatever the interval and whatever the setting, and prints the result. It changes nothing, not even the cache.
+  Outside a project it reports the `Xaden` line only.
+- `xaden upgrade --check --if-due`: checks only when the interval has passed, writes the cache, prints nothing and exits 0 when the network is down.
+  The setting decides here: `off` means no check.
+- `xaden update-check` is the old name of the same thing. It still works, says so on stderr, and goes away in a later release.
+  The setting `update-check` and `XADEN_UPDATE_CHECK` keep their names.
 
 ## What it reports
 
 ```text
 Xaden: pinned 0.2.3, installed 0.2.3, newest 0.3.0 (move the project with: xaden pin 0.3.0)
-Dependencies: npm: left-pad; pip: up to date
+Dependencies: npm: left-pad, react (major); pip: up to date
 ```
 
 - The `Xaden` line compares the version the project pins with the newest release on github.com. Move the project with
   `xaden pin`, on a branch and through a pull request ([Pin one Xaden version per project](pin-one-version-per-project.md)).
 - The `Dependencies` line lists packages that `npm outdated` or `pip list --outdated` report for the project. Those updates stay yours:
   `xaden pin` never touches `package.json`, lockfiles or `requirements-dev.txt`.
+- `(major)` marks a package whose newest version has a higher major number than the installed one. Such an update can break your project:
+  read its release notes and update it in a pull request with your tests.
 - A tool that is not installed shows as `not checked`, never as up to date.
 
 The result is cached in the repository's git folder (`.git/xaden-update-check`), so it is never committed and every worktree shares it.
