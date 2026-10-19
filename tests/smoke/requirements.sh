@@ -162,8 +162,38 @@ test_context_budget_index() {
   assert_fails_with "REQ-126 a stale full table is rejected" 'stale' "$PROJECT/scripts/check-requirements.sh" "$big/docs/requirements"
 }
 
+# REQ-127 requirements are found by the files a change touches, and by words, without reading them all
+test_scoped_lookup() {
+  local scoped="$WORKDIR/scoped-project" req="$PROJECT/scripts/req.sh" check="$PROJECT/scripts/check-requirements.sh"
+  mkdir -p "$scoped/docs/requirements/billing" "$scoped/src/billing" "$scoped/tests" "$scoped/legacy"
+  printf '# Billing\n\n## Goal\n\nWhen I bill, I want invoices, so I can get paid.\n' >"$scoped/docs/requirements/billing/EPIC.md"
+  scoped_requirement() { # <id> <title> <paths line or empty> <text>
+    printf -- '---\nid: %s\ntype: job\nepic: billing\npriority: should\nstatus: done\nupdated: 2026-10-19\n%s---\n\n# %s\n\n## Job\n\nWhen I close a month, I want %s, so I can send it.\n\n## Acceptance criteria\n\n- Given a month, when I close it, then it is done.\n' \
+      "$1" "$3" "$2" "$4" >"$scoped/docs/requirements/billing/$1-$(printf '%s' "$2" | tr -c 'a-z\n' '-' | cut -c1-20).md"
+  }
+  scoped_requirement REQ-001 "Export invoices" $'paths: src/billing/, tests/*.py\n' "a PDF of all invoices"
+  scoped_requirement REQ-002 "Read the old ledger" $'paths: legacy/ledger.csv, ./nothing/here.c\n' "the ledger"
+  scoped_requirement REQ-003 "Print receipts" "" "a receipt for each payment"
+  touch "$scoped/src/billing/pdf.py" "$scoped/tests/test_pdf.py" "$scoped/legacy/ledger.csv"
+  PROJECT_ROOT="$scoped" "$req" index >/dev/null
+  assert "REQ-127 req.sh for matches a file below a folder entry" bash -c "[ \"\$(PROJECT_ROOT='$scoped' '$req' for src/billing/pdf.py)\" = 'REQ-001 [done, should] Export invoices' ]"
+  assert "REQ-127 req.sh for matches a glob entry" bash -c "PROJECT_ROOT='$scoped' '$req' for tests/test_pdf.py | grep -q '^REQ-001 '"
+  assert "REQ-127 req.sh for matches a file entry and a ./ path" bash -c "PROJECT_ROOT='$scoped' '$req' for ./legacy/ledger.csv | grep -q '^REQ-002 '"
+  assert "REQ-127 req.sh for names each requirement once for several files" bash -c "test \"\$(PROJECT_ROOT='$scoped' '$req' for src/billing/pdf.py tests/test_pdf.py | wc -l)\" -eq 1"
+  assert "REQ-127 a requirement without paths never matches" bash -c "! PROJECT_ROOT='$scoped' '$req' for src/billing/pdf.py tests/test_pdf.py legacy/ledger.csv | grep -q REQ-003"
+  assert "REQ-127 a folder name is no prefix match of a longer name" bash -c "test -z \"\$(PROJECT_ROOT='$scoped' '$req' for src/billing-old/x.py)\""
+  assert "REQ-127 req.sh find lists requirements holding every word, ignoring case" bash -c "[ \"\$(PROJECT_ROOT='$scoped' '$req' find INVOICES pdf)\" = 'REQ-001 [done, should] Export invoices' ]"
+  assert "REQ-127 req.sh find prints one line, not the file" bash -c "test \"\$(PROJECT_ROOT='$scoped' '$req' find ledger | wc -l)\" -eq 1"
+  assert_fails_with "REQ-127 req.sh for needs a path" 'usage: scripts/req.sh for' env PROJECT_ROOT="$scoped" "$req" for
+  assert "REQ-127 a stale paths entry is named and only warns" bash -c "out=\"\$(PROJECT_ROOT='$scoped' '$check' '$scoped/docs/requirements' 2>&1)\"; \
+    printf '%s' \"\$out\" | grep -q 'REQ-002: paths entry \"nothing/here.c\" matches no file or folder' && ! printf '%s' \"\$out\" | grep -q 'REQ-001: paths' && PROJECT_ROOT='$scoped' '$check' '$scoped/docs/requirements' >/dev/null 2>&1"
+  assert "REQ-127 req.sh new leaves paths out" bash -c "PROJECT_ROOT='$scoped' '$req' new billing job 'Refund a payment' >/dev/null && ! grep -q '^paths:' '$scoped'/docs/requirements/billing/REQ-004-*.md"
+  assert "REQ-127 the session start asks for req.sh for and a folder's own AGENTS.md" bash -c "grep -q 'req.sh for <files you plan to change>' '$PROJECT/AGENTS.md' && grep -q 'In a folder with its own .AGENTS.md., read that too' '$PROJECT/AGENTS.md'"
+}
+
 test_job_stories
 test_requirement_files
 test_requirements_migration
 test_traceability
 test_context_budget_index
+test_scoped_lookup

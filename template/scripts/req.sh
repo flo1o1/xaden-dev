@@ -2,6 +2,8 @@
 # Looks up and creates requirements so nobody has to quote them from memory (REQ-047).
 # Usage: scripts/req.sh list [--epic <epic>] [--status <status>]   one line per requirement
 #        scripts/req.sh show REQ-nnn [--brief]        the requirement file; --brief: goal and criteria only
+#        scripts/req.sh for <path>...                 the requirements whose "paths:" line matches a file or folder
+#        scripts/req.sh find <word>...                the requirements whose title or text holds every word
 #        scripts/req.sh new <epic> <job|quality> "<title>"   creates the next REQ-nnn as draft
 #        scripts/req.sh index                         rewrites docs/requirements/INDEX.md and INDEX-full.md
 set -euo pipefail
@@ -35,6 +37,57 @@ list_requirements() {
   [ -z "$status" ] || case " $REQUIREMENT_STATUSES " in *" $status "*) ;; *) die "status must be one of: $REQUIREMENT_STATUSES" ;; esac
   requirement_records "$DIR" | LC_ALL=C sort | awk -F'\t' -v epic="$epic" -v status="$status" \
     '(epic == "" || $5 == epic) && (status == "" || $2 == status) { printf "%s [%s, %s] %s\n", $1, $2, $3, $6 }'
+}
+
+# path_matches <entry> <path>: true when a "paths:" entry covers a repository path. An entry that ends
+# in / or names a folder covers everything below it; an entry with * ? [ is a glob over the whole path
+# (a * also crosses /); anything else is one file (REQ-127).
+path_matches() {
+  local entry=$1 path=$2
+  entry="${entry#./}"
+  path="${path#./}"
+  path="${path#"$ROOT"/}"
+  [ -n "$entry" ] || return 1
+  case "$entry" in
+    *[\*\?\[]*)
+      # shellcheck disable=SC2254 # the entry is a glob on purpose
+      case "$path" in $entry) return 0 ;; esac
+      return 1 ;;
+  esac
+  entry="${entry%/}"
+  case "$path" in "$entry" | "$entry"/*) return 0 ;; esac
+  return 1
+}
+
+# requirements_for <path>...: "ID [status, priority] title" of each requirement whose "paths:" line
+# matches one of the paths; a requirement without "paths:" never matches (REQ-127).
+requirements_for() {
+  [ $# -gt 0 ] || die "usage: scripts/req.sh for <path>..."
+  local id status priority title paths entry path rest
+  requirement_records "$DIR" | LC_ALL=C sort | while IFS=$'\t' read -r id status priority _ _ title _ paths; do
+    [ -n "$paths" ] || continue
+    rest="$paths,"
+    while [ -n "$rest" ]; do
+      entry="${rest%%,*}"
+      rest="${rest#*,}"
+      entry="$(printf '%s' "$entry" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+      for path in "$@"; do
+        if path_matches "$entry" "$path"; then printf '%s [%s, %s] %s\n' "$id" "$status" "$priority" "$title"; rest=""; break; fi
+      done
+    done
+  done
+}
+
+# find_requirements <word>...: "ID [status, priority] title" of each requirement whose file holds every
+# word, ignoring case; it never prints a whole file (REQ-127).
+find_requirements() {
+  [ $# -gt 0 ] || die "usage: scripts/req.sh find <word>..."
+  local id status priority title path word hit
+  requirement_records "$DIR" | LC_ALL=C sort | while IFS=$'\t' read -r id status priority _ _ title path _; do
+    hit=1
+    for word in "$@"; do grep -qiF -- "$word" "$path" || { hit=0; break; }; done
+    if [ "$hit" = 1 ]; then printf '%s [%s, %s] %s\n' "$id" "$status" "$priority" "$title"; fi
+  done
 }
 
 # show_requirement <REQ-nnn> [--brief]: prints the path and the content of one requirement; with
@@ -80,7 +133,9 @@ write_index() {
 case "${1:-}" in
   list) shift; list_requirements "$@" ;;
   show) show_requirement "${2:-}" "${3:-}" ;;
+  for) shift; requirements_for "$@" ;;
+  find) shift; find_requirements "$@" ;;
   new) new_requirement "${2:-}" "${3:-}" "${4:-}" ;;
   index) write_index && info "wrote ${DIR#"$ROOT"/}/$INDEX_FILE" ;;
-  *) die "usage: scripts/req.sh list [--epic <epic>] [--status <status>] | show REQ-nnn [--brief] | new <epic> <job|quality> \"<title>\" | index" ;;
+  *) die "usage: scripts/req.sh list [--epic <epic>] [--status <status>] | show REQ-nnn [--brief] | for <path>... | find <word>... | new <epic> <job|quality> \"<title>\" | index" ;;
 esac

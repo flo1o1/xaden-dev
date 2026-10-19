@@ -28,7 +28,8 @@ requirement_files() {
 }
 
 # requirement_records <requirements-dir>: one tab-separated line per requirement file:
-# id, status, priority, type, epic, title, path. Fields missing in a file are empty.
+# id, status, priority, type, epic, title, path, paths (the optional "paths:" line, REQ-127).
+# Fields missing in a file are empty.
 # shellcheck disable=SC2016 # single-quoted awk program, not shell
 requirement_records() {
   local files
@@ -36,8 +37,8 @@ requirement_records() {
   [ -n "$files" ] || return 0
   printf '%s\n' "$files" | tr '\n' '\0' | xargs -0 awk '
     function flush() {
-      if (path != "") printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", \
-        field["id"], field["status"], field["priority"], field["type"], field["epic"], title, path
+      if (path != "") printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", \
+        field["id"], field["status"], field["priority"], field["type"], field["epic"], title, path, field["paths"]
     }
     FNR == 1 { flush(); path = FILENAME; split("", field); title = ""; in_front = 0; after_front = 0 }
     FNR == 1 && $0 == "---" { in_front = 1; next }

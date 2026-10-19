@@ -146,8 +146,28 @@ check_index() {
   fi
 }
 
+# check_paths: a "paths:" entry that matches no file or folder of the repository hides its requirement
+# from `scripts/req.sh for`, so each one is named as a warning (REQ-127); it never fails the check.
+check_paths() {
+  local id paths rest entry
+  while IFS=$'\t' read -r id _ _ _ _ _ _ paths; do
+    rest="$paths,"
+    while [ -n "$paths" ] && [ -n "$rest" ]; do
+      entry="${rest%%,*}"
+      rest="${rest#*,}"
+      entry="$(printf '%s' "$entry" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's#^\./##')"
+      [ -n "$entry" ] || continue
+      case "$entry" in
+        *[\*\?\[]*) compgen -G "$ROOT/$entry" >/dev/null || warn "$id: paths entry \"$entry\" matches no file or folder" ;;
+        *) [ -e "$ROOT/${entry%/}" ] || warn "$id: paths entry \"$entry\" matches no file or folder" ;;
+      esac
+    done
+  done < <(requirement_records "$DIR")
+}
+
 check_epics
 check_files || FAILURES=$((FAILURES + 1))
 check_index
+check_paths
 [ "$RELEASE_MODE" = "1" ] && check_release_blockers
 [ "$FAILURES" -eq 0 ] || exit 1

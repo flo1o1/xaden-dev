@@ -7,7 +7,7 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Assistant guidance (`assistant-guidance`)
 
-33 done, 1 dropped.
+34 done, 1 dropped.
 
 
 ## Project setup (`project-setup`)

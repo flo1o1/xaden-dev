@@ -23,13 +23,14 @@ Explicit user instructions in the current session override this file.
    line. It lets the user see which file versions you started from; it is a consistency aid,
    not proof that you read or follow them.
 2. Read `docs/requirements/INDEX.md` (source of truth for *what* to build; skip it when your tool already loaded it,
-   e.g. through `CLAUDE.md`) and the requirement files your task touches (`scripts/req.sh show REQ-nnn`).
+   e.g. through `CLAUDE.md`). Run `scripts/req.sh for <files you plan to change>` and read what it lists
+   (`scripts/req.sh show REQ-nnn --brief`). In a folder with its own `AGENTS.md`, read that too.
 3. Read the `Unreleased` section of `CHANGELOG.md` (what changed since last release).
 4. If a request is ambiguous or conflicts with a requirement: **ask, do not guess**.
 
 ## 2. Requirements tracking (mandatory)
 
-Before you add, change or drop a requirement or set its status, read `docs/rules/requirements.md`. Update the requirement files first, then write code.
+Before you add, change or drop a requirement, read `docs/rules/requirements.md`; update the requirement first, then write code.
 
 ## 3. Clean code rules
 
@@ -65,8 +66,8 @@ Before you write a test, read `docs/rules/requirements.md`. Follow CC-08; cite t
 - Linter and type-checker configuration only gets stricter on your own. Loosening a rule,
   raising a threshold, or adding an ignore or suppression is an **Approval point**.
 - Before you change linter settings, the mode, baselines or presets, read `docs/rules/checks.md`.
-- End every task with a completion report: `COMPLETION REPORT` with the lines Checks run, Checks skipped, Unresolved findings and
-  Acceptance evidence (format in `docs/rules/checks.md`). A check you could not run is skipped, never passed.
+- End every task with a `COMPLETION REPORT` (Checks run, Checks skipped, Unresolved findings, Acceptance evidence; format in
+  `docs/rules/checks.md`). A check you could not run is skipped, never passed.
 
 ## 6. Security (mandatory)
 
@@ -78,11 +79,11 @@ Before a change that touches input, auth, data, files, network, secrets or depen
   or any other route, unless the user tells it to in that session; that instruction covers the pull request named
   and no later one. The commit's author stays the human: `Co-Authored-By` for an assistant discloses its part and
   does not replace the author, and `Signed-off-by` (`git commit -s`) is optional, never required.
-- Before you branch, commit, push or open a pull request, read `docs/rules/git.md`.
+- Before you branch, commit or push, read `docs/rules/git.md`.
 
 ## 8. Documentation (mandatory)
 
-Before you finish a feature, read `docs/rules/docs.md`: a feature is not done until the guides describe it.
+Before you finish a feature, read `docs/rules/docs.md`.
 
 ## 9. Working style
 
