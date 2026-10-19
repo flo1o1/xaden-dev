@@ -12,11 +12,8 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Project setup (`project-setup`)
 
-30 done.
+31 done.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-128 | job | must | approved | The AIDD installer never runs before my yes |
 
 ## Quality gates (`quality-gates`)
 
