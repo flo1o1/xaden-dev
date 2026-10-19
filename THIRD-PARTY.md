@@ -71,6 +71,7 @@ Never installed by Xaden; the user decides. Each plugin keeps its own license.
 | [claude-mem](https://github.com/thedotmack/claude-mem) | Apache-2.0 | |
 | [impeccable](https://github.com/pbakaus/impeccable) | Apache-2.0 | |
 | [obsidian-skills](https://github.com/kepano/obsidian-skills) | MIT | |
+| [AI-Driven Dev framework](https://github.com/ai-driven-dev/framework) | MIT | Optional add-on that `xaden aidd enable` installs through its own CLI, `@ai-driven-dev/cli`, at a pinned version (REQ-118). Xaden copies none of it. |
 | [Anthropic plugins](https://github.com/anthropics/claude-plugins-official) | Apache-2.0 (repository) | `code-review`, `security-guidance`, `pr-review-toolkit`; a plugin in it can carry its own license. |
 
 ## Standards and works the documents build on

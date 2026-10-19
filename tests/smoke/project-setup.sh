@@ -241,6 +241,92 @@ test_command_dist() {
   assert "the template ignores -dist files" grep -qxF '*-dist' "$SCAFFOLD_ROOT/template/.gitignore"
 }
 
+# REQ-118 the AIDD framework is switched on, checked and off again through its own CLI, pinned. The CLI is a stub
+# (XADEN_AIDD_RUNNER) that writes what the real one writes: .aidd/manifest.json with the release of every plugin.
+# shellcheck disable=SC2016 # the stub and the bash -c scripts are single-quoted on purpose
+test_aidd_framework() {
+  local x="$SCAFFOLD_ROOT/scripts/xaden.sh" stub="$WORKDIR/aidd-stub" fakebin="$WORKDIR/aidd-node" log="$WORKDIR/aidd-stub.log" repo="$WORKDIR/aidd-repo" out="$WORKDIR/aidd.out" version
+  version="$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
+  mkdir -p "$fakebin"
+  cat >"$stub" <<'STUB'
+#!/usr/bin/env bash
+echo "$XADEN_AIDD_CLI_VERSION $*" >>"$STUB_LOG"
+case "$1" in
+  setup)
+    if [ "${2:-}" = "--help" ]; then [ "${STUB_NO_RELEASE:-0}" = 1 ] || echo "  --release <tag>  Marketplace release tag to fetch"; exit 0; fi
+    release=""
+    while [ "$#" -gt 0 ]; do if [ "$1" = "--release" ]; then release=$2; fi; shift; done
+    [ "${STUB_WRONG_REF:-0}" != 1 ] || release=v0.0.1
+    mkdir -p .aidd .claude
+    printf '{\n  "plugins": [\n    {\n      "ref": "%s"\n    }\n  ]\n}\n' "$release" >.aidd/manifest.json
+    printf '{}\n' >.claude/settings.json ;;
+  clean) rm -rf .aidd .claude ;;
+esac
+STUB
+  chmod +x "$stub"
+  printf '#!/bin/sh\necho v22.12.0\n' >"$fakebin/node" && chmod +x "$fakebin/node"
+  mkdir -p "$repo/xaden" && git -C "$repo" init -q -b main
+  printf 'version = %s\nmode = advisory\nassistants = claude,vibe\n' "$version" >"$repo/xaden/xaden.conf"
+  printf '# Rules\n' >"$repo/AGENTS.md"
+  git -C "$repo" add -A && git -C "$repo" -c user.name=t -c user.email=t@example.com commit -q -m "chore: init"
+  # aidd <env...> -- <args...>: xaden aidd in the repository, output in $out, status in $aidd_rc
+  aidd() {
+    aidd_rc=0
+    (cd "$repo" && env -u CI PATH="$fakebin:$PATH" XADEN_AIDD_RUNNER="$stub" STUB_LOG="$log" "$@") >"$out" 2>&1 || aidd_rc=$?
+  }
+  aidd_yes() { aidd env XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=y "$x" aidd "$@"; }
+
+  aidd "$x" aidd status
+  assert "REQ-118 status says the framework is not enabled" grep -q 'not enabled' "$out"
+
+  aidd env STUB_NO_RELEASE=1 XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=y "$x" aidd enable
+  assert "REQ-118 a CLI that cannot take a release stops enable" test "$aidd_rc" -ne 0 -a ! -e "$repo/.aidd"
+  assert "REQ-118 the refusal says why" grep -q 'cannot be held to release' "$out"
+
+  printf '#!/bin/sh\necho v20.1.0\n' >"$fakebin/node"
+  aidd_yes enable
+  assert "REQ-118 an old Node stops enable before it installs" test "$aidd_rc" -ne 0 -a ! -e "$repo/.aidd"
+  assert "REQ-118 the refusal names the prerequisite and the version found" grep -q 'needs Node 22.12 or later; found v20.1.0' "$out"
+  printf '#!/bin/sh\necho v22.12.0\n' >"$fakebin/node"
+
+  aidd "$x" aidd enable
+  assert "REQ-118 enable without a terminal installs nothing" test "$aidd_rc" -ne 0 -a ! -e "$repo/.aidd"
+  aidd env XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=n "$x" aidd enable
+  assert "REQ-118 enable answered no installs nothing" test "$aidd_rc" -ne 0 -a ! -e "$repo/.aidd"
+
+  aidd_yes enable
+  assert "REQ-118 enable installs" test "$aidd_rc" -eq 0 -a -f "$repo/.aidd/manifest.json"
+  assert "REQ-118 it skips an assistant the framework does not support" grep -q 'skipped vibe' "$out"
+  assert "REQ-118 it lists the files it added" grep -q '\.aidd/manifest.json' "$out"
+  assert "REQ-118 it warns about the user-level marketplace before the question" grep -q "registers the marketplace 'aidd-framework'" "$out"
+  assert "REQ-118 the pinned CLI version and release are recorded" bash -c 'grep -q "^aidd-cli = 5.5.0$" "$1" && grep -q "^aidd-release = v5.12.0$" "$1"' _ "$repo/xaden/xaden.conf"
+  assert "REQ-118 the CLI is called with the exact version and the release, never latest" bash -c '! grep -qi latest "$1" && grep -q "^5.5.0 setup .*--release v5.12.0" "$1"' _ "$log"
+  assert "REQ-118 the rules file gets the mapping block" bash -c 'grep -q "xaden:aidd:begin" "$1" && grep -q "these rules win" "$1"' _ "$repo/AGENTS.md"
+  aidd "$x" aidd status
+  assert "REQ-118 status shows the pin next to the installed release" bash -c 'grep -q "pinned:    CLI 5.5.0, release v5.12.0" "$1" && grep -q "installed: release v5.12.0" "$1"' _ "$out"
+  aidd_yes enable
+  assert "REQ-118 enable twice is harmless" test "$aidd_rc" -eq 0
+  assert "REQ-118 nothing in the template or the checks depends on the add-on" bash -c '! grep -rlE "aidd-cli|aidd\.sh" "$1/template" "$1/scripts/check-scaffold.sh"' _ "$SCAFFOLD_ROOT"
+
+  aidd_yes pin 5.5.0 v5.13.0
+  assert "REQ-118 pin makes a branch of its own and leaves the current one unpinned" bash -c 'git -C "$1" rev-parse --verify -q chore/pin-aidd-v5.13.0 >/dev/null && grep -q "^aidd-release = v5.12.0$" "$1/xaden/xaden.conf"' _ "$repo"
+  assert "REQ-118 pin records the new release and links the framework's changes" bash -c 'grep -q "^aidd-release = v5.13.0$" "$1/xaden/xaden.conf" && git -C "$1" log -1 --format=%B | grep -q "compare/v5.12.0...v5.13.0"' _ "$repo-pin-aidd-v5.13.0"
+  git -C "$repo" worktree remove --force "$repo-pin-aidd-v5.13.0" && git -C "$repo" branch -D chore/pin-aidd-v5.13.0 >/dev/null
+
+  aidd_yes disable
+  assert "REQ-118 disable removes what enable added" test "$aidd_rc" -eq 0 -a ! -e "$repo/.aidd" -a ! -e "$repo/.claude"
+  assert "REQ-118 disable removes the pin and the rules block" bash -c '! grep -q "aidd" "$1" && ! grep -q "xaden:aidd" "$2"' _ "$repo/xaden/xaden.conf" "$repo/AGENTS.md"
+  assert "REQ-118 disable leaves the project's own rules" grep -q '^# Rules$' "$repo/AGENTS.md"
+
+  aidd env STUB_WRONG_REF=1 XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=y "$x" aidd enable
+  assert "REQ-118 a pin that did not hold removes the installation again" test "$aidd_rc" -ne 0 -a ! -e "$repo/.aidd"
+  assert "REQ-118 and says so" grep -q 'the pin did not hold' "$out"
+  assert "REQ-118 and records no pin" bash -c '! grep -q "aidd" "$1"' _ "$repo/xaden/xaden.conf"
+
+  mkdir -p "$WORKDIR/aidd-classic" && git -C "$WORKDIR/aidd-classic" init -q -b main
+  assert_fails_with "REQ-118 a project that did not adopt Xaden is told so" "adopted Xaden" bash -c 'cd "$1" && "$2" aidd status' _ "$WORKDIR/aidd-classic" "$x"
+}
+
 test_license
 test_command_dist
 test_generation_safety
@@ -253,3 +339,4 @@ test_pack_script_removed
 test_update_safety
 test_xaden_command
 test_settings_update
+test_aidd_framework

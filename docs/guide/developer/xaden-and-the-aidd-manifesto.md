@@ -4,6 +4,8 @@ Xaden follows the ideas of the [AI-Driven Development Manifesto](https://ai-driv
 
 Xaden implements the manifesto as far as the table says. The manifesto is not a certification, Xaden is not affiliated with its authors, and nobody has reviewed this table but the Xaden maintainers.
 
+The full workflow of the manifesto's reference framework is an optional add-on: [use the AIDD framework](use-the-aidd-framework.md).
+
 ## Status
 
 | Key | Manifesto item | Status | Xaden rule |
