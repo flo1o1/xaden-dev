@@ -2,7 +2,7 @@
 title: Build a feature
 type: prompt
 status: stable
-version: 1.5.0
+version: 1.6.0
 works-with: [claude-code, chatgpt, local-llm]
 tags: [prompt, development]
 ---
@@ -19,6 +19,8 @@ Implement one capability, test-first, tracked in requirements.
 ## Steps
 1. Run `scripts/context-status.sh`; read `AGENTS.md` and `docs/requirements/INDEX.md`. Look
    requirements up with `scripts/req.sh show REQ-nnn`; never from memory.
+   Then state the size as AGENTS.md §9 (Size the task) says; on a small change skip the steps it names
+   (the requirement draft, the library search, the plan and persona check, the security review).
 2. If the feature has no `REQ-nnn`, draft one as a job in the chat (*When …, I want to …, so I can …*,
    with acceptance criteria). **Approval point:** show me the draft; create no branch, worktree or file
    before my OK. After my OK, start the change as AGENTS.md §7 says (sparse worktree), create the

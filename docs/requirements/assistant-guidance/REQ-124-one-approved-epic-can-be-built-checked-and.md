@@ -2,8 +2,8 @@
 id: REQ-124
 type: job
 epic: assistant-guidance
-priority: could
-status: draft
+priority: must
+status: approved
 updated: 2026-10-19
 ---
 
@@ -26,7 +26,7 @@ When an epic has several approved requirements, I want the assistant to work thr
 
 ## Notes
 
-Park until REQ-123 is released: the loop stops on a size change, which needs that rule. Bigger than REQ-123 and not needed for it.
+Approved 2026-10-19 for release 0.6.0 with REQ-123 and REQ-125. Build it after REQ-123 is merged: the loop stops on a size change, which needs that rule.
 
 Open questions for the approval: does the loop live in a prompt only, or does it need a script (`scripts/epic.sh`) that lists the next approved requirement of an epic? A script is cheap; unattended running is not, because the approval points exist for a reason (`template/AGENTS.md` §10). Does the loop open the pull requests itself or leave them to the person?
 
