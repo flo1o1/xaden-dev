@@ -8,7 +8,7 @@
 # (REQ-059): a project that edited it keeps its file and gets <file>-dist to merge (REQ-100).
 MANAGED_PATHS="scripts/ prompts/ presets/ .claude/commands/ .claude/settings.json .semgrep/ .github/workflows/
 .github/copilot-instructions.md .continue/ .clinerules .aider.conf.yml .obsidian/app.json
-.obsidian/core-plugins.json .obsidian/templates.json AGENTS.md CLAUDE.md docs/clean-code.md
+.obsidian/core-plugins.json .obsidian/templates.json AGENTS.md CLAUDE.md docs/clean-code.md docs/rules/
 docs/security.md docs/local-llm.md docs/optional-tools.md docs/decisions/0000-template.md docs/security-reviews/0000-template.md
 docs/personas/0000-template.md
 .editorconfig .gitattributes

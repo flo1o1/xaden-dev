@@ -20,6 +20,12 @@ Only files Xaden manages (scripts, prompts, presets, rules, commands, Claude Cod
 Your code, requirements, guides, README and changelog are never touched, and your local edits are never overwritten: where you and Xaden both
 changed a file, the new version is written next to yours as `<file>-dist`. Projects updated before that name existed may still hold `*.scaffold-new` files; `xaden doctor` names both kinds. Each project records its version in `.scaffold/`.
 
+## Update from before 0.6.0: rules folder and short index
+
+`xaden update --apply` adds `docs/rules/` (the rule sections that moved out of `AGENTS.md`, REQ-126) and regenerates `docs/requirements/INDEX.md`
+in its short form, with the full table beside it in `INDEX-full.md`; both are staged with the rest. If you edited `AGENTS.md`, your file stays and the
+new one comes as `AGENTS.md-dist`: until you merge it, your `AGENTS.md` still holds the old text that `docs/rules/` now repeats.
+
 ## A project with an old requirements table
 
 A project that keeps its requirements in one `docs/requirements/REQUIREMENTS.md` table runs `scripts/migrate-requirements.sh` after

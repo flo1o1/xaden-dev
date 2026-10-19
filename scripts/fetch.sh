@@ -293,6 +293,10 @@ pin_main() {
   conf_set "$worktree/xaden/xaden.conf" version "$target"
   conf_set "$worktree/xaden/xaden.conf" checksum "$checksum"
   (cd "$worktree" && bash -c 'source "$1/template/scripts/lib.sh"; TOOLS_DIR="$1/template"; render_rules' _ "$tools" >xaden/RULES.md)
+  # REQ-126 the index of the new version lists only open work and has a full table beside it
+  if [ -d "$worktree/xaden/requirements" ] && [ -f "$tools/template/scripts/req.sh" ]; then
+    PROJECT_ROOT="$worktree" bash "$tools/template/scripts/req.sh" index >/dev/null || warn "could not regenerate xaden/requirements/INDEX.md; run: xaden req index"
+  fi
   # REQ-080, REQ-081 the command files follow the prompts of the new version
   assistants="$(conf_get "$worktree/xaden/xaden.conf" assistants)"
   if [ -n "$(command_kinds "$assistants")" ]; then sync_commands "$worktree" "$tools/template" "$assistants" "$SCAFFOLD_ROOT/template"; fi

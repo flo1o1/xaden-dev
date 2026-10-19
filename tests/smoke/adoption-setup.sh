@@ -96,8 +96,15 @@ test_adopt_and_remove() {
   assert "REQ-110 RULES.md says the assistant never merges its own pull request" bash -c 'tr "\n" " " <"$1" | grep -q "never merges it"' _ "$worktree/xaden/RULES.md"
   assert "REQ-111 RULES.md holds the judgment section" grep -q '^### Judgment stays with the human' "$worktree/xaden/RULES.md"
   assert "REQ-122 RULES.md asks for epic, title and ID" bash -c 'tr -s "[:space:]" " " <"$1" | grep -q "Name a requirement with its epic, title and ID"' _ "$worktree/xaden/RULES.md"
-  assert "RULES.md starts a change sparse on the team's requirements only (REQ-082)" \
-    grep -qF 'sparse-checkout set --cone xaden/requirements`' "$worktree/xaden/RULES.md"
+  x_in "$worktree" doc rules-git
+  assert "REQ-126 xaden doc rules-git prints the git rules for the adopted layout" test "$XRC" -eq 0
+  assert "RULES.md starts a change sparse on the team's requirements only (REQ-082, REQ-126)" \
+    grep -qF 'sparse-checkout set --cone xaden/requirements`' "$XOUT"
+  assert "REQ-126 RULES.md names the command of each moved topic, not a file the project lacks" bash -c \
+    'grep -q "xaden doc rules-git" "$1" && grep -q "xaden doc rules-requirements" "$1" && ! grep -q "docs/rules/" "$1" "$2"' _ "$worktree/xaden/RULES.md" "$XOUT"
+  assert "REQ-126 RULES.md stays under the 10240 byte budget" test "$(wc -c <"$worktree/xaden/RULES.md")" -le 10240
+  x_in "$worktree" doc rules-nonsense
+  assert "REQ-126 an unknown rules topic is refused" test "$XRC" -ne 0
   assert "the version and checksum are pinned" grep -Eq '^checksum = [0-9a-f]{64}$' "$worktree/xaden/xaden.conf"
   assert "the build's commands are mapped" grep -q '^check.test = npm test$' "$worktree/xaden/xaden.conf"
   assert "git hooks of the clone are chained, not replaced" grep -q 'xaden hook pre-commit' "$repo/.git/hooks/pre-commit"

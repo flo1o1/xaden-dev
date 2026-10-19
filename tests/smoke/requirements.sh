@@ -34,11 +34,11 @@ test_job_stories() {
   # REQ-049 the scaffold uses the format it prescribes
   assert "scaffold's own requirements are finished job and quality files" \
     "$PROJECT/scripts/check-requirements.sh" --release "$SCAFFOLD_ROOT/docs/requirements"
-  assert "AGENTS.md defines the job story format" grep -q 'When <situation>, I want to <motivation>, so I can <expected' "$PROJECT/AGENTS.md"
+  assert "AGENTS.md defines the job story format" grep -q 'When <situation>, I want to <motivation>, so I can <expected' "$(rules_text "$PROJECT")"
   assert "kickoff writes requirements as jobs" grep -q 'Find the jobs my users hire the software for' "$PROJECT/prompts/kickoff.md"
   # REQ-006: requirement history comes from git, not from a hand-kept change log
-  assert "AGENTS.md points to git for requirement history" grep -q 'git log -- docs/requirements' "$PROJECT/AGENTS.md"
-  assert "no hand-kept requirements change log in new projects" bash -c "! grep -qi 'change.log' '$PROJECT/AGENTS.md' '$PROJECT/docs/requirements/README.md' '$PROJECT/prompts/requirements-update.md' '$PROJECT/prompts/feature.md'"
+  assert "AGENTS.md points to git for requirement history" grep -q 'git log -- docs/requirements' "$(rules_text "$PROJECT")"
+  assert "no hand-kept requirements change log in new projects" bash -c "! grep -qi 'change.log' '$PROJECT/AGENTS.md' '$PROJECT/docs/rules/requirements.md' '$PROJECT/docs/requirements/README.md' '$PROJECT/prompts/requirements-update.md' '$PROJECT/prompts/feature.md'"
 }
 
 # REQ-047 one file per requirement, epic folders, global IDs, generated index
@@ -127,7 +127,43 @@ test_traceability() {
   git -C "$PROJECT" reset -q --hard && git -C "$PROJECT" clean -qfd
 }
 
+# REQ-126 the index an assistant loads in every session follows the open work, not the history
+test_context_budget_index() {
+  local big="$WORKDIR/big-project" n epic status id
+  mkdir -p "$big/docs/requirements"
+  (
+    export PROJECT_ROOT="$big"
+    # shellcheck source=SCRIPTDIR/../../template/scripts/requirements-lib.sh
+    source "$SCAFFOLD_ROOT/template/scripts/requirements-lib.sh"
+    for n in $(seq 1 500); do
+      epic="epic-$((n % 5))"
+      status="done"
+      [ "$n" -gt 50 ] || status=draft
+      id="$(printf 'REQ-%03d' "$n")"
+      write_epic "$big/docs/requirements/$epic" "Epic $epic" "The big job of this epic."
+      write_requirement "$big/docs/requirements/$epic/$id-job-number-$n.md" "$id" job "$epic" should "$status" 2026-10-19 \
+        "Users can export invoice number $n as a PDF file" "When I close a month, I want export $n, so I can send it." \
+        "Given a month, when I export, then I get a PDF."
+    done
+  )
+  assert "REQ-126 the scaffold writes the index and the full table" bash -c "PROJECT_ROOT='$big' '$PROJECT/scripts/req.sh' index >/dev/null \
+    && test -f '$big/docs/requirements/INDEX-full.md'"
+  assert "REQ-126 the index of 500 requirements with 50 open stays under 6144 bytes" \
+    test "$(wc -c <"$big/docs/requirements/INDEX.md")" -le 6144
+  assert "REQ-126 a done requirement is only counted in the index" bash -c "grep -q '90 done' '$big/docs/requirements/INDEX.md' \
+    && ! grep -q '| REQ-50[0] |' '$big/docs/requirements/INDEX.md' && grep -q '| REQ-001 | job | should | draft |' '$big/docs/requirements/INDEX.md'"
+  assert "REQ-126 the full table lists every requirement" test "$(grep -c '^| REQ-' "$big/docs/requirements/INDEX-full.md")" -eq 500
+  assert "REQ-126 list --epic and --status filter" bash -c "test \"\$(PROJECT_ROOT='$big' '$PROJECT/scripts/req.sh' list --epic epic-1 --status draft | wc -l)\" -eq 10"
+  assert_fails_with "REQ-126 list rejects an unknown status" 'status must be one of' env PROJECT_ROOT="$big" "$PROJECT/scripts/req.sh" list --status finished
+  assert "REQ-126 show --brief prints goal and criteria only" bash -c "out=\"\$(PROJECT_ROOT='$big' '$PROJECT/scripts/req.sh' show REQ-077 --brief)\"; \
+    printf '%s' \"\$out\" | grep -q '^## Acceptance criteria' && printf '%s' \"\$out\" | grep -q '^status: done' && ! printf '%s' \"\$out\" | grep -q '^updated:'"
+  assert "REQ-126 show without --brief is unchanged" bash -c "PROJECT_ROOT='$big' '$PROJECT/scripts/req.sh' show REQ-077 | grep -q '^updated: 2026-10-19'"
+  echo "stale" >>"$big/docs/requirements/INDEX-full.md"
+  assert_fails_with "REQ-126 a stale full table is rejected" 'stale' "$PROJECT/scripts/check-requirements.sh" "$big/docs/requirements"
+}
+
 test_job_stories
 test_requirement_files
 test_requirements_migration
 test_traceability
+test_context_budget_index

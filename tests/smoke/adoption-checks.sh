@@ -57,7 +57,7 @@ test_modes_and_baselines() {
   edit_file "$worktree/xaden/xaden.conf" 's/^commit-convention = .*/commit-convention = conventional/'
   x_in "$worktree" hook commit-msg "$WORKDIR/message.txt"
   assert "Conventional Commits: the hook rejects a bad message" test "$XRC" -ne 0
-  assert "the rule file makes a mode change an approval point (REQ-044)" bash -c 'tr "\n" " " <"$1" | grep -q "mode. in .xaden/xaden.conf.*is an .*Approval point"' _ "$SCAFFOLD_ROOT/template/AGENTS.md"
+  assert "the rule file makes a mode change an approval point (REQ-044)" bash -c 'tr "\n" " " <"$1" | grep -q "mode. in .xaden/xaden.conf.*is an .*Approval point"' _ "$SCAFFOLD_ROOT/template/docs/rules/checks.md"
 
   # a real commit goes through the chained hook
   git -C "$worktree" checkout -q -- xaden/xaden.conf

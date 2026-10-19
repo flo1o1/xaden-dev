@@ -261,7 +261,11 @@ adopted_project_command() {
       (PROJECT_ROOT="$root"; layout_init "$root"; file="$(resolve_prompt "$name")"; cat "$file"; case "$file" in "$TEAM_DIR"/*) ;; *) rm -f "$file" ;; esac) ;;
     doc)
       name="${1:-}"
-      case "$name" in clean-code | security | optional-tools | local-llm) cat "$SCAFFOLD_ROOT/template/docs/$name.md" ;; *) die "usage: xaden doc <clean-code|security|optional-tools|local-llm>" ;; esac ;;
+      case "$name" in
+        clean-code | security | optional-tools | local-llm) cat "$SCAFFOLD_ROOT/template/docs/$name.md" ;;
+        rules-*) render_rule_topic "${name#rules-}" ;;
+        *) die "usage: xaden doc <clean-code|security|optional-tools|local-llm|rules-<topic>>" ;;
+      esac ;;
     rules)
       layout_init "$root"
       render_rules >"$root/xaden/RULES.md"

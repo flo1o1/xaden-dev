@@ -225,6 +225,7 @@ apply_core() {
   readme_text >"$dir/xaden/README.md"
   render_rules >"$dir/xaden/RULES.md"
   render_index "$dir/xaden/requirements" >"$dir/xaden/requirements/INDEX.md"
+  render_index "$dir/xaden/requirements" full >"$dir/xaden/requirements/INDEX-full.md"
   if [ -f "$dir/AGENTS.md" ]; then note_footprint "$dir" block AGENTS.md; else note_footprint "$dir" created-block AGENTS.md; fi
   set_block "$dir/AGENTS.md" "$BLOCK_BEGIN" "$BLOCK_END" "$(agents_block)"
   case ",$ADOPT_ASSISTANTS," in

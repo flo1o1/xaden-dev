@@ -19,7 +19,8 @@ esac
 if [ "$check_format" = "1" ] && ! printf '%s' "$first_line" | grep -Eq "$pattern"; then
   die "commit message must follow Conventional Commits:
   <type>(<scope>)!: <summary up to 72 chars>
-  types: feat fix refactor docs test chore perf build ci style revert"
+  types: feat fix refactor docs test chore perf build ci style revert
+  rule: docs/rules/git.md (in an adopted project: xaden doc rules-git)"
 fi
 
 # Cited REQ-/CC- IDs must exist; feat/fix must reference a requirement.
