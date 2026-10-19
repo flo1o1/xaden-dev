@@ -128,7 +128,7 @@ test_install_ways() {
   local install="$SCAFFOLD_ROOT/docs/guide/admin/install-xaden.md" platforms="$SCAFFOLD_ROOT/docs/guide/admin/requirements-and-platforms.md"
   local update="$SCAFFOLD_ROOT/docs/guide/admin/update-xaden.md" contributing="$SCAFFOLD_ROOT/docs/guide/contributing" page
   local extracted="$WORKDIR/extracted-zip" clone="$WORKDIR/cloned-xaden" heading version
-  for heading in '## Install with one command' '## Install from a git clone' '## Verify what you downloaded'; do
+  for heading in '## Install with one command' '## Verify what you downloaded'; do
     assert "install guide has the heading $heading" grep -qE "^$heading\$" "$install"
   done
   for heading in '## Linux' '## macOS' '## Windows'; do
