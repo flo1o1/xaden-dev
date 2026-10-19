@@ -56,6 +56,10 @@ Changed your mind during a feature? Say so; the assistant updates the requiremen
 
 At the start the assistant says whether a change is small, normal or large, with one line of reason. You can overrule it. A small change is covered by one approved requirement, touches at most 2 files and adds no dependency and no new input, auth, data, files or network surface. It skips the requirement draft, the library search, the plan and the security review, and keeps the test, `xaden check`, the `Refs:` trailer, the changelog bullet, the guide update and a quick review of the diff. If the change grows, the assistant stops and switches to the normal flow. A large change gets a plan in `docs/architecture.md`, split into steps that are each a normal change. The size is guidance: the hooks and the checks run the same for every size.
 
+## Findings that are not fixed now
+
+When a review finds a real problem that the change did not cause or that is too big to fix now, the assistant offers three routes: fix now, ask you, or defer. It defers only after you agree, as one row in `docs/deferred-work.md` (in an adopted project `xaden/deferred-work.md`, created with the first deferral) with its source (a requirement ID or a branch), a one-sentence summary and the evidence that it is real. The file is append only: a row leaves it when it becomes a requirement or is dropped, and the commit message says which. `xaden check` fails on a row with a part missing or an unknown requirement ID. Accepted vulnerabilities with an owner and an expiry stay in `docs/security-exceptions.md`.
+
 ## Restart a session
 
 A long session can lose its coherence: the assistant repeats itself, forgets a rule or contradicts a requirement you approved. The rules ask it to say so and to suggest a fresh session; you can also call it yourself. Nothing is lost, because the work lives in files, not in the chat:
