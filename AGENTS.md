@@ -102,12 +102,12 @@ or to the workflow therefore runs all areas. `SMOKE=skip scripts/check-scaffold.
 | Area | Requirements | Main paths |
 |------|--------------|------------|
 | `adoption` | REQ-066 to REQ-076 | `scripts/xaden.sh`, `scripts/fetch.sh`, `template/scripts/lib.sh` |
-| `assistant-guidance` | epic `assistant-guidance` | `template/scripts/persona.sh`, `template/AGENTS.md`, `template/prompts/` |
+| `assistant-guidance` | epic `assistant-guidance` | `template/scripts/persona.sh`, `template/AGENTS.md`, `template/prompts/`, `GETTING-STARTED.md`, `docs/guide/admin/`, `docs/guide/contributing/` |
 | `project-setup` | epic `project-setup` | `scripts/new-project.sh`, `scripts/update-scaffold.sh`, `scripts/install.sh`, `scripts/setup.sh`, `scripts/aidd.sh` |
 | `quality-gates` | epic `quality-gates` | `template/scripts/check.sh`, `scripts/check-scaffold.sh`, `template/scripts/verify-commits.sh`, `template/scripts/verify-refs.sh` |
-| `requirements` | epic `requirements` | `template/scripts/req.sh`, `template/scripts/check-requirements.sh`, `template/scripts/check-traceability.sh` |
+| `requirements` | epic `requirements` | `template/scripts/req.sh`, `template/scripts/check-requirements.sh`, `template/scripts/check-traceability.sh`, `docs/requirements/INDEX.md` |
 | `security` | epic `security` | `template/scripts/check-security-exceptions.sh`, `template/.semgrep/` |
-| `release-and-docs` | epic `release-and-docs` | `scripts/release-scaffold.sh`, `template/scripts/release.sh`, `scripts/sign-release.sh`, `scripts/check-site-pages.sh`, `scripts/check-third-party.sh`, `scripts/check-aidd-mapping.sh`, `scripts/check-release-archive.sh`, `.gitattributes` |
+| `release-and-docs` | epic `release-and-docs` | `scripts/release-scaffold.sh`, `template/scripts/release.sh`, `scripts/sign-release.sh`, `scripts/check-site-pages.sh`, `scripts/check-third-party.sh`, `scripts/check-aidd-mapping.sh`, `scripts/check-release-archive.sh`, `.gitattributes`, `CHANGELOG.md`, `THIRD-PARTY.md`, `docs/site-pages.txt`, `GETTING-STARTED.md`, `docs/guide/admin/`, `docs/guide/contributing/` |
 
 ## Using the project commands here (REQ-055)
 
