@@ -55,7 +55,7 @@ Details and examples: `docs/clean-code.md` (same IDs).
 
 ## 4. Tests
 
-Before you write or change a test, read `docs/rules/requirements.md` (Tests). Follow CC-08; a test cites the `REQ-nnn` it verifies.
+Before you write a test, read `docs/rules/requirements.md`. Follow CC-08; cite the `REQ-nnn` in the test.
 
 ## 5. Static analysis (mandatory before "done")
 
@@ -64,13 +64,13 @@ Before you write or change a test, read `docs/rules/requirements.md` (Tests). Fo
 - Fix findings; never silence a rule without a one-line reason.
 - Linter and type-checker configuration only gets stricter on your own. Loosening a rule,
   raising a threshold, or adding an ignore or suppression is an **Approval point**.
-- Before you change linter, type-checker or mode settings, baselines, presets or the completion report, read `docs/rules/checks.md`.
+- Before you change linter settings, the mode, baselines or presets, read `docs/rules/checks.md`.
 - End every task with a completion report: `COMPLETION REPORT` with the lines Checks run, Checks skipped, Unresolved findings and
   Acceptance evidence (format in `docs/rules/checks.md`). A check you could not run is skipped, never passed.
 
 ## 6. Security (mandatory)
 
-Before a change that touches input, auth, data, files, network, secrets or dependencies, and before every release, read `docs/rules/security.md`.
+Before a change that touches input, auth, data, files, network, secrets or dependencies, or a release, read `docs/rules/security.md`.
 
 ## 7. Versioning and git
 
@@ -86,7 +86,7 @@ Before you finish a feature, read `docs/rules/docs.md`: a feature is not done un
 
 ## 9. Working style
 
-Before you plan, place new code, add a dependency or pick a library, read `docs/rules/working-style.md`.
+Before you plan or add a dependency, read `docs/rules/working-style.md`.
 
 ### Size the task (REQ-123)
 
@@ -106,8 +106,7 @@ shippable goals: list them, recommend a first one and ask whether to split or ke
 
 ### Findings not fixed now (REQ-125)
 
-Before you answer a review finding that this change does not fix, read `docs/rules/findings.md`: offer three routes
-(fix now, ask me, defer) and defer only after the user agrees.
+Before you answer a finding this change does not fix, read `docs/rules/findings.md`; defer only after the user agrees.
 
 ### Judgment stays with the human (REQ-111)
 
