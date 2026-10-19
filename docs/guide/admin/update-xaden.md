@@ -15,7 +15,7 @@ xaden upgrade
 xaden upgrade --check
 ```
 
-- `xaden upgrade --check`: only tells you whether a newer release exists.
+- `xaden upgrade --check`: only tells you whether a newer release exists and, inside a project, which npm or pip dependencies are outdated ([Check for updates](check-for-updates.md)).
 
 Older versions stay installed, because projects that pin them use them. Nothing in an installed version folder is ever edited, so there is
 nothing to overwrite. Without a terminal nothing downloads and the command exits with code 3.
