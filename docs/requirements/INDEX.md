@@ -38,6 +38,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn`.
 | REQ-120 | job | could | approved | I can tell when a session lost its coherence and restart it from the files |
 | REQ-123 | job | should | draft | A small change takes a short path and a large change takes the full one |
 | REQ-124 | job | could | draft | One approved epic can be built, checked and reviewed requirement by requirement |
+| REQ-125 | job | could | draft | A review finding that is not fixed in this change is recorded, not lost in the chat |
 
 ## Project setup (`project-setup`)
 
