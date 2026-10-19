@@ -15,9 +15,9 @@ Xaden implements the manifesto as far as the table says. The manifesto is not a 
 | P01 | Ship in verified increments | met | Requirement, test, review and a completion report with evidence before "done" (REQ-036, REQ-035) |
 | P02 | Start from a clear spec | met | One requirement file per behaviour, with acceptance criteria that become tests (REQ-046, REQ-047) |
 | P03 | Plan before generation | partly | A requirement is approved before work starts (REQ-082) and the assistant plans briefly (`template/AGENTS.md`); a written plan is not required |
-| P04 | Decompose until delegable | partly | Small steps and one commit per item (`template/AGENTS.md`); no rule sizes the task, planned |
+| P04 | Decompose until delegable | met | The assistant sizes each task as small, normal or large; a large one is split into steps that are each a normal change (REQ-123) |
 | P05 | Craft context with care | partly | Rules, prompts and requirements are files under version control, and a context check line shows stale rules (REQ-085); no limit on the size of the always-loaded context, planned |
-| P06 | Capture learning for reuse | partly | The assistant proposes a decision record for what later work needs (REQ-111); no home for findings that are not fixed now, planned |
+| P06 | Capture learning for reuse | met | The assistant proposes a decision record for what later work needs (REQ-111) and, with your agreement, records a review finding it does not fix in the deferred work file of the project, with its source and evidence (REQ-125) |
 | P07 | Own every shipped change | met | The assistant opens the pull request and stops; the person merges (REQ-110, REQ-112) |
 | P08 | Do not delegate what you cannot evaluate | partly | The assistant says what it cannot judge and asks (REQ-111); its security review is a checklist, not proof (REQ-005) |
 | P09 | Improve the system before forcing the model | met | Before a retry the assistant names which of scope, names, tests or context it will change (REQ-119) |

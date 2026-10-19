@@ -124,7 +124,7 @@ apply_migration() {
   move_team_content "$dir" docs/personas xaden/personas 0000-template.md
   move_team_content "$dir" docs/security-reviews xaden/security-reviews 0000-template.md
   move_team_content "$dir" docs/decisions xaden/decisions 0000-template.md
-  for path in security-exceptions threat-model architecture; do
+  for path in security-exceptions deferred-work threat-model architecture; do
     if [ -f "$dir/docs/$path.md" ]; then mkdir -p "$dir/xaden"; mv "$dir/docs/$path.md" "$dir/xaden/$path.md"; fi
   done
   while IFS="$(printf '\t')" read -r sum path; do
