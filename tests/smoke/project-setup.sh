@@ -134,7 +134,6 @@ test_command_dist() {
   assert "an edited command file stays as it is" grep -q 'My own wording.' "$dir/$file"
   assert "the new command text comes as -dist" grep -q 'Newer title' "$dir/$file-dist"
   assert "the -dist file is in the footprint, so remove takes it out" grep -qxF "file $file-dist" "$dir/$FOOTPRINT_FILE"
-  assert "the template ignores -dist files" grep -qxF '*-dist' "$SCAFFOLD_ROOT/template/.gitignore"
 }
 
 # REQ-118 the AIDD framework is switched on, checked and off again through its own CLI, pinned. The CLI is a stub

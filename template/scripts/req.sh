@@ -129,7 +129,7 @@ write_index() {
   render_index "$DIR" full >"$DIR/$INDEX_FULL_FILE"
 }
 
-[ -d "$DIR" ] || die "${DIR#"$ROOT"/} not found (old table format? run scripts/migrate-requirements.sh)"
+[ -d "$DIR" ] || die "${DIR#"$ROOT"/} not found"
 case "${1:-}" in
   list) shift; list_requirements "$@" ;;
   show) show_requirement "${2:-}" "${3:-}" ;;

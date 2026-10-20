@@ -202,7 +202,7 @@ test_scope_of_changed_files() {
   assert "the mode in xaden.conf is untouched by the fallback" grep -q '^mode = changed-files$' "$conf"
   # the step that runs the checks, not another one, receives the event
   assert "the generated workflows hand the event to the check step" bash -c '
-    for f in "$1/scripts/adopt/ci.yml" "$1/template/.github/workflows/ci.yml"; do
+    for f in "$1/scripts/adopt/ci.yml"; do
       awk "/name: (Xaden checks|Static analysis) \\(full run/ { step = 1 } step && /EVENT_NAME:/ { e = 1 } step && /BASE_REF:/ { b = 1 } step && /BEFORE_SHA:/ { s = 1 } step && /run:/ { exit !(e && b && s) }" "$f" || exit 1
     done' _ "$SCAFFOLD_ROOT"
 }

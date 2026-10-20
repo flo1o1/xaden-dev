@@ -28,15 +28,13 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
 
 ## Entry points
 
-- CLI arguments: project name and target directory (`new-project.sh`), bump part (`release*.sh`),
+- CLI arguments: project name and target directory (`create.sh`), bump part (`release*.sh`),
   requirement IDs, epics and titles (`req.sh`), persona names (`persona.sh`); command and arguments of `xaden`, target
   directory of `install.sh`; `adopt`, `remove`, `upgrade`, `fetch`, `hook`, `prompt`, `doc` and `new --autopilot`
   with their options (`--check <kind>=<command>`, `--assistants`, `--mode`, `--stack`, version numbers).
 - Files the scripts read: `template/` (exported to projects), requirement files, commit message
-  files, the old requirements table `docs/requirements/REQUIREMENTS.md` (`migrate-requirements.sh`),
-  `docs/personas/*.md` (`persona.sh`), `CHANGELOG.md`, `VERSION`, `docs/security-exceptions.md`, `SECURITY.md`, a project's
-  `.scaffold/manifest` and `package.json` /
-  `pyproject.toml` (which decide which tools run).
+  files, `xaden/personas/*.md` (`persona.sh`), `CHANGELOG.md`, `VERSION`, `xaden/security-exceptions.md`, `SECURITY.md`
+  and a project's `package.json` / `pyproject.toml` (which decide which tools run).
 - Files of an adopted repository: `xaden/xaden.conf` (version, checksum, mode and the commands `check.<name>`
   that `xaden check` runs), `xaden/footprint.txt` (paths `xaden project remove` deletes), `xaden/baselines/`,
   `xaden/prompts/`, the existing `AGENTS.md`, `CLAUDE.md`, hook files and workflows.
@@ -104,8 +102,6 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
 | Malicious `BASE_REF` in CI | CI runner | value validated before use | REQ-022, smoke "CI rejects a malformed base ref" |
 | Update overwrites a project's own edits | project integrity | three-way comparison; conflicts written as `*-dist` | REQ-017, smoke `test_scaffold_update` |
 | Symlink in a project redirects an update's writes outside the project | users' machines | writes refused when the path or a parent is a symlink (review 2026-10-11 #1) | REQ-017, smoke `test_update_safety` |
-| Edited manifest makes an update delete project-owned files | project integrity | manifest paths outside `MANAGED_PATHS` ignored (review #2) | REQ-017, smoke `test_update_safety` |
-| Crafted ID in an old requirements table makes the migration write outside `docs/requirements/` | users' machines | every ID must be `REQ-nnn` before anything is written (review 2026-10-11-audit-fixes #1) | REQ-048, smoke `test_requirements_migration` |
 | Impossible expiry date keeps an accepted vulnerability "valid" | trust in the gates | month 01–12 and day 01–31 required (review 2026-10-11-audit-fixes #2) | REQ-057, smoke `test_security_exceptions` |
 | `fix` trailer with any text containing "none" passes | trust in the gates | only the exact value `none` replaces a requirement (review 2026-10-11-audit-fixes #3) | REQ-022, smoke `test_commit_bypasses` |
 | Repository token left in `.git/config` while CI runs project code | CI runner | `persist-credentials: false` on every checkout (review #3) | REQ-019, smoke `test_ci_credentials` |

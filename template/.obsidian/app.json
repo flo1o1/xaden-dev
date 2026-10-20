@@ -1,7 +1,0 @@
-{
-  "userIgnoreFilters": ["node_modules/", ".git/", ".venv/", "dist/", "build/"],
-  "newFileLocation": "folder",
-  "newFileFolderPath": "prompts",
-  "alwaysUpdateLinks": true,
-  "propertiesInDocument": "visible"
-}

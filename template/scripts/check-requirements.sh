@@ -31,7 +31,6 @@ DIR="${1:-$REQ_DIR}"
 DATE_PLACEHOLDER="{{""DATE}}"
 
 [ -d "$DIR" ] || die "$DIR not found"
-[ -f "$DIR/REQUIREMENTS.md" ] && die "$DIR/REQUIREMENTS.md uses the old table format; run scripts/migrate-requirements.sh"
 
 # check_epics: every epic folder has EPIC.md with a title and a non-empty "## Goal".
 check_epics() {
@@ -55,7 +54,7 @@ check_epics() {
 check_files() {
   local files
   files="$(requirement_files "$DIR")"
-  if [ -z "$files" ] && [ "$LAYOUT" = "adopted" ]; then # a freshly adopted project starts without requirements
+  if [ -z "$files" ]; then # a freshly created or adopted project starts without requirements
     echo "no requirements yet (write them with: xaden prompt kickoff)"
     return 0
   fi

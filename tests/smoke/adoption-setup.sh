@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2016 # bash -c programs are single-quoted on purpose
-# Smoke test area "adoption-setup" (REQ-121, part of REQ-066 to REQ-076: adopting, assistant commands, reuse of existing tooling, migration, new-project layout).
+# Smoke test area "adoption-setup" (REQ-121, part of REQ-066 to REQ-076: adopting, assistant commands, reuse of existing tooling, the layout xaden project create writes).
 # Sourced by tests/smoke.sh, which defines the helpers and creates the demo project first.
 # shellcheck source=SCRIPTDIR/adoption-lib.sh
 source "$SMOKE_DIR/adoption-lib.sh"
@@ -424,27 +424,6 @@ test_autopilot() {
   assert "an existing project is not touched again" test "$XRC" -eq 2
 }
 
-# REQ-071 a project with a copy of the tooling moves to the pinned layout with `xaden project adopt`
-test_migration() {
-  local repo="$WORKDIR/repos/classic" worktree
-  rm -rf "$repo"
-  env ALLOW_MAIN_COMMIT=0 "$SCAFFOLD_ROOT/scripts/new-project.sh" classic-app "$repo" >/dev/null 2>&1
-  printf '\nOur own twist.\n' >>"$repo/prompts/feature.md"
-  git -C "$repo" commit -q -n -am "docs: our feature prompt"
-  x_in "$repo" project adopt --yes --skip-ci
-  worktree="$repo-adopt-xaden"
-  assert "migration succeeds" test "$XRC" -eq 0
-  assert "requirements move into xaden/" test -f "$worktree/xaden/requirements/INDEX.md" -a -d "$worktree/xaden/requirements/first-epic"
-  assert "the copied tooling is removed" test ! -e "$worktree/scripts/check.sh" -a ! -e "$worktree/prompts/bugfix.md" -a ! -e "$worktree/.scaffold"
-  assert "a prompt the team edited stays" grep -q 'Our own twist' "$worktree/prompts/feature.md"
-  assert "the edited file is listed" grep -q 'prompts/feature.md' "$XOUT"
-  assert "the project's own README and guides stay" test -f "$worktree/README.md" -a -f "$worktree/docs/user-guide.md"
-  assert "AGENTS.md is now the short block" bash -c '[ "$(wc -l <"$1")" -lt 12 ] && grep -q "xaden/RULES.md" "$1"' _ "$worktree/AGENTS.md"
-  assert "the copied hooks path is gone and Xaden is chained" bash -c 'test -z "$(git -C "$1" config --get core.hooksPath || true)" && grep -q "xaden hook pre-commit" "$1/.git/hooks/pre-commit"' _ "$repo"
-  x_in "$worktree" check
-  assert "the migrated project passes the checks" test "$XRC" -eq 0
-}
-
 # REQ-066 `xaden project create` creates the same layout `xaden project adopt` gives an empty repository
 test_new_project_layout() {
   local base="$WORKDIR/new-layout" project
@@ -531,5 +510,4 @@ test_other_assistant_commands
 test_reuse_of_existing_tooling
 test_prompts_and_ignore_list
 test_autopilot
-test_migration
 test_new_project_layout

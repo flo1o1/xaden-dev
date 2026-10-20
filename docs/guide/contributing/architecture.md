@@ -10,7 +10,7 @@ template/             the product: copied 1:1 into every new project
   prompts/            prompt library (open template/ or a project as Obsidian vault)
   docs/               user-guide, admin-guide, requirements, ADRs, clean-code, security, local-llm
   scripts/            setup, check, release, hooks, req, context-status, stacks/
-scripts/              scaffold tools: xaden, install, get-xaden (the one-line installer), new-project (test fixture),
+scripts/              scaffold tools: xaden, install, get-xaden (the one-line installer), create,
                       adopt (+ adopt-scan, adopt-lib), fetch (downloads, pin, upgrade), autopilot, setup,
                       check-scaffold, release-scaffold
 docs/guide/           the guides; they are also the source of the pages on the website

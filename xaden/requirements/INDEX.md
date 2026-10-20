@@ -12,12 +12,8 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Project setup (`project-setup`)
 
-30 done, 5 dropped.
+32 done, 5 dropped.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-133 | job | should | approved | Xaden knows one project layout |
-| REQ-134 | job | should | approved | The Xaden repository is an adopted project |
 
 ## Quality gates (`quality-gates`)
 

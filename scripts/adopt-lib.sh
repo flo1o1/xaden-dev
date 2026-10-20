@@ -99,48 +99,6 @@ remove_block() {
 
 # --- the footprint: everything a step puts outside xaden/ (REQ-073) -------------------
 
-# --- migration: a project created by `xaden project create` keeps a copy of the tooling (REQ-071) ---
-
-# move_team_content <dir> <from> <to> [except-name]: moves the files of a folder into the xaden
-# folder and leaves the scaffold's template file behind.
-move_team_content() {
-  local dir=$1 from=$2 to=$3 except=${4:-} entry
-  [ -d "$dir/$from" ] || return 0
-  mkdir -p "$dir/$to"
-  for entry in "$dir/$from"/* "$dir/$from"/.[!.]*; do
-    [ -e "$entry" ] || continue
-    [ -z "$except" ] || [ "$(basename "$entry")" != "$except" ] || continue
-    mv "$entry" "$dir/$to/"
-  done
-  rmdir "$dir/$from" 2>/dev/null || true
-}
-
-# apply_migration <dir>: the team content of a copied layout moves into xaden/; the copied
-# tooling the project did not edit is removed (what it edited stays and is listed). The
-# project's own files (README, guides, changelog, code) are never touched.
-apply_migration() {
-  local dir=$1 manifest="$1/.scaffold/manifest" sum path kept=""
-  move_team_content "$dir" docs/requirements xaden/requirements
-  move_team_content "$dir" docs/personas xaden/personas 0000-template.md
-  move_team_content "$dir" docs/security-reviews xaden/security-reviews 0000-template.md
-  move_team_content "$dir" docs/decisions xaden/decisions 0000-template.md
-  for path in security-exceptions deferred-work threat-model architecture; do
-    if [ -f "$dir/docs/$path.md" ]; then mkdir -p "$dir/xaden"; mv "$dir/docs/$path.md" "$dir/xaden/$path.md"; fi
-  done
-  while IFS="$(printf '\t')" read -r sum path; do
-    case "$path" in /* | *..* | "") continue ;; esac
-    [ -f "$dir/$path" ] || continue
-    if [ "$(content_sum <"$dir/$path")" = "$sum" ]; then
-      delete_file "$dir/$path"
-    else
-      kept="$kept $path"
-    fi
-  done <"$manifest"
-  [ -z "$kept" ] || warn "left in place because it differs from the template (compare it with Xaden's, then delete it):$kept"
-  rm -rf "${dir:?}/.scaffold"
-  find "$dir" -mindepth 1 -type d -empty ! -path "$dir/.git/*" ! -path "$dir/xaden/*" -delete 2>/dev/null || true
-}
-
 # --- step 1: the xaden folder and the pointers ----------------------------------------
 
 # expected_kinds: the kinds of checks a repository of the scanned stack should have.
