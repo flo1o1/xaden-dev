@@ -78,7 +78,7 @@ test_xaden_command() {
   # REQ-131 the moved commands live under core and project; their old top-level spellings are unknown
   assert "REQ-131 xaden core version prints the version" \
     test "$("$xaden" core version)" = "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
-  assert "REQ-131 xaden help lists the namespaces" bash -c "'$xaden' help | grep -q 'xaden <core|project>'"
+  assert "REQ-131 xaden help lists the namespaces" bash -c "'$xaden' help | grep -q 'xaden <core|project|aidd>'"
   assert "REQ-131 xaden help project lists the project commands" bash -c "'$xaden' help project | grep -q 'pin \[--check\]'"
   assert "REQ-131 xaden help core lists the core commands" bash -c "'$xaden' help core | grep -q 'upgrade'"
   assert_fails_with "REQ-131 xaden core without a command lists its commands" "xaden core <command>" "$xaden" core
