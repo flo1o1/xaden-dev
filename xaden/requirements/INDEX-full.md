@@ -167,4 +167,4 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-077 | job | should | done | Releases are signed so a pinned checksum comes from the maintainer |
 | REQ-106 | job | must | done | An adopted project audits its dependencies and runs Bandit like a new one |
 | REQ-136 | job | should | done | A release that should be signed is refused when its signature is missing |
-| REQ-145 | job | should | approved | The workflow of an adopted project installs shellcheck at a pinned, verified release |
+| REQ-145 | job | should | done | The workflow of an adopted project installs shellcheck at a pinned, verified release |

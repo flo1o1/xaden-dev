@@ -35,10 +35,12 @@ test_security_exceptions() {
 
 # REQ-145: the adopted workflow installs the shellcheck release the Xaden repository's own CI pins, verified by hash.
 test_adopted_ci_shellcheck_pin() {
-  local ci="$SCAFFOLD_ROOT/scripts/adopt/ci.yml" pin="$SCAFFOLD_ROOT/.github/shellcheck.version"
-  assert "REQ-145 the adopted workflow has the pinned shellcheck version and hash" \
-    bash -c ". '$pin'; grep -qF \"SHELLCHECK_VERSION: \\\"\$SHELLCHECK_VERSION\\\"\" '$ci' && grep -qF \"SHELLCHECK_SHA256: \\\"\$SHELLCHECK_SHA256\\\"\" '$ci'"
-  assert_fails "REQ-145 the adopted workflow does not install an unpinned shellcheck from apt" grep -q 'apt-get install.*shellcheck' "$ci"
+  local ci="$SCAFFOLD_ROOT/scripts/adopt/ci.yml" SHELLCHECK_VERSION SHELLCHECK_SHA256
+  # shellcheck source=/dev/null
+  . "$SCAFFOLD_ROOT/.github/shellcheck.version"
+  assert "REQ-145 the adopted workflow has the pinned shellcheck version" grep -qF "SHELLCHECK_VERSION: \"$SHELLCHECK_VERSION\"" "$ci"
+  assert "REQ-145 the adopted workflow has the pinned shellcheck hash" grep -qF "SHELLCHECK_SHA256: \"$SHELLCHECK_SHA256\"" "$ci"
+  assert_fails "REQ-145 the adopted workflow does not install shellcheck from apt" grep -q 'apt-get install.*shellcheck' "$ci"
   assert "REQ-145 the adopted workflow verifies the archive hash" grep -q 'SHELLCHECK_SHA256.*sha256sum -c' "$ci"
 }
 
