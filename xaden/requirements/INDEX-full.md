@@ -168,3 +168,4 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-106 | job | must | done | An adopted project audits its dependencies and runs Bandit like a new one |
 | REQ-136 | job | should | done | A release that should be signed is refused when its signature is missing |
 | REQ-144 | job | should | done | The offline SAST scans Go files with its own rules |
+| REQ-150 | job | should | approved | The offline SAST scans Ruby files with its own rules |
