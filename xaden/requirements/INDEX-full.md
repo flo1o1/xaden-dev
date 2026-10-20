@@ -85,7 +85,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-133 | job | should | done | Xaden knows one project layout |
 | REQ-134 | job | should | done | The Xaden repository is an adopted project |
 | REQ-135 | job | could | approved | I complete Xaden commands with the Tab key |
-| REQ-141 | job | should | approved | Adoption offers an owner for the files that control the checks |
+| REQ-141 | job | should | done | Adoption offers an owner for the files that control the checks |
 
 ## Quality gates (`quality-gates`)
 

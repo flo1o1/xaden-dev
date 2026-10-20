@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Adds Xaden to an existing repository, or takes it out again (REQ-066, REQ-067, REQ-069, REQ-070, REQ-073).
 # Usage: xaden project adopt [--scan | --plan] [--yes] [--assistants <list>] [--mode <mode>]
-#                    [--check <kind>=<command>]... [--preset | --no-preset] [--worktrees | --no-worktrees] [--skip-hooks] [--skip-ci]
+#                    [--check <kind>=<command>]... [--preset | --no-preset] [--worktrees | --no-worktrees] [--codeowner <@owner>] [--skip-hooks] [--skip-ci]
 #                    [--commit-convention <conventional|other>]
 #        xaden project remove [--yes]
 #   --scan        read the repository and report what it has; changes nothing
@@ -45,6 +45,9 @@ usage() {
   sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
+# is_codeowner <text>: true for @user or @org/team, the forms a CODEOWNERS file accepts here.
+is_codeowner() { printf '%s' "$1" | grep -Eq '^@[A-Za-z0-9][A-Za-z0-9-]*(/[A-Za-z0-9._-]+)?$'; }
+
 # parse_arguments <args...>: sets the choices.
 parse_arguments() {
   while [ "$#" -gt 0 ]; do
@@ -56,6 +59,10 @@ parse_arguments() {
       --no-preset) PRESET_CHOICE=no ;;
       --worktrees) WORKTREES_CHOICE=yes ;;
       --no-worktrees) WORKTREES_CHOICE=no ;;
+      --codeowner)
+        shift
+        is_codeowner "${1:-}" || die "--codeowner takes @user or @org/team"
+        ADOPT_CODEOWNER=$1 ;;
       --skip-hooks) ADOPT_HOOKS=0 ;;
       --skip-ci) ADOPT_CI=0 ;;
       --mode)
@@ -172,6 +179,15 @@ choose_worktrees() {
   if ask "Add a worktrees/ folder where change worktrees live? Git ignores everything in it; one small file."; then ADOPT_WORKTREES=1; fi
 }
 
+# choose_codeowner (REQ-141): the owner is asked for, never guessed; no answer means no candidate.
+choose_codeowner() {
+  [ -z "$ADOPT_CODEOWNER" ] || return 0
+  [ "$ASSUME_YES" != 1 ] || return 0
+  ask_text "Who reviews changes to the check settings, the baselines, AGENTS.md and the workflows? (@user or @org/team, empty: nobody)" "" || return 0
+  if is_codeowner "$ASK_TEXT_ANSWER"; then ADOPT_CODEOWNER=$ASK_TEXT_ANSWER
+  elif [ -n "$ASK_TEXT_ANSWER" ]; then warn "'$ASK_TEXT_ANSWER' is not @user or @org/team; no code owners candidate"; fi
+}
+
 # run_steps <dir> <record>: the steps, one commit each. record=1 also records the baselines.
 run_steps() {
   local dir=$1 record=$2
@@ -192,6 +208,10 @@ run_steps() {
   if [ "$ADOPT_WORKTREES" = 1 ]; then
     apply_worktrees "$dir"
     commit_step "$dir" "chore: add worktrees/ for Xaden change worktrees"
+  fi
+  if [ -n "$ADOPT_CODEOWNER" ]; then
+    apply_codeowners "$dir"
+    commit_step "$dir" "chore: propose code owners for the files that control Xaden's checks"
   fi
   if [ -n "$ADOPT_PRESET" ]; then
     apply_preset "$dir" "$ADOPT_PRESET"
@@ -309,6 +329,7 @@ adopt_main() {
   choose_assistants
   choose_preset
   choose_worktrees
+  choose_codeowner
   if [ -n "$SCAN_UNRECOGNISED$SCAN_FOUND_TOOLS" ] && [ "$ASSUME_YES" != 1 ] && has_terminal; then
     ask "Some tools were not recognised (listed above) and get no check. Continue anyway? Name their commands with --check <kind>=<command>." ||
       { echo "Nothing was changed."; return 0; }
