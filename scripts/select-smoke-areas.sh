@@ -41,7 +41,7 @@ main() {
     mapped=0
     while IFS='|' read -r area paths; do
       [ "$area" = '*all*' ] && continue
-      if matches "$file" "$paths tests/smoke/$area.sh docs/requirements/$area/"; then
+      if matches "$file" "$paths tests/smoke/$area.sh xaden/requirements/$area/"; then
         mapped=1
         case " $selected " in *" $area "*) ;; *) selected="$selected $area" ;; esac
       fi

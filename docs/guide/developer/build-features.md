@@ -61,7 +61,7 @@ At the start the assistant says whether a change is small, normal or large, with
 The assistant loads `AGENTS.md` and the requirements index in every session, so both stay under a byte budget however large the project grows (REQ-126):
 
 - `AGENTS.md` is at most 10240 bytes. It keeps the grounding rules, the nine clean-code rules, the trust and approval rules, the size table and the judgment rules. The rest moved word for word to `docs/rules/` (requirements and tests, checks, security, git, documentation, working style), and `AGENTS.md` tells the assistant when to read each file. In a project with an `xaden/` folder the same text is printed by `xaden doc rules-<topic>`, for example `xaden doc rules-git`.
-- `docs/requirements/INDEX.md` lists only requirements that are not `done` or `dropped`; those are counted per epic. The full table is `docs/requirements/INDEX-full.md`, which no tool imports. With 500 requirements and 50 of them open the index stays under 6144 bytes.
+- `xaden/requirements/INDEX.md` lists only requirements that are not `done` or `dropped`; those are counted per epic. The full table is `xaden/requirements/INDEX-full.md`, which no tool imports. With 500 requirements and 50 of them open the index stays under 6144 bytes.
 - `xaden req list --epic <epic> --status <status>` filters the list, and `xaden req show REQ-nnn --brief` prints the goal and the acceptance criteria only.
 - A hook or check that enforces a moved rule names the file that holds it in its message.
 

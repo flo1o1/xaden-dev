@@ -14,7 +14,7 @@ scripts/              scaffold tools: xaden, install, get-xaden (the one-line in
                       adopt (+ adopt-scan, adopt-lib), fetch (downloads, pin, upgrade), autopilot, setup,
                       check-scaffold, release-scaffold
 docs/guide/           the guides; they are also the source of the pages on the website
-docs/requirements/    requirements of the scaffold itself
+xaden/                 the scaffold's own requirements, security reviews, threat model and decisions (it adopts itself)
 inbox/                local drop zone (git-ignored contents)
 tests/smoke.sh        end-to-end test: generates a project and exercises its tooling;
                       areas in tests/smoke/ (one per epic)

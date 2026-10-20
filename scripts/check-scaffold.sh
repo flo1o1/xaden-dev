@@ -43,6 +43,15 @@ warn_shellcheck_version() {
     warn "shellcheck $local_version here, CI pins $pinned (.github/shellcheck.version): CI may flag findings this run does not"
 }
 
+# check_version_pin: the version pinned in xaden/xaden.conf is the one in VERSION; the release script stamps both (REQ-134).
+check_version_pin() {
+  local pinned version
+  pinned="$(conf_get "$ROOT/xaden/xaden.conf" version)"
+  version="$(tr -d '[:space:]' <"$ROOT/VERSION")"
+  [ "$pinned" = "$version" ] || { warn "xaden/xaden.conf pins $pinned, VERSION is $version"; return 1; }
+  info "xaden/xaden.conf pins $version"
+}
+
 REAL_ROOT="$ROOT" # the staged snapshot has no .git
 if [ "$MODE" = "staged" ]; then
   enter_staged_snapshot "$ROOT" # checks see exactly the staged content (REQ-020)
@@ -50,7 +59,8 @@ if [ "$MODE" = "staged" ]; then
 fi
 
 info "check mode: $MODE"
-run_tool "scaffold requirements" "$TEMPLATE_SCRIPTS/check-requirements.sh" --release "$ROOT/docs/requirements" # REQ-049: no TODO: left
+run_tool "scaffold requirements" "$TEMPLATE_SCRIPTS/check-requirements.sh" --release "$ROOT/xaden/requirements" # REQ-049: no TODO: left
+run_tool "version pin" check_version_pin # REQ-134
 run_tool "scaffold traceability" env PROJECT_ROOT="$ROOT" "$TEMPLATE_SCRIPTS/check-traceability.sh"
 run_tool "site pages" "$ROOT/scripts/check-site-pages.sh" "$ROOT" # REQ-064
 run_tool "third-party credits" "$ROOT/scripts/check-third-party.sh" "$ROOT" # REQ-113

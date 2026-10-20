@@ -12,7 +12,7 @@ How a change to Xaden itself is made, checked and landed. The rules are in `AGEN
 
 ## Requirements first
 
-Xaden's own requirements are in `docs/requirements/`, one file per requirement in an epic folder. When scope changes, update them first and look them up with
+Xaden's own requirements are in `xaden/requirements/`, one file per requirement in an epic folder. When scope changes, update them first and look them up with
 `xaden req show REQ-nnn`, never from memory. A requirement is drafted and approved before any branch exists.
 
 ## Branch and worktree
@@ -22,7 +22,7 @@ the pre-commit hook refuses it.
 
 ```bash
 git worktree add --no-checkout -b feat/req-066-adopt worktrees/req-066-adopt main
-git -C worktrees/req-066-adopt sparse-checkout set --cone docs/requirements template/scripts
+git -C worktrees/req-066-adopt sparse-checkout set --cone xaden/requirements template/scripts
 git -C worktrees/req-066-adopt checkout
 ```
 

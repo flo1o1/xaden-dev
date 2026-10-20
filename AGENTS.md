@@ -5,7 +5,7 @@ This repository **is the scaffold**. Read this before changing it.
 - `template/` is the product: every file there is copied into new projects.
   Its rules (`template/AGENTS.md`) apply here too, especially the clean-code rules
   `CC-01`…`CC-09` in its section 3 and the grounding rules in its section 0.
-- The scaffold's own requirements are in `docs/requirements/` (one file per requirement, this
+- The scaffold's own requirements are in `xaden/requirements/` (one file per requirement, this
   repository, not the template). Update them first when scope changes; look them up with
   `xaden req show REQ-nnn`, never from memory.
 - Commits: Conventional Commits; `feat` needs `Refs: REQ-nnn` from **this** repository's
@@ -14,7 +14,7 @@ This repository **is the scaffold**. Read this before changing it.
   (REQ-078). Not mandatory, but it shows at a glance what a branch is for.
 - Start of a change (REQ-082): the requirement is approved before any branch exists. Draft it in
   the chat or in `inbox/` and wait for the OK, then (worktrees live in `worktrees/`, git-ignored) `git worktree add --no-checkout -b <type>/req-nnn-<slug> worktrees/req-nnn-<slug> main`,
-  `git -C <worktree> sparse-checkout set --cone docs/requirements template/scripts`, `git -C <worktree> checkout`,
+  `git -C <worktree> sparse-checkout set --cone xaden/requirements template/scripts`, `git -C <worktree> checkout`,
   commit the requirement first, and run `git sparse-checkout disable` there when implementation starts.
 - While working (REQ-092): `tests/smoke.sh <area>` runs one smoke area (`--list` names them) and
   `scripts/check-scaffold.sh --staged` the fast offline subset; see "Smoke areas" below.
@@ -91,13 +91,13 @@ secret other than `GITHUB_TOKEN`: the scaffold holds no site credential and neve
 
 `tests/smoke.sh <area>` runs one area after the demo project is created; `tests/smoke.sh --list` names
 them. Pick the area by the requirement your change refers to (one area per epic under
-`docs/requirements/`, plus `adoption-setup`, `adoption-versions` and `adoption-checks`); the paths are the scripts it exercises most. CI runs the full
+`xaden/requirements/`, plus `adoption-setup`, `adoption-versions` and `adoption-checks`); the paths are the scripts it exercises most. CI runs the full
 suite once for the pull request (REQ-093), so run only the areas you touched before opening it.
 `scripts/check-smoke-areas.sh` (part of `scripts/check-scaffold.sh`) fails when an area has no row here, or
 when a row's paths differ from `docs/smoke-areas.txt`, the machine-readable table CI reads (REQ-114).
 
 **What CI runs (REQ-114).** `scripts/select-smoke-areas.sh <base> [head]` maps the changed files of a pull
-request to areas: the paths below, plus `tests/smoke/<area>.sh` and `docs/requirements/<area>/`. Each selected
+request to areas: the paths below, plus `tests/smoke/<area>.sh` and `xaden/requirements/<area>/`. Each selected
 area runs as its own job on both systems, with the offline checks and the commit-message check; the log names
 the skipped areas. All areas run when a changed path is in no row, when it is a shared file (the `*all*` line of
 the table: `template/scripts/lib.sh`, `scripts/xaden.sh`, `tests/smoke.sh`, `tests/smoke/lib.sh`,
@@ -113,7 +113,7 @@ or to the workflow therefore runs all areas. `SMOKE=skip scripts/check-scaffold.
 | `assistant-guidance` | epic `assistant-guidance` | `template/scripts/persona.sh`, `template/scripts/check-deferred-work.sh`, `template/AGENTS.md`, `template/prompts/`, `GETTING-STARTED.md`, `docs/guide/admin/`, `docs/guide/contributing/` |
 | `project-setup` | epic `project-setup` | `scripts/new-project.sh`, `scripts/install.sh`, `scripts/setup.sh`, `scripts/aidd.sh` |
 | `quality-gates` | epic `quality-gates` | `template/scripts/check.sh`, `scripts/check-scaffold.sh`, `template/scripts/verify-commits.sh`, `template/scripts/verify-refs.sh` |
-| `requirements` | epic `requirements` | `template/scripts/req.sh`, `template/scripts/check-requirements.sh`, `template/scripts/check-traceability.sh`, `docs/requirements/INDEX.md` |
+| `requirements` | epic `requirements` | `template/scripts/req.sh`, `template/scripts/check-requirements.sh`, `template/scripts/check-traceability.sh`, `xaden/requirements/INDEX.md` |
 | `security` | epic `security` | `template/scripts/check-security-exceptions.sh`, `template/.semgrep/` |
 | `release-and-docs` | epic `release-and-docs` | `scripts/release-scaffold.sh`, `template/scripts/release.sh`, `scripts/sign-release.sh`, `scripts/check-site-pages.sh`, `scripts/check-third-party.sh`, `scripts/check-aidd-mapping.sh`, `scripts/check-release-archive.sh`, `.gitattributes`, `CHANGELOG.md`, `THIRD-PARTY.md`, `docs/site-pages.txt`, `GETTING-STARTED.md`, `docs/guide/admin/`, `docs/guide/contributing/` |
 
@@ -132,7 +132,7 @@ the root as in any project (REQ-085; `xaden check` is `scripts/check-scaffold.sh
 | `AGENTS.md` | this file, plus the rules in `template/AGENTS.md` |
 | `docs/clean-code.md`, `docs/security.md` | `template/docs/clean-code.md`, `template/docs/security.md` |
 | `docs/architecture.md` | the "Layout" section of `README.md` and this file |
-| `docs/threat-model.md`, `docs/security-reviews/` | the same paths at the root (the scaffold's own) |
+| `docs/threat-model.md`, `docs/security-reviews/` | `xaden/threat-model.md`, `xaden/security-reviews/` (the scaffold's own) |
 | `docs/security-reviews/0000-template.md` | `template/docs/security-reviews/0000-template.md` |
 | `scripts/check.sh`, `scripts/req.sh`, `scripts/context-status.sh` | `xaden check`, `xaden req`, `xaden context` |
 | `scripts/release.sh <part>` | `scripts/release-scaffold.sh [--check] <part>` on a `release/v<version>` branch, landed as described above; tag the merge commit, never push to `main` |

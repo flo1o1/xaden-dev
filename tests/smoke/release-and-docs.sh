@@ -19,6 +19,7 @@ test_scaffold_release_failures() {
   cp "$SCAFFOLD_ROOT/template/scripts/lib.sh" "$SCAFFOLD_ROOT/template/scripts/layout.sh" "$SCAFFOLD_ROOT/template/scripts/gate.sh" "$copy/template/scripts/"
   printf '#!/bin/sh\nexit 0\n' >"$copy/scripts/check-scaffold.sh" && chmod +x "$copy/scripts/check-scaffold.sh"
   printf '0.1.0\n' >"$copy/VERSION"
+  mkdir -p "$copy/xaden" && printf 'version = 0.1.0\n' >"$copy/xaden/xaden.conf"
   printf '# Changelog\n\n## [Unreleased]\n\n- change\n' >"$copy/CHANGELOG.md"
   git -C "$copy" init -q -b main && git -C "$copy" add -A && git -C "$copy" commit -q -m "chore: init"
   head="$(git -C "$copy" rev-parse HEAD)"
@@ -230,7 +231,7 @@ test_aidd_mapping() {
   page="$copy/docs/guide/developer/xaden-and-the-aidd-manifesto.md"
   mkdir -p "$copy/docs/guide/developer" "$copy/template/scripts"
   cp "$SCAFFOLD_ROOT/template/scripts/lib.sh" "$SCAFFOLD_ROOT/template/scripts/layout.sh" "$SCAFFOLD_ROOT/template/scripts/gate.sh" "$copy/template/scripts/"
-  cp -R "$SCAFFOLD_ROOT/docs/requirements" "$copy/docs/" && cp -R "$SCAFFOLD_ROOT/template/AGENTS.md" "$copy/template/" && cp "$SCAFFOLD_ROOT/THIRD-PARTY.md" "$copy/"
+  mkdir -p "$copy/xaden" && cp -R "$SCAFFOLD_ROOT/xaden/requirements" "$copy/xaden/" && cp "$SCAFFOLD_ROOT/xaden/xaden.conf" "$copy/xaden/" && cp -R "$SCAFFOLD_ROOT/template/AGENTS.md" "$copy/template/" && cp "$SCAFFOLD_ROOT/THIRD-PARTY.md" "$copy/"
   cp "$SCAFFOLD_ROOT/docs/guide/developer/xaden-and-the-aidd-manifesto.md" "$page"
   assert "a copy of the page passes" "$check" "$copy"
   grep -v '^| P09 |' "$SCAFFOLD_ROOT/docs/guide/developer/xaden-and-the-aidd-manifesto.md" >"$page"
@@ -256,10 +257,10 @@ test_readme_wording() {
 
 # REQ-115: the assessment of the AIDD reference framework is a decision record that stays proposed until approved.
 test_aidd_decision_record() {
-  local record="$SCAFFOLD_ROOT/docs/decisions/0001-aidd-reference-framework.md"
+  local record="$SCAFFOLD_ROOT/xaden/decisions/0001-aidd-reference-framework.md"
   assert "the decision record exists with a status" grep -qE '^- Status: (proposed|accepted)' "$record"
   assert "the decision record names license and maturity" grep -q 'MIT' "$record"
-  assert "the archive leaves out the maintainer decision records" grep -qx '/docs/decisions export-ignore' "$SCAFFOLD_ROOT/.gitattributes"
+  assert "the archive leaves out the maintainer decision records" grep -qx '/xaden export-ignore' "$SCAFFOLD_ROOT/.gitattributes"
 }
 
 # The guides link to each other with relative paths (the website turns them into page links): every target exists.
@@ -284,12 +285,14 @@ test_scaffold_release_check_option() {
   # shellcheck disable=SC2016 # the $ expressions belong to the stub script, not to this shell
   printf '#!/bin/sh\ntouch "$CHECK_MARKER"\n[ -z "${FAIL_CHECK:-}" ] || exit 1\n' >"$base/scripts/check-scaffold.sh" && chmod +x "$base/scripts/check-scaffold.sh"
   printf '0.1.0\n' >"$base/VERSION"
+  mkdir -p "$base/xaden" && printf 'version = 0.1.0\n' >"$base/xaden/xaden.conf"
   printf '# Changelog\n\n## [Unreleased]\n\n- change\n' >"$base/CHANGELOG.md"
   git -C "$base" init -q -b main && git -C "$base" add -A && git -C "$base" commit -q -m "chore: init"
 
   copy="$WORKDIR/scaffold-release-default" && rm -rf "$copy" && cp -R "$base" "$copy"
   out="$(CHECK_MARKER="$copy.ran" "$copy/scripts/release-scaffold.sh" patch 2>&1)" || true
   assert "a release without --check does not run the full check" test ! -e "$copy.ran"
+  assert "REQ-134 the release stamps the pin in xaden/xaden.conf with VERSION" test "$(tr -d '[:space:]' <"$copy/VERSION")" = "0.1.1" -a "$(sed -n 's/^version = //p' "$copy/xaden/xaden.conf")" = "0.1.1"
   assert "a release without --check says the check was skipped" grep -q 'full check skipped' <<<"$out"
   assert "a release without --check still stamps the version" test "$(cat "$copy/VERSION")" = "0.1.1"
 
@@ -332,7 +335,7 @@ test_release_archive() {
   local extracted="$WORKDIR/archive-run" bin="$WORKDIR/archive-bin" root="$WORKDIR/archive-root" repo="$WORKDIR/archive-repo" path
   mkdir -p "$extracted"
   git -C "$SCAFFOLD_ROOT" archive "$(git -C "$SCAFFOLD_ROOT" write-tree)" | tar -x -C "$extracted"
-  for path in tests docs/requirements docs/security-reviews docs/threat-model.md docs/release-signing.md docs/site-pages.txt .githooks .github .claude inbox \
+  for path in tests xaden docs/release-signing.md docs/site-pages.txt .githooks .github .claude inbox \
     AGENTS.md CLAUDE.md scripts/sign-release.sh scripts/release-scaffold.sh scripts/check-scaffold.sh scripts/setup.sh; do
     assert "the archive leaves out $path" test ! -e "$extracted/$path"
   done

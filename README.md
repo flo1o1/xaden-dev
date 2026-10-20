@@ -19,7 +19,7 @@ relative to it.
 | Clean code | Rules in `AGENTS.md`, details in `docs/clean-code.md`, review/refactor prompts |
 | Static analysis | `scripts/check.sh`: shellcheck, gitleaks, semgrep, per-stack linters/type/audit (Python, Node) |
 | Security | `docs/security.md`, `/xaden-security` and tool-agnostic `prompts/security-review.md` (OWASP WSTG based) |
-| Requirements tracking | `docs/requirements/`: one file per requirement in epic folders, functional ones as Jobs To Be Done, quality ones as measurable goals; validated by `scripts/check-requirements.sh`; the AI must update them when scope changes |
+| Requirements tracking | `xaden/requirements/`: one file per requirement in epic folders, functional ones as Jobs To Be Done, quality ones as measurable goals; validated by `scripts/check-requirements.sh`; the AI must update them when scope changes |
 | Semantic versioning | `VERSION`, `CHANGELOG.md`, Conventional Commits hook, `scripts/release.sh` |
 | User + admin docs | `docs/user-guide.md`, `docs/admin-guide.md` (install, system requirements, config, hardening, upgrade); filled by `/xaden-docs`, structure checked by `scripts/check-docs.sh` (not content), release blocked while incomplete |
 | Fewer invented rules/requirements | Numbered rules (`CC-nn`) and requirements (`REQ-nnn`); Claude Code imports them into every session; `scripts/req.sh` lookup; commit hook and traceability check reject unknown IDs. `scripts/context-status.sh` fingerprints the files the assistant started from: a consistency aid, not proof it read or followed them |
@@ -44,7 +44,7 @@ template/             the product: copied 1:1 into every new project
   scripts/            setup, check, release, hooks, req, context-status, stacks/
 scripts/              scaffold tools: xaden + install (+ get-xaden, the one-line installer), new-project (test fixture), adopt (+ adopt-scan, adopt-lib), fetch (downloads,
                       upgrade), autopilot, setup, check-scaffold, release-scaffold
-docs/requirements/    requirements of the scaffold itself
+xaden/                 the scaffold's own requirements, security reviews, threat model and decisions (it adopts itself)
 inbox/                local drop zone (git-ignored contents)
 tests/smoke.sh        end-to-end test: generates a project and exercises its tooling;
                       areas in tests/smoke/ (one per epic), run one: tests/smoke.sh <area>
