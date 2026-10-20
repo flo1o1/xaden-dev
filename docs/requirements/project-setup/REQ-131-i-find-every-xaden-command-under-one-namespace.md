@@ -3,8 +3,8 @@ id: REQ-131
 type: job
 epic: project-setup
 priority: should
-status: approved
-updated: 2026-10-19
+status: done
+updated: 2026-10-20
 ---
 
 # I find every Xaden command under one namespace that says what it acts on
