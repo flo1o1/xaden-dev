@@ -349,7 +349,7 @@ TOP_LEVEL_COMMANDS="core project aidd check req version context verify-commits p
 
 # completion_main <shell>: the completion script of a shell on stdout; its command lists are the ones above (REQ-135).
 completion_main() {
-  [ "${1:-}" = bash ] && [ "$#" -eq 1 ] || { usage_core >&2; exit 2; }
+  case "$*" in bash) ;; *) usage_core >&2; exit 2 ;; esac
   local prompts="" file name
   for file in "$SCAFFOLD_ROOT"/template/prompts/*.md; do
     name=${file##*/}
