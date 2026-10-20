@@ -162,6 +162,8 @@ XADEN="$SCAFFOLD_ROOT/scripts/xaden.sh"
 # The git hooks of the fixtures call `xaden`: it must be this checkout's command, not one installed on the machine.
 mkdir -p "$WORKDIR/bin" && ln -sf "$XADEN" "$WORKDIR/bin/xaden"
 export PATH="$WORKDIR/bin:$PATH"
+# Test releases are 9.9.9 and unsigned; only the signature tests restore the real floor (REQ-136).
+export XADEN_FIRST_SIGNED_VERSION=99.0.0
 XOUT="$WORKDIR/xaden.out"
 XRC=0
 
