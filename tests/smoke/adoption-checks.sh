@@ -205,6 +205,26 @@ test_scope_of_changed_files() {
     for f in "$1/scripts/adopt/ci.yml"; do
       awk "/name: (Xaden checks|Static analysis) \\(full run/ { step = 1 } step && /EVENT_NAME:/ { e = 1 } step && /BASE_REF:/ { b = 1 } step && /BEFORE_SHA:/ { s = 1 } step && /run:/ { exit !(e && b && s) }" "$f" || exit 1
     done' _ "$SCAFFOLD_ROOT"
+
+  # REQ-137 a pull request does not judge itself: changed settings stop the run until a person accepts them
+  edit_file "$conf" 's/^mode = .*/mode = advisory/'
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -am "chore: looser mode"
+  scope_run EVENT_NAME=pull_request BASE_REF=release
+  assert "REQ-137 a changed mode fails the pull request run" test "$XRC" -ne 0
+  assert "REQ-137 the run names the change" grep -q 'check settings changed' "$XOUT"
+  assert "REQ-137 the changed line is shown" grep -q 'now: mode = advisory' "$XOUT"
+  scope_run SETTINGS_ACCEPTED=true EVENT_NAME=pull_request BASE_REF=release
+  assert "REQ-137 the label accepts the change" grep -q 'accepted by the label' "$XOUT"
+  scope_run EVENT_NAME=push BEFORE_SHA="$before_violation"
+  assert "REQ-137 a push run compares nothing" bash -c '! grep -q "check settings changed" "$1"' _ "$XOUT"
+  edit_file "$conf" 's/^mode = .*/mode = changed-files/'
+  mkdir -p "$worktree/xaden/baselines" && printf 'a.py: new finding\n' >>"$worktree/xaden/baselines/stub.txt"
+  git -C "$worktree" add -A && git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "chore: bigger baseline"
+  scope_run EVENT_NAME=pull_request BASE_REF=release
+  assert "REQ-137 a baseline that grew fails the run" grep -q 'baseline stub grew from 0 to 1' "$XOUT"
+  # a baseline records every occurrence: three findings against one baselined line leave two new ones
+  printf 'a.py: m\na.py: m\na.py: m\nb.py: x\n' >"$WORKDIR/keys.txt" && printf 'a.py: m\n' >"$WORKDIR/base.txt"
+  assert "REQ-137 a baselined key hides one occurrence, not all" test "$(bash -c 'source "$1"; gate_new_violations "$2" "$3" | wc -l' _ "$SCAFFOLD_ROOT/template/scripts/lib.sh" "$WORKDIR/keys.txt" "$WORKDIR/base.txt" | tr -d ' ')" -eq 3
 }
 
 # REQ-108 the commit convention comes from evidence and is shown with its consequence
