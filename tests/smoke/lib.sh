@@ -205,6 +205,27 @@ test_new_project() {
   x_in "$DEMO" req new first-epic job "Describe the first job"
   assert "the adopted demo project has a placeholder requirement" test -f "$DEMO/xaden/requirements/first-epic/REQ-001-describe-the-first-job.md"
   git -C "$DEMO" add -A && git -C "$DEMO" commit -q --no-verify -m "docs: placeholder requirement"
+  make_demo_tools
+}
+
+# make_demo_tools: $DEMO_TOOLS holds one executable per script of template/scripts that runs it on the adopted demo project
+# (PROJECT_ROOT, unless the caller sets another), so an area calls "$DEMO_TOOLS/check-requirements.sh" like a script of the project.
+# shellcheck disable=SC2016 # the wrapper's ${PROJECT_ROOT:-...} must stay literal in the generated script
+make_demo_tools() {
+  local script name
+  DEMO_TOOLS="$WORKDIR/demo-tools"
+  mkdir -p "$DEMO_TOOLS"
+  for script in "$SCAFFOLD_ROOT"/template/scripts/*.sh; do
+    name="$(basename "$script")"
+    printf '#!/usr/bin/env bash\nexec env PROJECT_ROOT="${PROJECT_ROOT:-%s}" "%s" "$@"\n' "$DEMO" "$script" >"$DEMO_TOOLS/$name"
+    chmod +x "$DEMO_TOOLS/$name"
+  done
+  mkdir -p "$DEMO_TOOLS/hooks"
+  for script in "$SCAFFOLD_ROOT"/template/scripts/hooks/*; do
+    name="$(basename "$script")"
+    printf '#!/usr/bin/env bash\nexec env PROJECT_ROOT="${PROJECT_ROOT:-%s}" "%s" "$@"\n' "$DEMO" "$script" >"$DEMO_TOOLS/hooks/$name"
+    chmod +x "$DEMO_TOOLS/hooks/$name"
+  done
 }
 
 # git needs an identity inside the sandbox project.
