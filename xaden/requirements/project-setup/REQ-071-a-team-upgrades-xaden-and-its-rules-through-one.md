@@ -4,7 +4,7 @@ type: job
 epic: project-setup
 priority: must
 status: done
-updated: 2026-10-14
+updated: 2026-10-20
 ---
 
 # A team upgrades Xaden and its rules through one reviewed pull request
@@ -19,4 +19,3 @@ When a newer Xaden version is out, I want to switch the whole team in one review
 - Given a newer Xaden installed on one machine, then no repository file changes; `xaden doctor` only reports "installed X, project pinned Y".
 - Given `xaden/RULES.md` that does not match the pinned version, when the hook or CI runs, then the check fails and names the fix.
 - Given `xaden doctor`, then it contacts no network; looking for newer releases happens only with `xaden upgrade --check`.
-- Given a project that still holds the old copied layout, then the migration path is `xaden adopt` and it supersedes the copy-based update of REQ-017 and REQ-059 for projects that choose it.

@@ -12,7 +12,7 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Project setup (`project-setup`)
 
-31 done, 4 dropped.
+30 done, 5 dropped.
 
 | ID | Type | Priority | Status | Title |
 |----|------|----------|--------|-------|
