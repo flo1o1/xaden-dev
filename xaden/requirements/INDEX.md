@@ -17,6 +17,7 @@ lists them, and `INDEX-full.md` holds the full table.
 | ID | Type | Priority | Status | Title |
 |----|------|----------|--------|-------|
 | REQ-135 | job | could | approved | I complete Xaden commands with the Tab key |
+| REQ-141 | job | should | approved | Adoption offers an owner for the files that control the checks |
 
 ## Quality gates (`quality-gates`)
 
