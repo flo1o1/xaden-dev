@@ -41,8 +41,5 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Security (`security`)
 
-14 done.
+15 done.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-144 | job | should | approved | The offline SAST scans Go files with its own rules |

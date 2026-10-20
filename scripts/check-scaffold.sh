@@ -27,7 +27,7 @@ if [ "$MODE" = "full" ]; then refuse_nested_run check-scaffold.sh; fi
 test_semgrep_rules() {
   local workdir status=0
   workdir="$(mktemp -d)"
-  cp "$ROOT"/template/.semgrep/rules.yml "$ROOT"/tests/semgrep/rules.* "$workdir/"
+  cp "$ROOT"/template/.semgrep/*.yml "$ROOT"/tests/semgrep/* "$workdir/"
   semgrep --test --metrics=off --disable-version-check "$workdir" || status=$?
   rm -rf "$workdir"
   return "$status"

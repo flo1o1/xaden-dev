@@ -24,6 +24,8 @@ plus Xaden's own checks.
 | `pip-audit` (Python dependencies) | **unless mapped**: `check.audit` | skipped; fails with `--strict` and in CI | yes | no |
 | `npm audit` (Node dependencies) | **unless mapped**: `check.audit` | skipped; fails with `--strict` and in CI | yes | no |
 
+The local semgrep rules cover Python and JavaScript/TypeScript (`rules.yml`) and Go (`go.yml`, REQ-144); Java, PHP, Ruby and Rust files are not scanned. A file in another language gets no SAST finding, so a green run says nothing about it.
+
 A skipped check makes the run INCOMPLETE, never a success. The three audit rows are check kinds of an adopted project like `test` and
 `lint`: `check.audit` (every stack) and `check.security` (Bandit, Python only). `xaden project adopt` finds an existing command (a Makefile
 target `audit` or `security`, an npm script `audit`); `xaden project add-preset python` maps `pip-audit` and `bandit -q -r . -x ./.venv,./node_modules,./tests`,
