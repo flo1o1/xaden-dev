@@ -40,3 +40,8 @@ lists them, and `INDEX-full.md` holds the full table.
 
 14 done.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-138 | job | should | approved | The installed Xaden is checked against the pin before it runs |
+| REQ-139 | job | should | approved | The tree checksum refuses what it cannot see |
+| REQ-140 | job | could | approved | A moved Xaden home is confirmed like a moved download |
