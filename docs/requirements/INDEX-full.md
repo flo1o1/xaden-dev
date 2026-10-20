@@ -144,7 +144,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-021 | job | must | done | Requirements need complete fields and an eligible status |
 | REQ-046 | job | should | done | Functional requirements are written as Jobs To Be Done; quality requirements as measurable goals |
 | REQ-047 | job | should | done | One file per requirement, grouped in epic folders |
-| REQ-048 | job | should | done | Projects with a requirements table can migrate to the per-file format |
+| REQ-048 | job | should | dropped | Projects with a requirements table can migrate to the per-file format |
 | REQ-049 | job | should | done | The scaffold documents its own requirements in the per-file JTBD format |
 
 ## Security (`security`)

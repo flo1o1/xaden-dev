@@ -37,7 +37,7 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Requirements (`requirements`)
 
-7 done.
+6 done, 1 dropped.
 
 
 ## Security (`security`)

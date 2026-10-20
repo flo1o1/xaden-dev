@@ -98,9 +98,15 @@ assert_fails_with() {
   pass "$description"
 }
 
-# req_file <root> <REQ-nnn>: path of a requirement file below <root>/docs/requirements.
+# requirements_dir <root>: where a project keeps its requirements: xaden/requirements in the layout
+# every project has, docs/requirements in the old one (REQ-133 moves the areas over one by one).
+requirements_dir() {
+  if [ -d "$1/xaden/requirements" ]; then printf '%s' "$1/xaden/requirements"; else printf '%s' "$1/docs/requirements"; fi
+}
+
+# req_file <root> <REQ-nnn>: path of a requirement file of a project.
 req_file() {
-  find "$1/docs/requirements" -name "$2-*.md" | head -n 1
+  find "$(requirements_dir "$1")" -name "$2-*.md" | head -n 1
 }
 
 # edit_file <file> <sed-expression>: edits a file in place (portable, no sed -i).
@@ -108,23 +114,28 @@ edit_file() {
   sed "$2" "$1" >"$1.edit" && mv "$1.edit" "$1"
 }
 
-# set_status <REQ-nnn> <status>: changes a requirement's status in the demo project and
-# regenerates the index.
+# set_status <REQ-nnn> <status> [root]: changes a requirement's status in a demo project (default:
+# the classic one) and regenerates the index.
 set_status() {
-  edit_file "$(req_file "$PROJECT" "$1")" "s/^status: .*/status: $2/"
-  "$PROJECT/scripts/req.sh" index >/dev/null
+  local root="${3:-$PROJECT}"
+  edit_file "$(req_file "$root" "$1")" "s/^status: .*/status: $2/"
+  PROJECT_ROOT="$root" "$SCAFFOLD_ROOT/template/scripts/req.sh" index >/dev/null
 }
 
 
-# requirements_variant <name> <sed-expression>: a copy of the demo project's requirements with
-# REQ-001 edited and the index regenerated; prints the requirements directory.
+# requirements_variant <name> <sed-expression> [source]: a copy of a demo project's requirements (default: the
+# classic one) with REQ-001 edited and the index regenerated; prints the requirements directory.
 requirements_variant() {
-  local root="$WORKDIR/variants/$1"
-  rm -rf "$root" && mkdir -p "$root/docs"
-  cp -R "$PROJECT/docs/requirements" "$root/docs/"
+  local root="$WORKDIR/variants/$1" source="${3:-$PROJECT}"
+  rm -rf "$root" && mkdir -p "$root"
+  if [ -d "$source/xaden/requirements" ]; then
+    mkdir -p "$root/xaden" && cp -R "$source/xaden/requirements" "$root/xaden/" && cp "$source/xaden/xaden.conf" "$root/xaden/"
+  else
+    mkdir -p "$root/docs" && cp -R "$source/docs/requirements" "$root/docs/"
+  fi
   edit_file "$(req_file "$root" REQ-001)" "$2"
-  PROJECT_ROOT="$root" "$PROJECT/scripts/req.sh" index >/dev/null
-  printf '%s' "$root/docs/requirements"
+  PROJECT_ROOT="$root" "$SCAFFOLD_ROOT/template/scripts/req.sh" index >/dev/null
+  printf '%s' "$(requirements_dir "$root")"
 }
 
 # path_without <tool>: prints a PATH where every command except <tool> is available.
@@ -176,6 +187,9 @@ test_new_project() {
   assert "create the adopted demo project" test "$XRC" -eq 0
   assert "the adopted demo project has its team folder" test -f "$DEMO/xaden/xaden.conf" -a -d "$DEMO/xaden/requirements"
   assert "the adopted demo project has a first commit" git -C "$DEMO" log --oneline -1
+  x_in "$DEMO" req new first-epic job "Describe the first job"
+  assert "the adopted demo project has a placeholder requirement" test -f "$DEMO/xaden/requirements/first-epic/REQ-001-describe-the-first-job.md"
+  git -C "$DEMO" add -A && git -C "$DEMO" commit -q --no-verify -m "docs: placeholder requirement"
 }
 
 # git needs an identity inside the sandbox project.
