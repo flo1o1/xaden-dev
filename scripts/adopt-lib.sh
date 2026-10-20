@@ -115,6 +115,16 @@ expected_kinds() {
   return 0
 }
 
+# signature_policy_line: a new project accepts only releases the maintainer signed (REQ-136), when this
+# Xaden knows a key to verify them with; without a key the line would lock the project out.
+signature_policy_line() {
+  local signers="$SCAFFOLD_ROOT/release-signers"
+  # tests have no key unless they bring their own
+  if [ "${XADEN_TEST_MODE:-0}" = "1" ]; then signers="${XADEN_SIGNERS_FILE:-/dev/null}"; fi
+  grep -Ev '^[[:space:]]*(#|$)' "$signers" >/dev/null 2>&1 || return 0
+  printf '# Only releases signed by the maintainer (release-signers) may be installed. Set false to allow unsigned ones.\nrequire-signature = true'
+}
+
 # render_conf <expect>: the content of xaden/xaden.conf.
 render_conf() {
   local line
@@ -123,6 +133,7 @@ render_conf() {
 # The tooling is not copied here; this version and checksum select it (see xaden/README.md).
 version = $(running_version)
 checksum = $(running_checksum)
+$(signature_policy_line)
 # advisory: warn only. changed-files: fail for files the change touches. strict: fail for all.
 mode = $ADOPT_MODE
 commit-convention = $SCAN_CONVENTION
