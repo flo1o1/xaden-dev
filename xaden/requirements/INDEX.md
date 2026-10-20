@@ -43,3 +43,6 @@ lists them, and `INDEX-full.md` holds the full table.
 
 14 done.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-145 | job | should | approved | The workflow of an adopted project installs shellcheck at a pinned, verified release |
