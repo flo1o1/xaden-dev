@@ -28,6 +28,9 @@ ASSETS_URL="${XADEN_ASSETS_URL:-https://github.com/flo1o1/xaden-dev/releases/dow
 SIGNERS_FILE="$SCAFFOLD_ROOT/release-signers"
 # Tests may point to their own key; no other caller can change which keys are trusted.
 if [ "${XADEN_TEST_MODE:-0}" = "1" ]; then SIGNERS_FILE="${XADEN_SIGNERS_FILE:-$SIGNERS_FILE}"; fi
+# Releases from this version on were published with a signature; a missing one is an attack, not an old release.
+FIRST_SIGNED_VERSION=0.3.0
+if [ "${XADEN_TEST_MODE:-0}" = "1" ]; then FIRST_SIGNED_VERSION="${XADEN_FIRST_SIGNED_VERSION:-$FIRST_SIGNED_VERSION}"; fi
 SIGNATURE_NAMESPACE="xaden-release"
 SIGNER_PRINCIPAL="release@xaden.dev"
 LATEST_URL="${XADEN_LATEST_URL:-https://api.github.com/repos/flo1o1/xaden-dev/releases/latest}"
@@ -46,10 +49,27 @@ project_conf() {
   printf '%s' "$root/xaden/xaden.conf"
 }
 
+# confirm_url_overrides: names every download address taken from the environment and asks before it is used.
+# Test mode skips the question. Without a terminal it only names them: the callers stop there anyway.
+confirm_url_overrides() {
+  local name value found=0
+  [ "${XADEN_TEST_MODE:-0}" != "1" ] || return 0
+  for name in XADEN_RELEASES_URL XADEN_ASSETS_URL XADEN_LATEST_URL; do
+    value="${!name:-}"
+    [ -n "$value" ] || continue
+    warn "$name is set in the environment: $value" >&2
+    found=1
+  done
+  [ "$found" = 1 ] || return 0
+  has_terminal || return 0
+  ask "Download from the addresses above instead of github.com?" || { echo "Nothing was downloaded." >&2; exit 1; }
+}
+
 # confirm_download <version> <checksum|"">: shows what would arrive and asks. Returns 0 only for yes.
 # Without a terminal it prints the command to run yourself and exits with EXIT_NO_TERMINAL.
 confirm_download() {
   local version=$1 checksum=$2
+  confirm_url_overrides
   info "Xaden $version"
   echo "  source:   $(release_url "$version")"
   echo "  checksum: ${checksum:-not pinned yet; it is shown after the download and goes into xaden/xaden.conf}"
@@ -89,18 +109,23 @@ download_release() {
 # signing_keys_exist: true when release-signers holds at least one key.
 signing_keys_exist() { [ -f "$SIGNERS_FILE" ] && grep -Ev '^[[:space:]]*(#|$)' "$SIGNERS_FILE" >/dev/null; }
 
+# version_at_least <a> <b>: true when MAJOR.MINOR.PATCH a is b or newer.
+version_at_least() { [ "$(printf '%s\n%s\n' "$1" "$2" | sort -t. -k1,1n -k2,2n -k3,3n | head -n 1)" = "$2" ]; }
+
 # signed_checksum <version>: prints the checksum of a release that the maintainer signed. Returns 0
-# when the signature is valid, 10 when there is nothing to verify (no key in release-signers, no
-# ssh-keygen, no signature published for the release) and EXIT_SIGNATURE when a signature exists and
-# is wrong.
+# when the signature is valid, 10 when there is nothing to verify (no key in release-signers, or a
+# release older than FIRST_SIGNED_VERSION without ssh-keygen or without a published signature) and
+# EXIT_SIGNATURE when a signature is wrong, or missing for a release that was published signed.
 signed_checksum() {
-  local version=$1 dir status=0 line
-  signing_keys_exist && has_command ssh-keygen || return 10
+  local version=$1 dir status=0 line missing=10
+  signing_keys_exist || return 10
+  if version_at_least "$version" "$FIRST_SIGNED_VERSION"; then missing=$EXIT_SIGNATURE; fi
+  has_command ssh-keygen || return "$missing"
   dir="$(mktemp -d)"
   if ! curl -fsSL --max-filesize 4096 -o "$dir/checksum" "$ASSETS_URL/v$version/xaden-$version.checksum" ||
     ! curl -fsSL --max-filesize 4096 -o "$dir/checksum.sig" "$ASSETS_URL/v$version/xaden-$version.checksum.sig"; then
     rm -rf "${dir:?}"
-    return 10
+    return "$missing"
   fi
   ssh-keygen -Y verify -f "$SIGNERS_FILE" -I "$SIGNER_PRINCIPAL" -n "$SIGNATURE_NAMESPACE" -s "$dir/checksum.sig" <"$dir/checksum" >/dev/null 2>&1 || status=$?
   line="$(awk 'NR == 1 { print $1 }' "$dir/checksum")"
@@ -127,7 +152,7 @@ install_release() {
   signed="$(signed_checksum "$version")" || status=$?
   if [ "$status" -eq "$EXIT_SIGNATURE" ]; then
     rm -rf "${staging:?}"
-    warn "The signature of Xaden $version does not verify against the keys in release-signers. Nothing was installed."
+    warn "The signature of Xaden $version is missing or does not verify against the keys in release-signers. Nothing was installed."
     exit "$EXIT_SIGNATURE"
   elif [ "$status" -eq 0 ]; then
     if [ -n "$expected" ] && [ "$expected" != "$signed" ]; then
@@ -177,6 +202,7 @@ ensure_authenticated() {
   [ "$SIGNATURE_REQUIRED" = 1 ] || return 0
   if installation_authenticated "$version" "$dir" "${3:-}"; then return 0; fi
   info "This project requires signed releases; Xaden $version in $dir has no verified signature on record." >&2
+  confirm_url_overrides
   has_terminal || { warn "No terminal, so nothing was verified. Run this yourself in a terminal: xaden core fetch $version" >&2; exit "$EXIT_NO_TERMINAL"; }
   ask "Download the signed checksum of Xaden $version from github.com and verify the installed copy against it?" ||
     { echo "Nothing was verified." >&2; exit 1; }

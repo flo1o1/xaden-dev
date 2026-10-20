@@ -283,7 +283,9 @@ test_stack_enforcement() {
     assert "python preset applies" test "$XRC" -eq 0
     printf '"""Demo."""\n\n\ndef f(a, b, c, d, e):\n    """Too many args."""\n    return a\n' >"$DEMO/bad.py"
     git -C "$DEMO" add ruff.toml bad.py xaden/xaden.conf
-    assert_fails "preset rejects too many parameters (CC-01)" bash -c "cd '$DEMO' && '$DEMO_TOOLS/check.sh' --staged"
+    # REQ-137 the preset line is new to the last commit: without a yes the hook does not run it
+    assert "REQ-137 a changed check.lint line is skipped without a terminal" bash -c "cd '$DEMO' && '$DEMO_TOOLS/check.sh' --staged 2>&1 | grep -q 'would run on this machine'"
+    assert_fails "preset rejects too many parameters (CC-01)" env XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=y bash -c "cd '$DEMO' && '$DEMO_TOOLS/check.sh' --staged"
     git -C "$DEMO" rm -q --cached bad.py
     assert "preset accepts clean code" bash -c "cd '$DEMO' && '$DEMO_TOOLS/check.sh' --staged"
     git -C "$DEMO" reset -q --hard && git -C "$DEMO" clean -qfd

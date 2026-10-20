@@ -114,6 +114,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-109 | job | must | done | The CI commit check reads a range it can trust, and judges only the commits since the adoption |
 | REQ-114 | job | should | done | A pull request waits only for the checks its change can affect |
 | REQ-121 | job | should | done | A change to adoption waits for three short smoke areas, not one long one |
+| REQ-137 | job | should | done | A change to the checks is reviewed as code |
 
 ## Releases and documentation (`release-and-docs`)
 
@@ -165,3 +166,4 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-072 | job | must | done | Xaden downloads nothing without the person's explicit confirmation |
 | REQ-077 | job | should | done | Releases are signed so a pinned checksum comes from the maintainer |
 | REQ-106 | job | must | done | An adopted project audits its dependencies and runs Bandit like a new one |
+| REQ-136 | job | should | done | A release that should be signed is refused when its signature is missing |

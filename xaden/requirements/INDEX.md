@@ -20,7 +20,7 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Quality gates (`quality-gates`)
 
-22 done, 1 dropped.
+23 done, 1 dropped.
 
 | ID | Type | Priority | Status | Title |
 |----|------|----------|--------|-------|
@@ -41,5 +41,5 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Security (`security`)
 
-13 done.
+14 done.
 

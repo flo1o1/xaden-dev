@@ -77,11 +77,41 @@ check_findings_status_config() {
   done < <(conf_keys "$conf" "findings-status.")
 }
 
+# check_settings_unchanged: a pull request must not judge itself (REQ-137). In a pull request run, a change to
+# the settings that decide how the project is checked stops the run before any mapped command executes.
+SETTINGS_BLOCKED=0
+check_settings_unchanged() {
+  [ "$MODE" = "full" ] && [ -f "$TEAM_DIR/$CONF_NAME" ] || return 0
+  info "check settings unchanged from the merge base"
+  if "$SCRIPTS/check-settings.sh"; then
+    CHECKS_PASSED=$((CHECKS_PASSED + 1))
+  else
+    FAILURES=$((FAILURES + 1))
+    SETTINGS_BLOCKED=1
+  fi
+}
+
+# staged_command_confirmed <key> <command>: a mapped command that differs from the one the last commit had
+# runs in pre-commit only after a yes (REQ-137): the line is code that executes on this machine. Without a
+# terminal it does not run.
+staged_command_confirmed() {
+  local committed_conf committed
+  committed_conf="$(mktemp)"
+  if ! git -C "$GIT_REPO" show "HEAD:$TEAM_DIR_NAME/$CONF_NAME" >"$committed_conf" 2>/dev/null; then rm -f "$committed_conf"; return 0; fi
+  committed="$(conf_get "$committed_conf" "$1")"
+  rm -f "$committed_conf"
+  [ "$committed" != "$2" ] || return 0
+  warn "$1 changed in the staged xaden.conf and would run on this machine: $2" >&2
+  has_terminal || { warn "No terminal, so it did not run; 'xaden check' runs it after you read the line." >&2; return 1; }
+  ask "Run the changed command $1 now?" || { warn "Skipped $1." >&2; return 1; }
+}
+
 # check_mapped_commands: the commands the team mapped in xaden.conf ("check.<name> = <command>",
 # REQ-069) run under the project's mode and baseline. Pre-commit runs only the kinds named in
 # "hook-checks" (default: lint); the full run runs all. Expected kinds without a command are gaps:
 # a warning, an error in strict mode.
 check_mapped_commands() {
+  [ "$SETTINGS_BLOCKED" = 0 ] || return 0
   local conf="$TEAM_DIR/$CONF_NAME" key name kind hooked mode command_line binary expected network_note
   hooked="$(conf_get "$conf" hook-checks lint)"
   mode="$(project_mode "$ROOT")"
@@ -94,6 +124,7 @@ check_mapped_commands() {
     binary="${command_line%% *}"
     network_note=""
     [ "$name" != audit ] || network_note=" (needs the network)"
+    if [ "$MODE" = "staged" ] && ! staged_command_confirmed "$key" "$command_line"; then continue; fi
     if ! has_command "$binary"; then record_missing_tool "check: $name" "$binary"; continue; fi
     # the audits ask a vulnerability database: without a network they fail with the tool's own message (REQ-106)
     gate_run "$name" "check: $name${network_note}" bash -c "$command_line"
@@ -172,6 +203,7 @@ check_project_files
 lint_shell "$MODE"
 scan_secrets "$MODE"
 scan_sast "$MODE" "$TOOLS_DIR/.semgrep"
+check_settings_unchanged
 check_stacks
 if [ "$MODE" = "full" ]; then show_tips; fi
 
