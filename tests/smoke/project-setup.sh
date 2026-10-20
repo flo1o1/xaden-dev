@@ -73,17 +73,21 @@ test_xaden_command() {
   assert "install links xaden to this checkout" test "$(readlink "$xaden")" = "$SCAFFOLD_ROOT/scripts/xaden.sh"
   assert "xaden version prints the scaffold version" \
     test "$("$xaden" version)" = "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
-  assert "xaden help lists the commands" bash -c "'$xaden' help | grep -q 'create <name>'"
+  assert "xaden help project lists the commands" bash -c "'$xaden' help project | grep -q 'create <name>'"
   assert_fails "unknown xaden command fails" "$xaden" fly
   # REQ-131 the moved commands live under core and project; their old top-level spellings are unknown
   assert "REQ-131 xaden core version prints the version" \
     test "$("$xaden" core version)" = "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
-  assert "REQ-131 xaden help lists the namespaces" bash -c "'$xaden' help | grep -q 'xaden <core|project>'"
+  assert "REQ-131 xaden help lists the namespaces" bash -c "'$xaden' help | grep -q 'xaden <core|project|aidd>'"
   assert "REQ-131 xaden help project lists the project commands" bash -c "'$xaden' help project | grep -q 'pin \[--check\]'"
   assert "REQ-131 xaden help core lists the core commands" bash -c "'$xaden' help core | grep -q 'upgrade'"
   assert_fails_with "REQ-131 xaden core without a command lists its commands" "xaden core <command>" "$xaden" core
   assert_fails_with "REQ-131 xaden project without a command lists its commands" "xaden project <command>" "$xaden" project
   assert_fails_with "REQ-131 an unknown project command is named" "unknown command: xaden project fly" "$xaden" project fly
+  # REQ-132 version, check and req are aliases; aidd is a namespace with its own help
+  assert "REQ-132 xaden version is xaden core version" test "$("$xaden" version)" = "$("$xaden" core version)"
+  assert "REQ-132 xaden help project lists check and req" bash -c "'$xaden' help project | grep -q '^  check ' && '$xaden' help project | grep -q '^  req '"
+  assert "REQ-132 xaden help aidd lists its commands" bash -c "'$xaden' help aidd | grep -q 'enable' && '$xaden' help | grep -q 'xaden <core|project|aidd>'"
   for old in create adopt remove pin fetch doctor upgrade rules preset setup release persona ignore-list; do
     assert_fails_with "REQ-131 xaden $old is unknown at the top level" "unknown command: $old" "$xaden" "$old"
   done
@@ -101,6 +105,22 @@ test_xaden_command() {
     bash -c "cd '$elsewhere/xaden-app/docs' && '$xaden' req list | grep -q '^REQ-001 '"
   assert "xaden update is an unknown command (REQ-001)" \
     bash -c "cd '$elsewhere/xaden-app/docs' && ! '$xaden' update >/dev/null 2>&1"
+
+  assert "REQ-132 xaden project req does what xaden req does" \
+    bash -c "cd '$elsewhere/xaden-app' && test \"\$('$xaden' project req list)\" = \"\$('$xaden' req list)\" && '$xaden' project req list | grep -q '^REQ-001 '"
+  assert "REQ-132 xaden project check and xaden check fail the same way for a bad flag" \
+    bash -c "cd '$elsewhere/xaden-app' && test \"\$('$xaden' project check --bogus 2>&1)\" = \"\$('$xaden' check --bogus 2>&1)\""
+  local nowhere="$WORKDIR/no-repository" unadopted="$WORKDIR/unadopted-repository" command
+  mkdir -p "$nowhere" "$unadopted" && git -C "$unadopted" init -q -b main
+  for command in "project setup" "project pin" "project doctor" "project rules" "project preset python" "project release patch" \
+    "project persona new x" "project ignore-list" "project fetch 9.9.9" "project check" "project req list" check "req list" context "prompt feature" "doc security" "aidd status"; do
+    # shellcheck disable=SC2086 # the command words are split on purpose
+    assert_fails_with "REQ-132 outside a git repository '$command' names create and adopt" "xaden project create <name>, or adopt an existing repository with: xaden project adopt" \
+      bash -c "cd '$nowhere' && '$xaden' $command"
+    # shellcheck disable=SC2086
+    assert_fails_with "REQ-132 in a repository without Xaden '$command' gives the one message" "this repository has not adopted Xaden; run: xaden project adopt" \
+      bash -c "cd '$unadopted' && '$xaden' $command"
+  done
 
   mkdir -p "$WORKDIR/other-bin" && ln -s /bin/echo "$WORKDIR/other-bin/xaden"
   assert_fails "uninstall keeps a xaden link to something else" "$SCAFFOLD_ROOT/scripts/install.sh" --uninstall "$WORKDIR/other-bin"

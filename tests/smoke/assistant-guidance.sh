@@ -429,7 +429,7 @@ test_xaden_in_scaffold() {
   git -C "$lookalike" init -q
   mkdir -p "$lookalike/template/scripts"
   : >"$lookalike/template/scripts/req.sh"
-  assert "a repository with only a template folder is no scaffold" bash -c "cd '$lookalike' && '$xaden' req list 2>&1 | grep -q 'not a Xaden project'"
+  assert "a repository with only a template folder is no scaffold" bash -c "cd '$lookalike' && '$xaden' req list 2>&1 | grep -q 'has not adopted Xaden'"
   rm -rf "$lookalike"
 }
 

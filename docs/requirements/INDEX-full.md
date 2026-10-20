@@ -80,7 +80,8 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-128 | job | must | done | The AIDD installer never runs before my yes |
 | REQ-129 | job | should | done | A version change offers a CI workflow candidate for older installs |
 | REQ-130 | job | should | done | I ask one command whether Xaden or my dependencies are outdated |
-| REQ-131 | job | should | approved | I find every Xaden command under one namespace that says what it acts on |
+| REQ-131 | job | should | done | I find every Xaden command under one namespace that says what it acts on |
+| REQ-132 | job | should | done | I run check and req as project commands and keep the short spellings |
 
 ## Quality gates (`quality-gates`)
 

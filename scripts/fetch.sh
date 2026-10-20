@@ -41,8 +41,8 @@ require_version() { is_semver "$1" || die "not a version like 1.2.3: $1"; }
 # project_conf: the settings file of the project around the current directory.
 project_conf() {
   local root
-  root="$(git rev-parse --show-toplevel 2>/dev/null)" || die "run this inside a project (no git repository here)"
-  [ -f "$root/xaden/xaden.conf" ] || die "this project has not adopted Xaden (xaden/xaden.conf is missing); see: xaden project adopt"
+  root="$(git rev-parse --show-toplevel 2>/dev/null)" || die "$NO_REPOSITORY_MESSAGE"
+  [ -f "$root/xaden/xaden.conf" ] || die "$NOT_ADOPTED_MESSAGE"
   printf '%s' "$root/xaden/xaden.conf"
 }
 
@@ -429,7 +429,7 @@ outdated_dependencies() {
 # interval has passed, and never an error for a network that is down (REQ-084, REQ-130).
 update_check_due() {
   local root conf setting value origin seconds cache newest installed pinned tmp
-  root="$(git rev-parse --show-toplevel 2>/dev/null)" || die "run this inside a project (no git repository here)"
+  root="$(git rev-parse --show-toplevel 2>/dev/null)" || die "$NO_REPOSITORY_MESSAGE"
   conf="$root/xaden/xaden.conf"
   setting="$(update_check_setting "$conf")"
   value="${setting% *}"
