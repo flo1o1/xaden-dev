@@ -42,6 +42,7 @@ main() {
     # shellcheck source=/dev/null # the area is chosen at run time
     source "$SMOKE_DIR/$area.sh"
   done
+  [ "$FAILED_ASSERTIONS" -eq 0 ] || die "smoke test FAILED: $FAILED_ASSERTIONS assertion(s) failed (SMOKE_KEEP_GOING=1)"
   if [ "$SKIPPED" -gt 0 ]; then
     warn "smoke test INCOMPLETE: $PASSED assertions passed, $SKIPPED fixture(s) skipped"
   else

@@ -14,7 +14,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-023 | job | must | dropped | Context pack contains all mandatory guidance and is written safely |
 | REQ-027 | job | should | done | Clean-code rules are proportional and language-appropriate |
 | REQ-033 | job | must | done | Assistants distinguish trusted instructions from untrusted content and ask before risky actions |
-| REQ-034 | job | should | done | Claude Code permission rules are accurate and documented with their limits |
+| REQ-034 | job | should | dropped | Claude Code permission rules are accurate and documented with their limits |
 | REQ-035 | job | should | done | Prompts follow one consistent workflow and approval model |
 | REQ-036 | job | must | done | Assistants end work with a truthful completion report |
 | REQ-041 | job | should | done | Clean-code guide covers proven design, test and refactoring practices |
@@ -25,7 +25,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-055 | job | should | done | Maintainers use the project commands on the scaffold itself |
 | REQ-060 | job | should | done | Every change happens on its own branch and worktree and reaches main through a pull request |
 | REQ-061 | job | should | done | Assistants check solutions against the project's user personas |
-| REQ-063 | job | could | done | Claude Code users can plan with a stronger model and implement with a cheaper one |
+| REQ-063 | job | could | dropped | Claude Code users can plan with a stronger model and implement with a cheaper one |
 | REQ-079 | job | should | done | Xaden supports only assistants with file access |
 | REQ-082 | job | should | done | A requirement is approved before any branch or worktree exists |
 | REQ-085 | job | should | done | Maintainers run the xaden project commands on the scaffold itself |
