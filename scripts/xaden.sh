@@ -328,6 +328,7 @@ is_scaffold() { [ -f "$1/template/AGENTS.md" ] && [ -f "$1/scripts/check-scaffol
 scaffold_command() {
   local command=$1 root=$2
   shift 2
+  case "$command" in check | req | context) ;; *) return 0 ;; esac
   cd "$root"
   case "$command" in
     check) exec "$root/scripts/check-scaffold.sh" "$@" ;;
@@ -339,9 +340,6 @@ scaffold_command() {
 # classic_project_command <command> <root> <args...>: the project's own scripts (projects created by `create`).
 classic_project_command() {
   local command=$1 root=$2 script
-  case "$command" in
-    check | req | context) if is_scaffold "$root"; then scaffold_command "$@"; fi ;;
-  esac
   shift 2
   case "$command" in
     setup) script=setup.sh ;;
@@ -395,6 +393,7 @@ run_command() {
     pin) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" pin "$@" ;;
     setup | check | req | context | persona | release | hook | verify-commits | prompt | doc | rules | ignore-list | preset | aidd)
       root="$(project_root)"
+      if is_scaffold "$root"; then scaffold_command "$command" "$root" "$@"; fi # the Xaden repository adopts itself (REQ-134)
       if is_adopted "$root"; then
         adopted_project_command "$command" "$root" "$@"
       elif [ "$command" = "hook" ]; then

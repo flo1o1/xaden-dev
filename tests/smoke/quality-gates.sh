@@ -349,7 +349,7 @@ test_ci_credentials() {
   assert "AGENTS.md names when the full local run is still required" \
     grep -q 'touches no row of the area table' "$SCAFFOLD_ROOT/AGENTS.md"
   assert "REQ-088 marks the local full run before the pull request as superseded by REQ-093" \
-    grep -q 'superseded by REQ-093' "$SCAFFOLD_ROOT"/docs/requirements/quality-gates/REQ-088-*.md
+    grep -q 'superseded by REQ-093' "$SCAFFOLD_ROOT"/xaden/requirements/quality-gates/REQ-088-*.md
   # REQ-078: maintainer guidance asks for branch names prefixed with the requirement ID
   assert "AGENTS.md asks for requirement-prefixed branch names" \
     grep -q 'prefix the slug with the ID of the related requirement' "$SCAFFOLD_ROOT/AGENTS.md"
@@ -360,7 +360,7 @@ test_ci_credentials() {
 test_maintainer_hooks() {
   local clone="$WORKDIR/scaffold-clone" remote="$WORKDIR/scaffold-remote.git" worktree="$WORKDIR/scaffold-clone-wt" long
   mkdir -p "$clone"
-  (cd "$SCAFFOLD_ROOT" && tar -cf - .githooks scripts template docs/requirements) | tar -x -C "$clone"
+  (cd "$SCAFFOLD_ROOT" && tar -cf - .githooks scripts template xaden) | tar -x -C "$clone"
   git -C "$clone" init -q -b main
   "$clone/scripts/setup.sh" >/dev/null 2>&1 || true # the tool report may be INCOMPLETE here; the hooks path is what counts
   assert "setup sets core.hooksPath to .githooks" test "$(git -C "$clone" config core.hooksPath)" = ".githooks"
@@ -455,7 +455,7 @@ test_area_selection() {
     assert "$1" test "$("$repo/$select" main HEAD 2>/dev/null | tr '\n' ' ')" = "$3"
   }
   selected "REQ-114 a path of one area selects that area" template/scripts/req.sh "requirements "
-  selected "REQ-114 an area's requirement folder selects that area" docs/requirements/security/x.md "security "
+  selected "REQ-114 an area's requirement folder selects that area" xaden/requirements/security/x.md "security "
   selected "REQ-114 a shared file selects all areas" tests/smoke/lib.sh "all "
   selected "REQ-114 anything under .github selects all areas" .github/workflows/other.yml "all "
   selected "REQ-114 a path in no area selects all areas" some/new/file.txt "all "
@@ -467,8 +467,8 @@ test_area_selection() {
   # shellcheck disable=SC2016 # the bash -c script reads its file as $1
   assert "REQ-114 the skipped areas are named on stderr" bash -c '"$1" main probe 2>&1 >/dev/null | grep -q "skip adoption"' _ "$repo/$select"
   selected "REQ-114 a script of one area plus the changelog selects that area, release-and-docs and adoption-versions (its fake release copies the changelog)" "template/scripts/req.sh CHANGELOG.md" "adoption-versions requirements release-and-docs "
-  selected "REQ-114 a script, the changelog and the requirements index select their areas" "scripts/new-project.sh CHANGELOG.md docs/requirements/INDEX.md" "adoption-versions project-setup requirements release-and-docs "
-  selected "REQ-114 the requirements index alone selects requirements" docs/requirements/INDEX.md "requirements "
+  selected "REQ-114 a script, the changelog and the requirements index select their areas" "scripts/new-project.sh CHANGELOG.md xaden/requirements/INDEX.md" "adoption-versions project-setup requirements release-and-docs "
+  selected "REQ-114 the requirements index alone selects requirements" xaden/requirements/INDEX.md "requirements "
   selected "REQ-114 the third-party list and the site page list select release-and-docs" "THIRD-PARTY.md docs/site-pages.txt" "release-and-docs "
   selected "REQ-114 a guide of the admin folder selects release-and-docs and assistant-guidance" docs/guide/admin/install-xaden.md "assistant-guidance release-and-docs "
   selected "REQ-114 a guide of the developer folder is in no area and selects all areas" docs/guide/developer/build-features.md "all "

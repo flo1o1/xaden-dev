@@ -297,7 +297,7 @@ test_look_before_build() {
 test_no_context_pack() {
   local hits
   hits="$(cd "$SCAFFOLD_ROOT" || exit 1; grep -rIlE 'pack[-]context|context[-]pack|xaden[ ]pack' scripts template tests docs/guide \
-    docs/threat-model.md README.md GETTING-STARTED.md .gitignore 2>/dev/null || true)"
+    xaden/threat-model.md README.md GETTING-STARTED.md .gitignore 2>/dev/null || true)"
   assert "no file mentions the context pack: ${hits:-none}" test -z "$hits"
   assert_fails "xaden has no pack command" "$SCAFFOLD_ROOT/scripts/xaden.sh" pack
   assert "AGENTS.md says Xaden needs file access" grep -q 'Xaden needs an assistant with file access' "$TPL/AGENTS.md"
@@ -341,7 +341,7 @@ test_scaffold_commands() {
   assert "AGENTS.md maps the release script" grep -q 'release-scaffold.sh' "$SCAFFOLD_ROOT/AGENTS.md"
   assert "AGENTS.md names the commands left out" grep -q 'xaden-kickoff.*xaden-docs' "$SCAFFOLD_ROOT/AGENTS.md"
   assert "AGENTS.md maps prompt paths for the scaffold" grep -q '^## Using the project commands here' "$SCAFFOLD_ROOT/AGENTS.md"
-  assert "scaffold threat model names entry points" grep -q '^## Entry points' "$SCAFFOLD_ROOT/docs/threat-model.md"
+  assert "scaffold threat model names entry points" grep -q '^## Entry points' "$SCAFFOLD_ROOT/xaden/threat-model.md"
   assert_fails "projects get no scaffold threat model" grep -q 'Xaden' "$DEMO/xaden/threat-model.md"
 }
 

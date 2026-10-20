@@ -13,15 +13,12 @@
 /CLAUDE.md export-ignore
 /inbox export-ignore
 /tests export-ignore
-/docs/requirements export-ignore
-/docs/security-reviews export-ignore
-/docs/decisions export-ignore
 /docs/release-signing.md export-ignore
 /docs/site-pages.txt export-ignore
 /docs/smoke-areas.txt export-ignore
-/docs/threat-model.md export-ignore
 /scripts/check-*.sh export-ignore
 /scripts/release-scaffold.sh export-ignore
 /scripts/select-smoke-areas.sh export-ignore
 /scripts/setup.sh export-ignore
 /scripts/sign-release.sh export-ignore
+/xaden export-ignore

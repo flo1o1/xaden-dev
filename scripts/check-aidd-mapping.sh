@@ -22,7 +22,7 @@ for key in V1 V2 V3 V4 P01 P02 P03 P04 P05 P06 P07 P08 P09 P10 P11 P12; do
 done
 
 while IFS= read -r id; do
-  ls "$ROOT"/docs/requirements/*/"$id"-*.md >/dev/null 2>&1 || fail "$id is cited but does not exist"
+  ls "$ROOT"/xaden/requirements/*/"$id"-*.md >/dev/null 2>&1 || fail "$id is cited but does not exist"
 done < <(grep -oE 'REQ-[0-9]+' "$PAGE" | sort -u)
 tick=$(printf '\140') # the backtick that wraps a path in the page
 while IFS= read -r path; do

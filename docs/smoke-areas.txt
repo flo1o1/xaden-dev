@@ -1,7 +1,7 @@
 # Smoke areas and the paths they cover (REQ-114). One line per area: area|path path ...
 # A path ending in / is a directory prefix, any other path is one file. The root AGENTS.md table
 # "Smoke areas" repeats these paths; scripts/check-smoke-areas.sh fails when the two differ.
-# scripts/select-smoke-areas.sh also maps tests/smoke/<area>.sh and docs/requirements/<area>/ to the area.
+# scripts/select-smoke-areas.sh also maps tests/smoke/<area>.sh and xaden/requirements/<area>/ to the area.
 # A changed path in no line below, or in the *all* line, runs every area in CI.
 adoption-setup|scripts/xaden.sh scripts/fetch.sh template/scripts/lib.sh tests/smoke/adoption-lib.sh
 adoption-versions|scripts/xaden.sh scripts/fetch.sh template/scripts/lib.sh tests/smoke/adoption-lib.sh CHANGELOG.md
@@ -9,7 +9,7 @@ adoption-checks|scripts/xaden.sh scripts/fetch.sh template/scripts/lib.sh tests/
 assistant-guidance|template/scripts/persona.sh template/scripts/check-deferred-work.sh template/AGENTS.md template/prompts/ GETTING-STARTED.md docs/guide/admin/ docs/guide/contributing/
 project-setup|scripts/new-project.sh scripts/install.sh scripts/setup.sh scripts/aidd.sh
 quality-gates|template/scripts/check.sh scripts/check-scaffold.sh template/scripts/verify-commits.sh template/scripts/verify-refs.sh
-requirements|template/scripts/req.sh template/scripts/check-requirements.sh template/scripts/check-traceability.sh docs/requirements/INDEX.md
+requirements|template/scripts/req.sh template/scripts/check-requirements.sh template/scripts/check-traceability.sh xaden/requirements/INDEX.md
 security|template/scripts/check-security-exceptions.sh template/.semgrep/
 release-and-docs|scripts/release-scaffold.sh template/scripts/release.sh scripts/sign-release.sh scripts/check-site-pages.sh scripts/check-third-party.sh scripts/check-aidd-mapping.sh scripts/check-release-archive.sh .gitattributes CHANGELOG.md THIRD-PARTY.md docs/site-pages.txt GETTING-STARTED.md docs/guide/admin/ docs/guide/contributing/
 *all*|template/scripts/lib.sh scripts/xaden.sh tests/smoke.sh tests/smoke/lib.sh scripts/check-scaffold.sh .github/ docs/smoke-areas.txt scripts/select-smoke-areas.sh

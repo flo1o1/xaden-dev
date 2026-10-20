@@ -25,6 +25,6 @@ Xaden stores no sensitive data. Its scripts read git metadata (author names and 
 
 ## The full documents
 
-- The threat model lists every entry point, trust boundary and abuse case with the control and the test that covers it: `docs/threat-model.md` in the [`docs` folder](https://github.com/flo1o1/xaden-dev/tree/main/docs). Update it when a change adds an entry point, a downloaded tool or a new place the scripts write to.
-- Xaden's own requirements are one file per requirement in epic folders: [`docs/requirements/`](https://github.com/flo1o1/xaden-dev/tree/main/docs/requirements), with an index in `INDEX.md`. Functional requirements are jobs to be done ("When ..., I want to ..., so I can ..."), quality requirements are measurable goals. Look one up with `xaden req show REQ-nnn`.
-- Security reviews of releases are recorded in [`docs/security-reviews/`](https://github.com/flo1o1/xaden-dev/tree/main/docs/security-reviews).
+- The threat model lists every entry point, trust boundary and abuse case with the control and the test that covers it: `xaden/threat-model.md` in the [`xaden` folder](https://github.com/flo1o1/xaden-dev/tree/main/xaden). Update it when a change adds an entry point, a downloaded tool or a new place the scripts write to.
+- Xaden's own requirements are one file per requirement in epic folders: [`xaden/requirements/`](https://github.com/flo1o1/xaden-dev/tree/main/xaden/requirements), with an index in `INDEX.md`. Functional requirements are jobs to be done ("When ..., I want to ..., so I can ..."), quality requirements are measurable goals. Look one up with `xaden req show REQ-nnn`.
+- Security reviews of releases are recorded in [`xaden/security-reviews/`](https://github.com/flo1o1/xaden-dev/tree/main/xaden/security-reviews).
