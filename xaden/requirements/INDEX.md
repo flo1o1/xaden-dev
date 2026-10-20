@@ -38,8 +38,5 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Security (`security`)
 
-13 done.
+14 done.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-136 | job | should | approved | A release that should be signed is refused when its signature is missing |
