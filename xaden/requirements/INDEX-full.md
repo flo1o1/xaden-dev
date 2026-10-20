@@ -84,6 +84,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-132 | job | should | done | I run check and req as project commands and keep the short spellings |
 | REQ-133 | job | should | done | Xaden knows one project layout |
 | REQ-134 | job | should | done | The Xaden repository is an adopted project |
+| REQ-135 | job | could | approved | I complete Xaden commands with the Tab key |
 
 ## Quality gates (`quality-gates`)
 
