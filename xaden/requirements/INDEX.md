@@ -43,3 +43,6 @@ lists them, and `INDEX-full.md` holds the full table.
 
 15 done.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-148 | job | should | approved | The offline SAST scans Java files with its own rules |
