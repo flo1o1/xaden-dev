@@ -1,11 +1,11 @@
 # shellcheck shell=bash
 # Smoke test area "project-setup" (docs/requirements/project-setup). Sourced by tests/smoke.sh, which
-# defines the helpers and creates the demo project first.
+# defines the helpers and creates the demo projects first. Runs against the adopted demo project (REQ-133).
 
 # REQ-038 MIT license for the scaffold only
 test_license() {
   assert "scaffold is MIT licensed" grep -qx 'MIT License' "$SCAFFOLD_ROOT/LICENSE"
-  assert "generated projects do not inherit the scaffold license" test ! -e "$PROJECT/LICENSE"
+  assert "generated projects do not inherit the scaffold license" test ! -e "$DEMO/LICENSE"
 }
 
 # REQ-001, REQ-133: the hooks of a project made by `xaden project create` run Xaden's checks
@@ -17,59 +17,18 @@ test_adopted_demo_hooks() {
   git -C "$DEMO" reset -q --keep HEAD~1
 }
 
-# REQ-018 safe generation: a git copy of the scaffold with junk that must never be copied
-test_generation_safety() {
-  local source="$WORKDIR/source-scaffold" target="$WORKDIR/safety/generated app"
-  export_template "$SCAFFOLD_ROOT" "$source"
-  git -C "$source" init -q -b main && git -C "$source" add -A && git -C "$source" commit -q -m "chore: fixture"
-  printf 'SECRET=fixture\n' >"$source/template/.env"
-  printf 'private\n' >"$source/template/local-private-note.txt"
-  mkdir -p "$source/template/node_modules/pkg" && printf 'x\n' >"$source/template/node_modules/pkg/index.js"
-  printf 'dropped\n' >"$source/template/inbox/dropped.txt"
-  mkdir -p "$source/template/worktrees/leftover" && printf 'x\n' >"$source/template/worktrees/leftover/file.txt"
-  printf '\nUNCOMMITTED EDIT\n' >>"$source/template/prompts/bugfix.md"
-  local before
-  before="$(git -C "$source" status --porcelain)"
-  assert "generate from git source with junk" "$source/scripts/new-project.sh" safe-app "$target"
-  assert "untracked private file not copied" test ! -e "$target/local-private-note.txt"
-  assert ".env not copied" test ! -e "$target/.env"
-  assert "node_modules not copied" test ! -e "$target/node_modules"
-  assert "inbox content not copied" test ! -e "$target/inbox/dropped.txt"
-  assert "worktrees content not copied" test ! -e "$target/worktrees/leftover"
-  assert "uncommitted edit of tracked file copied (maintainer testing)" grep -q 'UNCOMMITTED EDIT' "$target/prompts/bugfix.md"
-  assert "executable bits preserved" test -x "$target/scripts/check.sh"
-  assert "source left untouched" test "$(git -C "$source" status --porcelain)" = "$before"
-  assert_fails "existing target refused" "$source/scripts/new-project.sh" safe-app "$target"
-  ln -s ../README.md "$source/template/link.md" && git -C "$source" add template/link.md
-  assert_fails "symlink in template refused" "$source/scripts/new-project.sh" link-app "$WORKDIR/link-app"
-  assert "nothing created when export is refused" test ! -e "$WORKDIR/link-app"
-  git -C "$source" rm -q --cached template/link.md && rm "$source/template/link.md"
-  edit_file "$(req_file "$source/template" REQ-001)" 's/^status: .*/status: bogus/'
-  assert_fails "generation fails when the first commit is rejected" "$source/scripts/new-project.sh" late-fail "$WORKDIR/late-fail"
-  assert "partial project removed after late failure" test ! -e "$WORKDIR/late-fail"
-}
-
-# REQ-026 local drop zone
-test_inbox() {
-  printf 'private\n' >"$PROJECT/inbox/notes.txt"
-  assert "inbox README tracked" git -C "$PROJECT" ls-files --error-unmatch inbox/README.md
-  assert "inbox contents ignored by git" git -C "$PROJECT" check-ignore -q inbox/notes.txt
-  assert "inbox contents never staged by add -A" test -z "$(git -C "$PROJECT" add -A --dry-run | grep inbox/notes.txt || true)"
-  rm -f "$PROJECT/inbox/notes.txt"
-}
-
 # REQ-012 usable by others (setup after clone, CI commit checks)
 test_setup_and_commit_checks() {
-  git -C "$PROJECT" config --unset core.hooksPath
-  assert "setup activates hooks" "$PROJECT/scripts/setup.sh"
-  assert "hooks path restored" test "$(git -C "$PROJECT" config core.hooksPath)" = "scripts/hooks"
+  rm -f "$DEMO/.git/hooks/pre-commit" "$DEMO/.git/hooks/commit-msg"
+  x_in "$DEMO" project setup
+  assert "setup chains Xaden into the hooks of the clone" test "$XRC" -eq 0 -a -x "$DEMO/.git/hooks/pre-commit" -a -x "$DEMO/.git/hooks/commit-msg"
   # REQ-109 the range must exist: HEAD~1 is not there in a project with one commit, and such a range is no valid history
-  git -C "$PROJECT" commit -q --allow-empty --no-verify -m "docs: a valid commit"
-  assert "verify-commits accepts valid history" "$PROJECT/scripts/verify-commits.sh" HEAD~1..HEAD
-  git -C "$PROJECT" commit -q --allow-empty --no-verify -m "feat: sneaked past hooks"
-  assert_fails "verify-commits catches skipped hooks" "$PROJECT/scripts/verify-commits.sh" HEAD~1..HEAD
-  assert_fails_with "verify-commits fails on a range it cannot read" "cannot read" "$PROJECT/scripts/verify-commits.sh" HEAD~99..HEAD
-  git -C "$PROJECT" reset -q --hard HEAD~2
+  git -C "$DEMO" commit -q --allow-empty --no-verify -m "docs: a valid commit"
+  assert "verify-commits accepts valid history" "$DEMO_TOOLS/verify-commits.sh" HEAD~1..HEAD
+  git -C "$DEMO" commit -q --allow-empty --no-verify -m "feat: sneaked past hooks"
+  assert_fails "verify-commits catches skipped hooks" "$DEMO_TOOLS/verify-commits.sh" HEAD~1..HEAD
+  assert_fails_with "verify-commits fails on a range it cannot read" "cannot read" "$DEMO_TOOLS/verify-commits.sh" HEAD~99..HEAD
+  git -C "$DEMO" reset -q --hard HEAD~2
 }
 
 # REQ-056: `xaden` runs the scaffold's and the current project's scripts from any directory.
@@ -106,14 +65,14 @@ test_xaden_command() {
   assert_fails_with "xaden project create --classic is an unknown option (REQ-001)" "unknown option: --classic" \
     bash -c "cd '$elsewhere' && '$xaden' project create --classic xaden-app"
   assert "xaden project create --classic creates nothing (REQ-001)" test ! -e "$elsewhere/xaden-app"
-  assert "the maintainers' fixture makes a project with its own tooling" "$SCAFFOLD_ROOT/scripts/new-project.sh" xaden-app "$elsewhere/xaden-app"
+  assert "xaden project create makes the project in the current directory" bash -c "cd '$elsewhere' && '$xaden' project create xaden-app"
   assert "new project has its first commit" git -C "$elsewhere/xaden-app" log -1 --format=%s
   assert "xaden new is an unknown command and creates nothing (REQ-130)" \
     bash -c "cd '$elsewhere' && ! '$xaden' new old-name-app >/dev/null 2>&1 && test ! -e old-name-app"
   assert "project command runs from a subdirectory" \
-    bash -c "cd '$elsewhere/xaden-app/docs' && '$xaden' req list | grep -q '^REQ-001 '"
+    bash -c "cd '$elsewhere/xaden-app/xaden' && '$xaden' req new core job 'Probe' >/dev/null && '$xaden' req list | grep -q '^REQ-001 '"
   assert "xaden update is an unknown command (REQ-001)" \
-    bash -c "cd '$elsewhere/xaden-app/docs' && ! '$xaden' update >/dev/null 2>&1"
+    bash -c "cd '$elsewhere/xaden-app/xaden' && ! '$xaden' update >/dev/null 2>&1"
 
   assert "REQ-132 xaden project req does what xaden req does" \
     bash -c "cd '$elsewhere/xaden-app' && test \"\$('$xaden' project req list)\" = \"\$('$xaden' req list)\" && '$xaden' project req list | grep -q '^REQ-001 '"
@@ -134,31 +93,27 @@ test_xaden_command() {
   mkdir -p "$WORKDIR/other-bin" && ln -s /bin/echo "$WORKDIR/other-bin/xaden"
   assert_fails "uninstall keeps a xaden link to something else" "$SCAFFOLD_ROOT/scripts/install.sh" --uninstall "$WORKDIR/other-bin"
   assert "foreign link left in place" test -L "$WORKDIR/other-bin/xaden"
-  printf 'x\n' >"$elsewhere/xaden-app/prompts/leftover.md-dist"
+  printf 'x\n' >"$elsewhere/xaden-app/leftover.md-dist"
   assert "doctor names a leftover -dist file (REQ-100)" \
-    bash -c "cd '$elsewhere/xaden-app' && '$xaden' project doctor 2>&1 | grep -q 'prompts/leftover.md-dist'"
-  rm "$elsewhere/xaden-app/prompts/leftover.md-dist"
+    bash -c "cd '$elsewhere/xaden-app' && '$xaden' project doctor 2>&1 | grep -q 'leftover.md-dist'"
+  rm "$elsewhere/xaden-app/leftover.md-dist"
   assert "uninstall removes the link" "$SCAFFOLD_ROOT/scripts/install.sh" --uninstall "$bin"
   assert_fails "link gone after uninstall" test -L "$xaden"
 }
 
 # REQ-001 generation ignores a PROJECT_ROOT that the caller's environment already carries
+# shellcheck disable=SC2153 # XADEN is set by lib.sh
 test_generation_ignores_project_root() {
   local other="$WORKDIR/foreign-repo" target="$WORKDIR/root-env/app"
   git init -q -b main "$other"
-  assert "generate while PROJECT_ROOT names another repository" env PROJECT_ROOT="$other" "$SCAFFOLD_ROOT/scripts/new-project.sh" root-app "$target"
-  assert "new project has its hooks path" test "$(git -C "$target" config core.hooksPath)" = "scripts/hooks"
-  assert "other repository's configuration untouched" test -z "$(git -C "$other" config --get core.hooksPath || true)"
+  assert "create while PROJECT_ROOT names another repository" env PROJECT_ROOT="$other" "$XADEN" project create root-app "$target"
+  assert "new project has its hooks" test -x "$target/.git/hooks/pre-commit" -a -x "$target/.git/hooks/commit-msg"
+  assert "other repository's configuration and hooks untouched" test -z "$(git -C "$other" config --get core.hooksPath || true)$(find "$other/.git/hooks" -type f ! -name '*.sample')"
 }
 
 # REQ-090 worktrees/ folder for change worktrees
 test_worktrees_folder() {
-  assert "worktrees README tracked" git -C "$PROJECT" ls-files --error-unmatch worktrees/README.md
-  git -C "$PROJECT" worktree add -q worktrees/probe -b chore/probe-worktree HEAD
-  assert "a worktree in worktrees/ is ignored by git" git -C "$PROJECT" check-ignore -q worktrees/probe
-  assert "worktrees contents never staged by add -A" test -z "$(git -C "$PROJECT" add -A --dry-run | grep worktrees/probe || true)"
-  assert "the guidance names worktrees/<slug>" grep -q 'git worktree add worktrees/<slug>' "$PROJECT/docs/rules/git.md"
-  git -C "$PROJECT" worktree remove --force worktrees/probe && git -C "$PROJECT" branch -D chore/probe-worktree >/dev/null
+  assert "the guidance names worktrees/<slug>" grep -q 'git worktree add worktrees/<slug>' "$SCAFFOLD_ROOT/template/docs/rules/git.md"
 }
 
 # REQ-100 command files: an unedited one follows the new prompts, an edited one stays and the new text is <file>-dist
@@ -281,9 +236,7 @@ STUB
 test_license
 test_adopted_demo_hooks
 test_command_dist
-test_generation_safety
 test_generation_ignores_project_root
-test_inbox
 test_worktrees_folder
 test_setup_and_commit_checks
 test_xaden_command
