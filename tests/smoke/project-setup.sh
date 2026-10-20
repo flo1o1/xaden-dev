@@ -73,7 +73,7 @@ test_xaden_command() {
   assert "install links xaden to this checkout" test "$(readlink "$xaden")" = "$SCAFFOLD_ROOT/scripts/xaden.sh"
   assert "xaden version prints the scaffold version" \
     test "$("$xaden" version)" = "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
-  assert "xaden help lists the commands" bash -c "'$xaden' help | grep -q 'create <name>'"
+  assert "xaden help project lists the commands" bash -c "'$xaden' help project | grep -q 'create <name>'"
   assert_fails "unknown xaden command fails" "$xaden" fly
   # REQ-131 the moved commands live under core and project; their old top-level spellings are unknown
   assert "REQ-131 xaden core version prints the version" \
