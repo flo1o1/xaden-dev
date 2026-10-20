@@ -36,6 +36,18 @@ rules_text() {
   printf '%s' "$file"
 }
 
+# fail_assertion <message>: ends the run with the message; with SMOKE_KEEP_GOING=1 it counts the failure and goes on,
+# so a rewrite of an area lists every assertion that fails in one run (the run still fails in the end).
+FAILED_ASSERTIONS=0
+fail_assertion() {
+  if [ "${SMOKE_KEEP_GOING:-0}" = "1" ]; then
+    FAILED_ASSERTIONS=$((FAILED_ASSERTIONS + 1))
+    printf 'FAIL %s\n' "$1" >&2
+    return 0
+  fi
+  die "$1"
+}
+
 # show_output: prints the tail of the last command's output (diagnostics on failure).
 show_output() {
   echo "----- output of the failed command (last 40 lines) -----" >&2
@@ -58,7 +70,7 @@ assert() {
     pass "$description"
   else
     show_output
-    die "FAILED: $description"
+    fail_assertion "FAILED: $description"
   fi
 }
 
@@ -68,7 +80,8 @@ assert_fails() {
   shift
   if ("$@") >"$OUTPUT" 2>&1; then
     show_output
-    die "FAILED (expected failure): $description"
+    fail_assertion "FAILED (expected failure): $description"
+    return 0
   fi
   pass "$description"
 }
@@ -89,11 +102,13 @@ assert_fails_with() {
   shift 2
   if ("$@") >"$OUTPUT" 2>&1; then
     show_output
-    die "FAILED (expected failure): $description"
+    fail_assertion "FAILED (expected failure): $description"
+    return 0
   fi
   if ! grep -q -- "$expected" "$OUTPUT"; then
     show_output
-    die "FAILED (wrong reason, expected '$expected'): $description"
+    fail_assertion "FAILED (wrong reason, expected '$expected'): $description"
+    return 0
   fi
   pass "$description"
 }
