@@ -41,8 +41,5 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Security (`security`)
 
-15 done.
+16 done.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-150 | job | should | approved | The offline SAST scans Ruby files with its own rules |

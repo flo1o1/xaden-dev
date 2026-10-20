@@ -1,0 +1,45 @@
+# Ruby rules (REQ-150): offline like rules.yml; fixtures in tests/semgrep/ruby.rb.
+rules:
+  - id: ruby-eval
+    languages: [ruby]
+    severity: ERROR
+    message: "eval executes arbitrary code. Parse the input explicitly instead."
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: $OBJ.instance_eval($CODE)
+      - pattern: $OBJ.class_eval($CODE)
+
+  - id: ruby-os-command
+    languages: [ruby]
+    severity: ERROR
+    message: "A shell runs a command string with interpolated values (command injection). Pass the program and its arguments separately: system('ls', dir) (docs/security.md: Injection)."
+    pattern-either:
+      - pattern: system("...#{$X}...")
+      - pattern: exec("...#{$X}...")
+      - pattern: IO.popen("...#{$X}...")
+      - pattern: "`...#{$X}...`"
+
+  - id: ruby-unsafe-deserialization
+    languages: [ruby]
+    severity: ERROR
+    message: "Marshal.load and YAML.load on untrusted data can construct arbitrary objects. Use JSON.parse or YAML.safe_load."
+    pattern-either:
+      - pattern: Marshal.load(...)
+      - pattern: YAML.load(...)
+
+  - id: ruby-sql-interpolation
+    languages: [ruby]
+    severity: ERROR
+    message: "SQL built by interpolation allows injection. Use placeholders: where('name = ?', name) (docs/security.md: Injection)."
+    pattern-either:
+      - pattern: $M.where("...#{$X}...")
+      - pattern: $M.find_by_sql("...#{$X}...")
+      - pattern: $CONN.execute("...#{$X}...")
+
+  - id: ruby-send-from-params
+    languages: [ruby]
+    severity: ERROR
+    message: "Request data chooses which method is called. Map the value to an allow-listed method."
+    pattern-either:
+      - pattern: $OBJ.send(params[...], ...)
+      - pattern: $OBJ.public_send(params[...], ...)
