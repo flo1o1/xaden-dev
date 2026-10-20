@@ -20,7 +20,7 @@ unset STRICT
 export ALLOW_MAIN_COMMIT=1
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
-PROJECT="$WORKDIR/demo app/demo-app" # space in the path on purpose (REQ-018)
+PROJECT="$WORKDIR/demo app/demo-app" # space in the path on purpose
 DEMO="$WORKDIR/demo adopted/demo-app" # the demo project in the layout every project has (REQ-133)
 mkdir -p "$(dirname "$PROJECT")" "$(dirname "$DEMO")"
 OUTPUT="$WORKDIR/last-command.log"
