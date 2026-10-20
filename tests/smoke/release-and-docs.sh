@@ -116,7 +116,7 @@ test_get_xaden() {
   rm -rf "${work:?}/home" "${bin:?}"
   assert "a changed zip fails the signature check with exit code 6" bash -c "XADEN_TEST_ANSWER=y bash '$script' '$bin'; test \$? -eq 6"
   assert "a failed signature installs nothing" test ! -e "$bin/xaden" -a ! -e "$work/home/versions"
-  unset XADEN_ASSETS_URL XADEN_SIGNERS_FILE XADEN_TEST_MODE XADEN_VERSION XADEN_HOME
+  unset XADEN_ASSETS_URL XADEN_SIGNERS_FILE XADEN_VERSION XADEN_HOME
 }
 
 # REQ-065: the guide documents both ways to get Xaden, and both ways work as written.
