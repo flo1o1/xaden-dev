@@ -8,12 +8,12 @@ WORKFLOW_PATTERN='^\.github/workflows/[^/]+\.ya?ml$'
 # stopping early would kill the listing with SIGPIPE, which pipefail reports as "no match".
 has_project_file() { list_project_files | tr '\0' '\n' | grep -E "$1" >/dev/null; }
 
-# run_workflow_check <name> <binary> [args...]: an adopted project judges the existing workflows
-# by its mode and baseline (REQ-068); other projects fail on any finding.
+# run_workflow_check <name> <binary> [args...]: with JUDGE_BY_MODE=1 (check.sh) the existing workflows are judged
+# by the mode and the baseline of the project (REQ-068); otherwise any finding fails.
 run_workflow_check() {
   local name=$1
   shift
-  if [ "${LAYOUT:-classic}" = "adopted" ]; then run_gated "$name" "workflows: $name" "$@"; else run_tool "workflows: $name" "$@"; fi
+  if [ "${JUDGE_BY_MODE:-0}" = "1" ]; then run_gated "$name" "workflows: $name" "$@"; else run_tool "workflows: $name" "$@"; fi
 }
 
 # stack_check <mode>: lints staged or all workflow files; full mode also checks duplication.
@@ -22,7 +22,7 @@ stack_check() {
   if [ ${#TARGETS[@]} -gt 0 ]; then
     if has_command actionlint; then run_workflow_check actionlint actionlint "${TARGETS[@]}"; fi
     if has_command zizmor; then
-      if [ "${LAYOUT:-classic}" = "adopted" ]; then # annotations name file and line, so the gate can judge them
+      if [ "${JUDGE_BY_MODE:-0}" = "1" ]; then # annotations name file and line, so the gate can judge them
         run_workflow_check zizmor zizmor --offline --format github "${TARGETS[@]}"
       else
         run_workflow_check zizmor zizmor --offline "${TARGETS[@]}"

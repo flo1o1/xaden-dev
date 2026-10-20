@@ -26,6 +26,7 @@ done
 if [ "$MODE" = "full" ]; then refuse_nested_run check.sh; fi
 cd "$ROOT"
 layout_init "$ROOT"
+JUDGE_BY_MODE=1 # the findings of the tools are judged by the mode and the baseline (REQ-068)
 
 # check_project_files: requirements, docs structure, traceability (cheap, always run).
 check_project_files() {
@@ -116,9 +117,9 @@ check_mapped_commands() {
   report_not_covered
 }
 
-# classic_extra_checks: "<kind> <tool>" lines for the checks a project made by xaden project create runs for the
-# stack's files, beyond test, lint and typecheck (REQ-105). Keep in step with stacks/python.sh and node.sh.
-classic_extra_checks() {
+# known_extra_checks: "<kind> <tool>" lines for the checks Xaden knows for the stack's files, beyond test, lint
+# and typecheck (REQ-105). Keep in step with xaden project preset.
+known_extra_checks() {
   if [ -f pyproject.toml ] || [ -f setup.py ] || ls requirements*.txt >/dev/null 2>&1; then
     printf '%s\n' "audit pip-audit" "security bandit"
   elif [ -f package.json ]; then
@@ -126,53 +127,33 @@ classic_extra_checks() {
   fi
 }
 
-# report_not_covered: a full run of an adopted project says which checks the classic layout would
-# run for this stack and nothing maps. An expected kind is already a gap (REQ-101), so it is skipped here.
+# report_not_covered: a full run says which checks Xaden knows for this stack and nothing maps. An expected kind is already a gap (REQ-101), so it is skipped here.
 report_not_covered() {
   local conf="$TEAM_DIR/$CONF_NAME" kind tool printed=""
   while read -r kind tool; do
     [ -n "$kind" ] || continue
     [ -z "$(conf_get "$conf" "check.$kind")" ] || continue
     if printf ',%s,' "$(conf_get "$conf" expect)" | grep -q ",$kind,"; then continue; fi
-    printf 'NOT COVERED: %s; a project made by xaden project create runs it. Map it with check.%s in xaden/xaden.conf (see "What Xaden checks")\n' "$tool" "$kind"
+    printf 'NOT COVERED: %s; Xaden knows it for this stack. Map it with check.%s in xaden/xaden.conf (see "What Xaden checks")\n' "$tool" "$kind"
     printed=1
-  done < <(classic_extra_checks)
+  done < <(known_extra_checks)
   # a project adopted before REQ-106 keeps its expect line; nothing turns red by an upgrade
   [ -z "$printed" ] || tip "name them in 'expect' once they are mapped (xaden project preset <stack> maps the commands) so a missing mapping is a gap"
 }
 
-# check_stacks: each file in stacks/ defines stack_check <mode> for one language. An adopted
-# project runs its own commands instead of the built-in language stacks (REQ-069).
+# check_stacks: a project runs its own commands (REQ-069); stacks/common.sh checks the workflows.
 check_stacks() {
-  local stack_file
-  if [ "$LAYOUT" = "adopted" ]; then
-    # shellcheck disable=SC1091 # discovered at runtime
-    source "$SCRIPTS/stacks/common.sh"
-    stack_check "$MODE"
-    check_mapped_commands
-    return 0
-  fi
-  for stack_file in "$SCRIPTS"/stacks/*.sh; do
-    # shellcheck disable=SC1090 # stack files are discovered at runtime
-    source "$stack_file"
-    stack_check "$MODE"
-  done
+  # shellcheck disable=SC1091 # discovered at runtime
+  source "$SCRIPTS/stacks/common.sh"
+  stack_check "$MODE"
+  check_mapped_commands
 }
 
 # show_tips: optional tools that fit this project (REQ-051); full run only, result unchanged.
 show_tips() {
-  local stack_file
-  if [ "$LAYOUT" = "adopted" ]; then
-    # shellcheck disable=SC1091 # discovered at runtime
-    source "$SCRIPTS/stacks/common.sh"
-    stack_tips
-    return 0
-  fi
-  for stack_file in "$SCRIPTS"/stacks/*.sh; do
-    # shellcheck disable=SC1090 # stack files are discovered at runtime
-    source "$stack_file"
-    stack_tips
-  done
+  # shellcheck disable=SC1091 # discovered at runtime
+  source "$SCRIPTS/stacks/common.sh"
+  stack_tips
 }
 
 if [ "$MODE" = "staged" ]; then
@@ -186,11 +167,11 @@ if [ "$MODE" = "staged" ]; then
 fi
 
 info "check mode: $MODE"
-if [ "$LAYOUT" = "adopted" ]; then check_rules_current; fi
+check_rules_current
 check_project_files
 lint_shell "$MODE"
 scan_secrets "$MODE"
-if [ "$LAYOUT" = "adopted" ]; then scan_sast "$MODE" "$TOOLS_DIR/.semgrep"; else scan_sast "$MODE" "$ROOT/.semgrep"; fi
+scan_sast "$MODE" "$TOOLS_DIR/.semgrep"
 check_stacks
 if [ "$MODE" = "full" ]; then show_tips; fi
 

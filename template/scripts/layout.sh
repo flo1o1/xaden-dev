@@ -1,56 +1,32 @@
 #!/usr/bin/env bash
-# Where a project keeps its files (REQ-070). Sourced by lib.sh; do not execute it.
-# Two layouts, one set of scripts:
-#   classic  the scaffold copied scripts, prompts and guides into the project; requirements and
-#            reviews live in docs/. This is what `xaden project create` creates.
-#   adopted  the team content lives in the visible folder xaden/ (requirements, personas,
-#            security reviews, baselines, xaden.conf); the tooling stays in the installed Xaden
-#            and is selected by the version pinned in xaden/xaden.conf.
+# Where a project keeps its files (REQ-070, REQ-133). Sourced by lib.sh; do not execute it.
+# One layout: the team content lives in the visible folder xaden/ (requirements, personas, security reviews, baselines,
+# xaden.conf); the tooling stays in the installed Xaden and is selected by the version pinned in xaden/xaden.conf.
 # shellcheck disable=SC2034 # the variables below are used by the scripts that source this file
 
 TEAM_DIR_NAME="xaden"
 CONF_NAME="xaden.conf"
 
-# layout_init <project-root>: sets LAYOUT and the locations the scripts read and write.
+# layout_init <project-root>: sets the locations the scripts read and write.
 layout_init() {
   local root=$1
-  if [ -f "$root/$TEAM_DIR_NAME/$CONF_NAME" ]; then
-    LAYOUT=adopted
-    TEAM_DIR="$root/$TEAM_DIR_NAME"
-    REQ_DIR="$TEAM_DIR/requirements"
-    PERSONAS_DIR="$TEAM_DIR/personas"
-    REVIEWS_DIR="$TEAM_DIR/security-reviews"
-    EXCEPTIONS_FILE="$TEAM_DIR/security-exceptions.md"
-    DEFERRED_FILE="$TEAM_DIR/deferred-work.md"
-    THREAT_MODEL_FILE="$TEAM_DIR/threat-model.md"
-    RULES_FILE="${RULES_FILE:-$TEAM_DIR/RULES.md}"
-    CLEAN_CODE_FILE="$TOOLS_DIR/docs/clean-code.md"
-    RULES_DIR="$TOOLS_DIR/docs/rules"
-    SECURITY_GUIDE_FILE="$TOOLS_DIR/docs/security.md"
-  else
-    LAYOUT=classic
-    TEAM_DIR="$root/docs"
-    REQ_DIR="$root/docs/requirements"
-    PERSONAS_DIR="$root/docs/personas"
-    REVIEWS_DIR="$root/docs/security-reviews"
-    EXCEPTIONS_FILE="$root/docs/security-exceptions.md"
-    DEFERRED_FILE="$root/docs/deferred-work.md"
-    THREAT_MODEL_FILE="$root/docs/threat-model.md"
-    RULES_FILE="${RULES_FILE:-$root/AGENTS.md}"
-    CLEAN_CODE_FILE="$(dirname "$RULES_FILE")/docs/clean-code.md"
-    RULES_DIR="$(dirname "$RULES_FILE")/docs/rules"
-    SECURITY_GUIDE_FILE="$root/docs/security.md"
-  fi
+  TEAM_DIR="$root/$TEAM_DIR_NAME"
+  REQ_DIR="$TEAM_DIR/requirements"
+  PERSONAS_DIR="$TEAM_DIR/personas"
+  REVIEWS_DIR="$TEAM_DIR/security-reviews"
+  EXCEPTIONS_FILE="$TEAM_DIR/security-exceptions.md"
+  DEFERRED_FILE="$TEAM_DIR/deferred-work.md"
+  THREAT_MODEL_FILE="$TEAM_DIR/threat-model.md"
+  RULES_FILE="${RULES_FILE:-$TEAM_DIR/RULES.md}"
+  CLEAN_CODE_FILE="$TOOLS_DIR/docs/clean-code.md"
+  RULES_DIR="$TOOLS_DIR/docs/rules"
+  SECURITY_GUIDE_FILE="$TOOLS_DIR/docs/security.md"
 }
 
-# rule_file_hint <topic>: where the rule of a topic is read, for messages (REQ-126): the file
-# docs/rules/<topic>.md of a classic project, the command of an adopted one.
-rule_file_hint() {
-  if [ "${LAYOUT:-classic}" = "adopted" ]; then printf 'xaden doc rules-%s' "$1"; else printf 'docs/rules/%s.md' "$1"; fi
-}
+# rule_file_hint <topic>: where the rule of a topic is read, for messages (REQ-126).
+rule_file_hint() { printf 'xaden doc rules-%s' "$1"; }
 
-# TOOLS_DIR: the template folder the running scripts belong to (the installed Xaden, or the
-# project itself in a classic layout).
+# TOOLS_DIR: the template folder the running scripts belong to (the installed Xaden).
 TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # --- xaden.conf: "key = value" lines, "#" comments. Parsed, never sourced. -------------
@@ -92,10 +68,9 @@ conf_set() {
 # The modes of the checks (REQ-068).
 CHECK_MODES="advisory changed-files strict"
 
-# project_mode <project-root>: the mode of the checks. A classic project is always strict.
+# project_mode <project-root>: the mode of the checks.
 project_mode() {
   local mode
-  [ "$LAYOUT" = "adopted" ] || { printf 'strict'; return 0; }
   mode="$(conf_get "$1/$TEAM_DIR_NAME/$CONF_NAME" mode strict)"
   case " $CHECK_MODES " in *" $mode "*) printf '%s' "$mode" ;; *) die "xaden/xaden.conf: mode must be one of: $CHECK_MODES (got: $mode)" ;; esac
 }
@@ -112,7 +87,6 @@ adopted_text() {
     -e 's#scripts/check-traceability\.sh#xaden check#g' \
     -e 's#scripts/check-docs\.sh#xaden check#g' \
     -e 's#scripts/context-status\.sh#xaden context#g' \
-    -e 's#scripts/apply-preset\.sh#xaden project preset#g' \
     -e 's#scripts/persona\.sh#xaden project persona#g' \
     -e 's#scripts/release\.sh#xaden project release#g' \
     -e 's#scripts/req\.sh#xaden req#g' \

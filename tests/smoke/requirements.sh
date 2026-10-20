@@ -36,7 +36,7 @@ test_job_stories() {
     's/^type: job/type: quality/; s/^## Job/## Quality goal/; s/^TODO: When .*/95 % of searches answer within one second./')"
   assert "a natural job story with 'I want a' is accepted" demo_check "$(demo_variant want-a \
     's/^TODO: When .*/When I close a month, I want a PDF of all invoices, so I can send it to my accountant./')"
-  assert "TODO text only warns outside a release" bash -c "cd '$DEMO' && '$SCAFFOLD_ROOT/template/scripts/check-requirements.sh' 2>&1 | grep -q 'contains TODO text'"
+  assert "TODO text only warns outside a release" bash -c "PROJECT_ROOT='$DEMO' '$SCAFFOLD_ROOT/template/scripts/check-requirements.sh' 2>&1 | grep -q 'contains TODO text'"
   assert "the word TODO in real content is no marker" bash -c "! '$SCAFFOLD_ROOT/template/scripts/check-requirements.sh' '$(demo_variant todo-word \
     's/^TODO: When .*/When TODOs pile up, I want a list of them, so I can plan the work./; s/^- TODO: .*/- Given open TODOs, when I list them, then all are shown./')' 2>&1 | grep -q 'REQ-001-.*contains TODO'"
   assert_fails_with "unknown requirement type rejected" 'type must be one of' \
@@ -73,14 +73,11 @@ test_requirement_files() {
   variant="$(demo_variant stale-index 's/x/x/')"
   edit_file "$(req_file "$WORKDIR/variants/stale-index" REQ-001)" 's/^# .*/# Renamed job/'
   assert_fails_with "a stale index is rejected" 'stale' demo_check "$variant"
-  variant="$(demo_variant old-table 's/x/x/')"
-  printf '| ID |\n' >"$variant/REQUIREMENTS.md"
-  assert_fails_with "the old table format is rejected with a migration hint" 'migrate-requirements.sh' demo_check "$variant"
   assert "req.sh new creates the next ID in a new epic" bash -c "PROJECT_ROOT='$WORKDIR/variants/stale-index' \
     '$SCAFFOLD_ROOT/template/scripts/req.sh' new billing job 'Export invoices' | grep -q 'xaden/requirements/billing/REQ-002-export-invoices.md'"
   assert "req.sh new adds the epic and updates the index" bash -c "test -f '$WORKDIR/variants/stale-index/xaden/requirements/billing/EPIC.md' \
     && grep -q '| REQ-002 | job | should | draft | Export invoices |' '$WORKDIR/variants/stale-index/xaden/requirements/INDEX.md'"
-  assert "req.sh show prints the requirement file" bash -c "'$SCAFFOLD_ROOT/template/scripts/req.sh' show REQ-001 | grep -q '^## Acceptance criteria'"
+  assert "req.sh show prints the requirement file" bash -c "PROJECT_ROOT='$DEMO' '$SCAFFOLD_ROOT/template/scripts/req.sh' show REQ-001 | grep -q '^## Acceptance criteria'"
   # REQ-003: the CC summary is loaded every session; the details are read when code is written or reviewed
   local prompt
   for prompt in feature bugfix refactor code-review; do

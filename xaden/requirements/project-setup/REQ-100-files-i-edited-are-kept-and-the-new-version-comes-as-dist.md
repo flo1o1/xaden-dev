@@ -4,7 +4,7 @@ type: job
 epic: project-setup
 priority: must
 status: done
-updated: 2026-10-19
+updated: 2026-10-20
 ---
 
 # Files I edited are kept and the new version comes as `-dist`
@@ -20,4 +20,3 @@ When Xaden is updated or pinned and I changed one of the files it manages, I wan
 - Given a managed file that I edited and that did not change upstream, then nothing is written.
 - Given `xaden pin` of an adopted project, then the same rule holds for command files; of the workflow only the two pinned lines change, everything else stays.
 - Given a leftover `<file>-dist`, then `xaden doctor` warns and names it, and the checks and file scans ignore it.
-- Given `-dist` files, then they are git-ignored like `*.scaffold-new` was.

@@ -115,7 +115,7 @@ One behaviour per test; test names state the behaviour.
 ## How each rule is enforced
 
 The rules are instructions to assistants; where a tool can check them, `scripts/check.sh`
-does (presets: `scripts/apply-preset.sh python|node`). Tools catch size, naming patterns
+does (presets: `xaden project preset python|node`). Tools catch size, naming patterns
 and obvious error-handling mistakes. Design, cohesion, dependency direction and good names
 need human review; no prompt or linter guarantees architectural quality.
 Configurations only get stricter without the user's approval; existing violations live in a

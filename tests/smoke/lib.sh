@@ -20,9 +20,8 @@ unset STRICT
 export ALLOW_MAIN_COMMIT=1
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
-PROJECT="$WORKDIR/demo app/demo-app" # space in the path on purpose
-DEMO="$WORKDIR/demo adopted/demo-app" # the demo project in the layout every project has (REQ-133)
-mkdir -p "$(dirname "$PROJECT")" "$(dirname "$DEMO")"
+DEMO="$WORKDIR/demo app/demo-app" # the demo project; a space in the path on purpose
+mkdir -p "$(dirname "$DEMO")"
 OUTPUT="$WORKDIR/last-command.log"
 PASSED=0
 SKIPPED=0
@@ -113,11 +112,8 @@ assert_fails_with() {
   pass "$description"
 }
 
-# requirements_dir <root>: where a project keeps its requirements: xaden/requirements in the layout
-# every project has, docs/requirements in the old one (REQ-133 moves the areas over one by one).
-requirements_dir() {
-  if [ -d "$1/xaden/requirements" ]; then printf '%s' "$1/xaden/requirements"; else printf '%s' "$1/docs/requirements"; fi
-}
+# requirements_dir <root>: where a project keeps its requirements.
+requirements_dir() { printf '%s' "$1/xaden/requirements"; }
 
 # req_file <root> <REQ-nnn>: path of a requirement file of a project.
 req_file() {
@@ -129,25 +125,21 @@ edit_file() {
   sed "$2" "$1" >"$1.edit" && mv "$1.edit" "$1"
 }
 
-# set_status <REQ-nnn> <status> [root]: changes a requirement's status in a demo project (default:
-# the classic one) and regenerates the index.
+# set_status <REQ-nnn> <status> [root]: changes a requirement's status in a project (default: the
+# demo project) and regenerates the index.
 set_status() {
-  local root="${3:-$PROJECT}"
+  local root="${3:-$DEMO}"
   edit_file "$(req_file "$root" "$1")" "s/^status: .*/status: $2/"
   PROJECT_ROOT="$root" "$SCAFFOLD_ROOT/template/scripts/req.sh" index >/dev/null
 }
 
 
-# requirements_variant <name> <sed-expression> [source]: a copy of a demo project's requirements (default: the
-# classic one) with REQ-001 edited and the index regenerated; prints the requirements directory.
+# requirements_variant <name> <sed-expression> [source]: a copy of a project's requirements (default: the
+# demo project) with REQ-001 edited and the index regenerated; prints the requirements directory.
 requirements_variant() {
-  local root="$WORKDIR/variants/$1" source="${3:-$PROJECT}"
-  rm -rf "$root" && mkdir -p "$root"
-  if [ -d "$source/xaden/requirements" ]; then
-    mkdir -p "$root/xaden" && cp -R "$source/xaden/requirements" "$root/xaden/" && cp "$source/xaden/xaden.conf" "$root/xaden/"
-  else
-    mkdir -p "$root/docs" && cp -R "$source/docs/requirements" "$root/docs/"
-  fi
+  local root="$WORKDIR/variants/$1" source="${3:-$DEMO}"
+  rm -rf "$root" && mkdir -p "$root/xaden"
+  cp -R "$source/xaden/requirements" "$root/xaden/" && cp "$source/xaden/xaden.conf" "$root/xaden/"
   edit_file "$(req_file "$root" REQ-001)" "$2"
   PROJECT_ROOT="$root" "$SCAFFOLD_ROOT/template/scripts/req.sh" index >/dev/null
   printf '%s' "$(requirements_dir "$root")"
@@ -189,21 +181,15 @@ x_answers() {
   XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=$answer x_in "$@"
 }
 
-# REQ-001 project creation, REQ-013 template separation
+# REQ-001 project creation: the demo project every area runs against, made by xaden itself (REQ-133)
 test_new_project() {
-  assert_fails "reject bad project name" "$SCAFFOLD_ROOT/scripts/new-project.sh" "Bad Name" "$WORKDIR/x"
-  assert "create project (first commit on main allowed)" env ALLOW_MAIN_COMMIT=0 "$SCAFFOLD_ROOT/scripts/new-project.sh" demo-app "$PROJECT"
-  assert "no placeholders left" test -z "$(grep -rl '{{PROJECT_NAME}}' "$PROJECT" --exclude-dir=.git || true)"
-  assert "scaffold-only files not copied" test ! -e "$PROJECT/tests" -a ! -e "$PROJECT/template" -a ! -e "$PROJECT/scripts/new-project.sh"
-  assert "project gets template rules" grep -q 'CC-09' "$PROJECT/AGENTS.md"
-  assert "own git repo with first commit" git -C "$PROJECT" log --oneline -1
-  assert "hooks path configured" test "$(git -C "$PROJECT" config core.hooksPath)" = "scripts/hooks"  # REQ-133: the same project in the layout every project has, made by xaden itself
+  assert_fails "reject bad project name" "$XADEN" project create "Bad Name" "$WORKDIR/x"
   x_in "$(dirname "$DEMO")" project create demo-app "$DEMO"
-  assert "create the adopted demo project" test "$XRC" -eq 0
-  assert "the adopted demo project has its team folder" test -f "$DEMO/xaden/xaden.conf" -a -d "$DEMO/xaden/requirements"
-  assert "the adopted demo project has a first commit" git -C "$DEMO" log --oneline -1
+  assert "create the demo project (first commit on main allowed)" test "$XRC" -eq 0
+  assert "the demo project has its team folder" test -f "$DEMO/xaden/xaden.conf" -a -d "$DEMO/xaden/requirements"
+  assert "the demo project has a first commit" git -C "$DEMO" log --oneline -1
   x_in "$DEMO" req new first-epic job "Describe the first job"
-  assert "the adopted demo project has a placeholder requirement" test -f "$DEMO/xaden/requirements/first-epic/REQ-001-describe-the-first-job.md"
+  assert "the demo project has a placeholder requirement" test -f "$DEMO/xaden/requirements/first-epic/REQ-001-describe-the-first-job.md"
   git -C "$DEMO" add -A && git -C "$DEMO" commit -q --no-verify -m "docs: placeholder requirement"
   make_demo_tools
 }

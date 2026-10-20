@@ -210,11 +210,12 @@ collect_files() {
     tr '\0' '\n' | grep -E "$pattern" | grep -Ev "$exclude")
 }
 
-# lint_shell <mode>: shellcheck on shell scripts and extension-less git hooks.
+# lint_shell <mode>: shellcheck on shell scripts and extension-less git hooks. With JUDGE_BY_MODE=1 (set by check.sh)
+# the findings are judged by the mode and the baseline of the project (REQ-068); otherwise any finding fails.
 lint_shell() {
   collect_files "$1" '(\.sh$|(^|/)hooks/[^/.]+$|^\.githooks/)'
   [ ${#TARGETS[@]} -eq 0 ] && return 0
-  if [ "${LAYOUT:-classic}" = "adopted" ]; then
+  if [ "${JUDGE_BY_MODE:-0}" = "1" ]; then
     run_gated shellcheck "shellcheck" shellcheck -x -f gcc "${TARGETS[@]}"
   else
     run_tool "shellcheck" shellcheck -x "${TARGETS[@]}" # -x: follow sourced lib.sh even if unstaged
@@ -239,7 +240,7 @@ scan_secrets() {
 scan_sast() {
   collect_files "$1" "$SOURCE_FILE_PATTERN" "${3:-^$}"
   [ ${#TARGETS[@]} -eq 0 ] && return 0
-  if [ "${LAYOUT:-classic}" = "adopted" ]; then
+  if [ "${JUDGE_BY_MODE:-0}" = "1" ]; then
     SEMGREP_ENABLE_VERSION_CHECK=0 run_gated semgrep "SAST (semgrep, local rules)" \
       semgrep scan --config "$2" --metrics=off --disable-version-check --error --quiet --emacs "${TARGETS[@]}"
   else

@@ -1,8 +1,0 @@
-# Aider: always load rules and requirements as read-only context.
-read:
-  - AGENTS.md
-  - docs/requirements/INDEX.md
-# Run static analysis after edits; Aider offers to fix failures.
-lint-cmd: scripts/check.sh
-auto-lint: false
-# Aider's own commits are fine; Conventional Commits are enforced by the commit-msg hook.

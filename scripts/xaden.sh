@@ -337,24 +337,6 @@ scaffold_command() {
   esac
 }
 
-# classic_project_command <command> <root> <args...>: the project's own scripts (projects created by `create`).
-classic_project_command() {
-  local command=$1 root=$2 script
-  shift 2
-  case "$command" in
-    setup) script=setup.sh ;;
-    check) script=check.sh ;;
-    req) script=req.sh ;;
-    release) script=release.sh ;;
-    context) script=context-status.sh ;;
-    persona) script=persona.sh ;;
-    *) die "$NOT_ADOPTED_MESSAGE" ;;
-  esac
-  [ -x "$root/scripts/$script" ] || die "$NOT_ADOPTED_MESSAGE"
-  cd "$root"
-  exec "$root/scripts/$script" "$@"
-}
-
 CORE_COMMANDS="upgrade version"
 PROJECT_COMMANDS="create adopt remove pin fetch doctor rules preset setup release persona ignore-list check req"
 
@@ -399,7 +381,7 @@ run_command() {
       elif [ "$command" = "hook" ]; then
         exit 0 # a clone whose branch does not carry Xaden yet: nothing to check
       else
-        classic_project_command "$command" "$root" "$@"
+        die "$NOT_ADOPTED_MESSAGE"
       fi
       ;;
   esac

@@ -47,7 +47,7 @@ tests/smoke.sh project-setup         # runs one area
 |------|--------|------------|
 | `adoption` | adopting a repository, pinned versions, downloads | `scripts/xaden.sh`, `scripts/fetch.sh`, `template/scripts/lib.sh` |
 | `assistant-guidance` | the rules and prompts assistants follow | `template/scripts/persona.sh`, `template/AGENTS.md`, `template/prompts/` |
-| `project-setup` | creating and installing | `scripts/new-project.sh`, `scripts/install.sh`, `scripts/setup.sh` |
+| `project-setup` | creating and installing | `scripts/create.sh`, `scripts/install.sh`, `scripts/setup.sh` |
 | `quality-gates` | the checks | `template/scripts/check.sh`, `scripts/check-scaffold.sh`, `template/scripts/verify-commits.sh` |
 | `requirements` | requirement tracking | `template/scripts/req.sh`, `template/scripts/check-requirements.sh` |
 | `security` | security checks and exceptions | `template/scripts/check-security-exceptions.sh`, `template/.semgrep/` |

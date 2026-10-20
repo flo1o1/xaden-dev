@@ -67,8 +67,6 @@ run_tool "third-party credits" "$ROOT/scripts/check-third-party.sh" "$ROOT" # RE
 run_tool "AIDD mapping" "$ROOT/scripts/check-aidd-mapping.sh" "$ROOT" # REQ-116
 run_tool "release archive" "$ROOT/scripts/check-release-archive.sh" "$REAL_ROOT" # REQ-094
 run_tool "smoke areas" "$ROOT/scripts/check-smoke-areas.sh" "$ROOT" # REQ-092
-run_tool "template requirements format" env PROJECT_ROOT="$ROOT/template" ALLOW_TEMPLATE_PLACEHOLDERS=1 "$TEMPLATE_SCRIPTS/check-requirements.sh"
-run_tool "template docs structure" env PROJECT_ROOT="$ROOT/template" "$TEMPLATE_SCRIPTS/check-docs.sh"
 run_tool "git hooks path" "$ROOT/scripts/check-hooks-path.sh" "$REAL_ROOT"
 warn_shellcheck_version
 lint_shell "$MODE"

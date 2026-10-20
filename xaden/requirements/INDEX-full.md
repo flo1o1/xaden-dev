@@ -50,7 +50,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-001 | job | must | done | Create a new project from the template with its own git repository and active hooks |
 | REQ-009 | quality | must | done | Run on Linux and macOS; Windows optional |
 | REQ-012 | job | must | done | Usable by people other than the author |
-| REQ-013 | job | must | done | Separate scaffold maintenance files from the project template |
+| REQ-013 | job | must | dropped | Separate scaffold maintenance files from the project template |
 | REQ-017 | job | should | dropped | Existing projects can adopt newer scaffold versions |
 | REQ-018 | job | must | dropped | Project generation copies only reviewed template content |
 | REQ-026 | job | should | dropped | Local drop zone for files that must never be committed |
@@ -82,8 +82,8 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-130 | job | should | done | I ask one command whether Xaden or my dependencies are outdated |
 | REQ-131 | job | should | done | I find every Xaden command under one namespace that says what it acts on |
 | REQ-132 | job | should | done | I run check and req as project commands and keep the short spellings |
-| REQ-133 | job | should | approved | Xaden knows one project layout |
-| REQ-134 | job | should | approved | The Xaden repository is an adopted project |
+| REQ-133 | job | should | done | Xaden knows one project layout |
+| REQ-134 | job | should | done | The Xaden repository is an adopted project |
 
 ## Quality gates (`quality-gates`)
 

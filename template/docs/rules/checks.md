@@ -4,7 +4,7 @@ Moved from `AGENTS.md` (REQ-126), rule IDs and wording unchanged. `AGENTS.md` sa
 
 ## 5. Static analysis (mandatory before "done")
 
-- Linter presets (`scripts/apply-preset.sh python|node`) enforce CC rules; once a stack is
+- Linter presets (`xaden project preset python|node`) enforce CC rules; once a stack is
   detected, missing lint/type/test setup fails the check instead of being skipped.
 - In a project that adopted Xaden, the `mode` in `xaden/xaden.conf` (`advisory`, `changed-files`,
   `strict`) is part of that configuration: loosening it, widening or removing a
