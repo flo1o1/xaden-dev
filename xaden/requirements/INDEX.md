@@ -25,6 +25,7 @@ lists them, and `INDEX-full.md` holds the full table.
 | ID | Type | Priority | Status | Title |
 |----|------|----------|--------|-------|
 | REQ-086 | job | should | approved | A check started from inside a check stops at once |
+| REQ-152 | quality | should | approved | The release archive check does not fail by chance |
 
 ## Releases and documentation (`release-and-docs`)
 
