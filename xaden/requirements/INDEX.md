@@ -43,3 +43,6 @@ lists them, and `INDEX-full.md` holds the full table.
 
 14 done.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-143 | job | should | approved | The offline SAST rules cover more classes of common mistakes in Python and JavaScript |
