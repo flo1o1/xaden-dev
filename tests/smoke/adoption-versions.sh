@@ -163,9 +163,20 @@ PY
     x_answers y "$signed_worktree" project pin 9.9.9
     assert "a signature by an unknown key fails with exit code 6" test "$XRC" -eq 6
 
+    # REQ-136 a release that was published signed is refused when its signature is gone
     rm -rf "${assets:?}"/* "$home"
+    assert "a project created with a key on record requires signed releases" grep -q '^require-signature = true' "$signed_worktree/xaden/xaden.conf"
+    edit_file "$signed_worktree/xaden/xaden.conf" '/^require-signature = true/d'
+    git -C "$signed_worktree" -c core.hooksPath=/dev/null commit -q -n -am "test: trust on first use"
+    XADEN_FIRST_SIGNED_VERSION=0.3.0 x_answers y "$signed_worktree" project pin 9.9.9
+    assert "REQ-136 a missing signature of a signed-era release fails with exit code 6" test "$XRC" -eq 6
+    assert "REQ-136 the refusal says the signature is missing" grep -q 'is missing or does not verify' "$XOUT"
+    assert "REQ-136 nothing is installed without it" test ! -e "$home/versions/9.9.9"
+    XADEN_SIGNERS_FILE=/dev/null XADEN_FIRST_SIGNED_VERSION=0.3.0 x_answers y "$signed_worktree" project pin 9.9.9
+    assert "REQ-136 without a key on record trust on first use stays" test "$XRC" -eq 0
+    rm -rf "$home" "$signed_worktree-upgrade-xaden-9.9.9" && git -C "${signed_worktree%-adopt-xaden}" worktree prune && git -C "${signed_worktree%-adopt-xaden}" branch -D chore/upgrade-xaden-9.9.9 >/dev/null
     x_answers y "$signed_worktree" project pin 9.9.9
-    assert "a release without a signature is installed with a warning" test "$XRC" -eq 0
+    assert "a release older than the first signed one is installed with a warning" test "$XRC" -eq 0
     assert "the warning names trust on first use" grep -q 'trust on first use' "$XOUT"
     # REQ-103 require-signature = true: only releases the maintainer signed, on every path
     local policy_worktree policy_pinned

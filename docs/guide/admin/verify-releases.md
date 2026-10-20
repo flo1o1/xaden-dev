@@ -20,16 +20,22 @@ archive of the same release give the same value, because the release leaves out 
 
 - **The signature does not verify:** nothing is installed and the command exits with code 6.
 - **The pinned checksum differs from the signed one:** nothing is installed and the command exits with code 5.
-- **There is no signature** (an older release, or `release-signers` holds no key yet): Xaden says the checksum is taken from the download
+- **There is no signature for a release from 0.3.0 on** while `release-signers` holds a key (or `ssh-keygen` is missing): nothing is installed
+  and the command exits with code 6. Releases from 0.3.0 on were published signed, so a missing signature means someone removed it, not that the release is old (REQ-136).
+- **There is no signature** for an older release, or `release-signers` holds no key yet: Xaden says the checksum is taken from the download
   itself, which means you trust the first download, and continues only after your yes.
+- **A download address comes from the environment** (`XADEN_RELEASES_URL`, `XADEN_ASSETS_URL`, `XADEN_LATEST_URL`): Xaden names each one and asks
+  before it downloads from there. Without a terminal it downloads nothing.
 
 Check which case applies to you: `grep -v '^#' ~/.xaden/release-signers` prints the trusted keys. No output means no key is published
 yet.
 
 ## Require signed releases
 
-By default a release without a verifiable signature is installed after your yes, on trust. A team that wants no exceptions sets, in
-`xaden/xaden.conf`:
+A project created or adopted by a Xaden that knows a signing key gets `require-signature = true` in `xaden/xaden.conf` (REQ-136), and Xaden then
+runs for it only after the copy you installed was verified once: if `xaden` stops with "no matching signature on record", run `xaden core fetch <version>`.
+A project from before keeps its setting; without the line a release older than 0.3.0, or one checked without a key, is installed after your yes, on trust.
+A team that wants no exceptions sets, in `xaden/xaden.conf`:
 
 ```
 require-signature = true
