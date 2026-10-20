@@ -1,4 +1,4 @@
-// Clean-code preset for JavaScript/TypeScript (xaden project preset node).
+// Clean-code preset for JavaScript/TypeScript (xaden project add-preset node).
 // Each rule is mapped to the AGENTS.md rule it enforces. Relaxing a rule needs the user's approval
 // and a comment with the reason (AGENTS.md §5).
 import js from "@eslint/js";

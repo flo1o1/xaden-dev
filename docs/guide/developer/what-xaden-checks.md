@@ -26,8 +26,8 @@ plus Xaden's own checks.
 
 A skipped check makes the run INCOMPLETE, never a success. The three audit rows are check kinds of an adopted project like `test` and
 `lint`: `check.audit` (every stack) and `check.security` (Bandit, Python only). `xaden project adopt` finds an existing command (a Makefile
-target `audit` or `security`, an npm script `audit`); `xaden project preset python` maps `pip-audit` and `bandit -q -r . -x ./.venv,./node_modules,./tests`,
-`xaden project preset node` maps `npm audit --audit-level=high`. The audits never run in the pre-commit hook (they need the network and are slow); the
+target `audit` or `security`, an npm script `audit`); `xaden project add-preset python` maps `pip-audit` and `bandit -q -r . -x ./.venv,./node_modules,./tests`,
+`xaden project add-preset node` maps `npm audit --audit-level=high`. The audits never run in the pre-commit hook (they need the network and are slow); the
 generated CI workflow installs the pinned tools before `xaden check --strict`. An audit finding names no file, so it cannot be baselined: it
 fails in `changed-files` and `strict` and warns in `advisory`.
 

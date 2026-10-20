@@ -26,7 +26,7 @@ relative to it.
 | User personas | `docs/personas/`: 3 to 5 personas, created prefilled by `scripts/persona.sh new` or `/xaden-persona`; assistants check every solution against them |
 | Git | New projects get their own repo with hooks installed |
 | An existing repository | `xaden project adopt` adds Xaden beneath it on a branch: a visible `xaden/` folder, a marked block in `AGENTS.md`, your own tests, linters, hooks and CI reused, existing findings baselined; `xaden project remove` takes it out again |
-| One Xaden version per team | `xaden/xaden.conf` pins the version and a checksum; `xaden project doctor`, `xaden project fetch` and `xaden project pin` keep the team on one reviewed version; nothing downloads without your yes |
+| One Xaden version per team | `xaden/xaden.conf` pins the version and a checksum; `xaden core doctor`, `xaden core fetch` and `xaden project pin` keep the team on one reviewed version; nothing downloads without your yes |
 | A new project | `xaden project create` creates the same `xaden/` layout `xaden project adopt` gives an existing repository |
 | A new project in one step | `xaden project create --autopilot` sets up the recommended checks, hooks and CI for Python or Node after one confirmation |
 | Obsidian | Open the folder as a vault; prompts have frontmatter, wikilinks, a template folder |

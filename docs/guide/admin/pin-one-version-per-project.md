@@ -8,10 +8,10 @@ changes nothing in the repository.
 ## See which version a project uses
 
 ```bash
-xaden project doctor
+xaden core doctor
 ```
 
-- `xaden project doctor`: prints `installed X, project pinned Y` and checks that the installed copy matches the pinned checksum. It reads two files and uses no network. It also shows the `update-check` setting in effect and the cached result of the last check ([Check for updates](check-for-updates.md)).
+- `xaden core doctor`: prints `installed X, project pinned Y` and checks that the installed copy matches the pinned checksum. It reads two files and uses no network. It also shows the `update-check` setting in effect and the cached result of the last check ([Check for updates](check-for-updates.md)).
 
 If `xaden/RULES.md` does not match the pinned version, `xaden check` fails and names the fix, `xaden project rules`, which regenerates the file from
 the pinned version.
@@ -28,15 +28,15 @@ The question shows the version, the source and the checksum first. Only a yes do
 checksum equals the one in `xaden.conf`. The answer is not remembered. You can run the same step on purpose:
 
 ```bash
-xaden project fetch 0.3.0
+xaden core fetch 0.3.0
 ```
 
-- `xaden project fetch 0.3.0`: shows the same facts, asks, downloads, verifies and installs into `~/.local/share/xaden/versions`. Set `XADEN_HOME` to use another place.
+- `xaden core fetch 0.3.0`: shows the same facts, asks, downloads, verifies and installs into `~/.local/share/xaden/versions`. Set `XADEN_HOME` to use another place.
 
 ## When there is no terminal
 
 An IDE git client, a script or an assistant cannot answer the question. Nothing downloads. The command exits with code 3 and prints the
-`xaden project fetch <version>` to run yourself in a terminal. Assistants show the question to you and never answer it.
+`xaden core fetch <version>` to run yourself in a terminal. Assistants show the question to you and never answer it.
 
 In CI, the workflow step names the version and the checksum and changes only by pull request.
 

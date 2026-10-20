@@ -381,11 +381,11 @@ test_prompts_and_ignore_list() {
 
   local before
   before="$(git -C "$worktree" status --porcelain)"
-  x_in "$worktree" project ignore-list
+  x_in "$worktree" core ignore-list
   assert "the ignore list names the Xaden paths" test "$(cat "$XOUT")" = "$(printf 'xaden/\nAGENTS.md\nCLAUDE.md')"
   assert "the ignore list changes no file" test "$(git -C "$worktree" status --porcelain)" = "$before"
   rm "$worktree/CLAUDE.md"
-  x_in "$worktree" project ignore-list
+  x_in "$worktree" core ignore-list
   assert "CLAUDE.md is listed only when present" test "$(cat "$XOUT")" = "$(printf 'xaden/\nAGENTS.md')"
 }
 
@@ -463,10 +463,10 @@ test_new_project_layout() {
   x_in "$project" check
   assert "strict: a stack without checks is an error" test "$XRC" -ne 0
   assert "the gap is named" grep -q "gap: no 'test' check is configured" "$XOUT"
-  x_in "$project" project preset node
-  assert "xaden project preset adds the preset's configuration" test -f "$project/eslint.config.mjs"
-  assert "xaden project preset maps the checks" grep -q '^check.lint = npx eslint \.$' "$project/xaden/xaden.conf"
-  assert "xaden project preset prints the install command" grep -q 'npm install --save-dev --save-exact eslint@' "$XOUT"
+  x_in "$project" project add-preset node
+  assert "xaden project add-preset adds the preset's configuration" test -f "$project/eslint.config.mjs"
+  assert "xaden project add-preset maps the checks" grep -q '^check.lint = npx eslint \.$' "$project/xaden/xaden.conf"
+  assert "xaden project add-preset prints the install command" grep -q 'npm install --save-dev --save-exact eslint@' "$XOUT"
 
   # release works without guides
   if need_tool gitleaks "release in an adopted project"; then

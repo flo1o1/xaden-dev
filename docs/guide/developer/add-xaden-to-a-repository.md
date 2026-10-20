@@ -106,7 +106,7 @@ xaden project remove
 
 - `xaden project remove`: deletes `xaden/` and undoes exactly the paths listed in `xaden/footprint.txt`. Review the result with `git status`, then commit.
 
-`xaden project ignore-list` prints `xaden/`, `AGENTS.md` and, when present, `CLAUDE.md`, one per line, for `.dockerignore`, `.npmignore` and archive
+`xaden core ignore-list` prints `xaden/`, `AGENTS.md` and, when present, `CLAUDE.md`, one per line, for `.dockerignore`, `.npmignore` and archive
 excludes.
 
 ## Working with assistants afterwards

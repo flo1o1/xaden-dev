@@ -344,11 +344,11 @@ test_audit_kinds() {
   assert "REQ-106 a new Node adoption expects audit but not security" grep -q '^expect = test,lint,audit$' "$node-adopt-xaden/xaden/xaden.conf"
 
   # a preset maps the classic commands, with the exit status that means findings
-  x_in "$py-adopt-xaden" project preset python
+  x_in "$py-adopt-xaden" project add-preset python
   assert "REQ-106 the Python preset maps pip-audit" grep -q '^check.audit = pip-audit$' "$conf"
   assert "REQ-106 the Python preset maps bandit like the classic project" grep -q '^check.security = bandit -q -r . -x ./.venv,./node_modules,./tests$' "$conf"
   assert "REQ-106 the Python preset declares exit status 1 as findings" bash -c 'grep -q "^findings-status.audit = 1$" "$1" && grep -q "^findings-status.security = 1$" "$1"' _ "$conf"
-  x_in "$node-adopt-xaden" project preset node
+  x_in "$node-adopt-xaden" project add-preset node
   assert "REQ-106 the Node preset maps npm audit" grep -q '^check.audit = npm audit --audit-level=high$' "$node-adopt-xaden/xaden/xaden.conf"
   assert "REQ-106 the Node preset declares exit status 1 as findings" grep -q '^findings-status.audit = 1$' "$node-adopt-xaden/xaden/xaden.conf"
 

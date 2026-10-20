@@ -279,7 +279,7 @@ test_stack_enforcement() {
     printf '[project]\nname = "demo"\nversion = "0.1.0"\n' >"$DEMO/pyproject.toml"
     printf '"""Demo."""\n' >"$DEMO/ok.py"
     git -C "$DEMO" add pyproject.toml ok.py
-    x_in "$DEMO" project preset python
+    x_in "$DEMO" project add-preset python
     assert "python preset applies" test "$XRC" -eq 0
     printf '"""Demo."""\n\n\ndef f(a, b, c, d, e):\n    """Too many args."""\n    return a\n' >"$DEMO/bad.py"
     git -C "$DEMO" add ruff.toml bad.py xaden/xaden.conf

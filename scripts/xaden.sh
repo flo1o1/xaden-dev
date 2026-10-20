@@ -37,11 +37,11 @@ usage() {
 Usage: xaden <command> [args...]
        xaden <core|project|aidd> <command> [args...]
 
-Namespaces (`xaden help <namespace>` lists one):
-  core               Xaden itself, on this machine: upgrade, version
-  project            one project and the Xaden version it uses: create, adopt, remove, pin, fetch, doctor, rules,
-                     preset, setup, release, persona, ignore-list, check, req
-  aidd               the AI-Driven Development framework, pinned per project: enable, status, disable, pin
+Namespaces (`xaden <namespace> help` lists the commands of one):
+  core               Xaden itself, on this machine: upgrade, version, fetch, doctor, ignore-list, help
+  project            one project and the Xaden version it uses: create, adopt, remove, pin, rules,
+                     add-preset, setup, release, persona, check, req, help
+  aidd               the AI-Driven Development framework, pinned per project: enable, status, disable, pin, help
 
 Short spellings and daily commands (anywhere inside a project):
   check [...]        same as `project check`: static analysis (--staged, --strict)
@@ -52,7 +52,7 @@ Short spellings and daily commands (anywhere inside a project):
                      check the commit messages a CI run introduces (adopted projects; advises only while commit-convention is other)
   prompt <name>      print a task prompt (kickoff, feature, bugfix, ...)
   doc <name>         print a guide (clean-code, security, optional-tools, local-llm)
-  help [namespace]   show this list, or one namespace
+  help               show this list
 EOF
 }
 
@@ -64,6 +64,10 @@ Usage: xaden core <command> [args...]
                      update Xaden itself to the newest release or to <version> (asks first; older versions stay installed);
                      --check only reports: the newest Xaden and, in a project, its outdated dependencies
   version            print the installed Xaden version
+  fetch <version>    install the pinned version if it is missing (asks first)
+  doctor             compare the installed version with the pinned one (no network)
+  ignore-list        print the paths Xaden owns, for .dockerignore and archive excludes (inside a project)
+  help               list these commands
 EOF
 }
 
@@ -81,19 +85,17 @@ Start and keep (any directory):
   remove             take Xaden out of the repository you are in
 
 Inside a project that adopted Xaden:
-  doctor             compare the installed version with the pinned one (no network)
-  fetch <version>    install the pinned version if it is missing (asks first)
   pin [--check] [version]
                      move the project to another Xaden version on a branch for a pull request
   rules              regenerate xaden/RULES.md from the pinned version
-  preset <python|node>
+  add-preset <python|node>
                      add Xaden's preset for a stack and map its checks
   setup              activate git hooks, report missing tools
   release <part>     cut a release: major, minor or patch
   persona new <name> create a user persona
-  ignore-list        print the paths Xaden owns, for .dockerignore and archive excludes
   check [...]        static analysis (--staged, --strict)
   req [...]          requirements: list, show, new, index
+  help               list these commands
 EOF
 }
 
@@ -105,6 +107,7 @@ Usage: xaden aidd <command> [args...]
   status             show whether it is on, the pins and whether they hold
   disable            switch it off and remove what enable added
   pin                move the project to another pinned release of the framework
+  help               list these commands
 EOF
 }
 
@@ -130,7 +133,7 @@ require_signed_installation() {
   if [ "$2" = "$(running_version)" ]; then dir="$SCAFFOLD_ROOT"; else dir="$(versions_dir)/$2"; fi
   [ -d "$dir" ] || return 0
   installation_authenticated "$2" "$dir" "$(conf_get "$1" checksum)" ||
-    die "this project requires signed releases (require-signature = true), and Xaden $2 in $dir has no matching signature on record. Verify it once with: xaden project fetch $2"
+    die "this project requires signed releases (require-signature = true), and Xaden $2 in $dir has no matching signature on record. Verify it once with: xaden core fetch $2"
 }
 
 # select_pinned_version <root> <args...>: runs the Xaden version the project pins. When it is
@@ -195,7 +198,7 @@ doctor_main() {
       info "Xaden $(running_version) is installed; move the project with: xaden project pin $(running_version)"
     fi
   else
-    warn "Xaden $pinned is not installed. Install it with: xaden project fetch $pinned"
+    warn "Xaden $pinned is not installed. Install it with: xaden core fetch $pinned"
     exit 1
   fi
   print_update_check "$root"
@@ -301,7 +304,7 @@ adopted_project_command() {
       ok "xaden/RULES.md regenerated from Xaden $(running_version); review the diff and commit it" ;;
     ignore-list) ignore_list_main "$root" ;;
     aidd) "$SCAFFOLD_ROOT/scripts/aidd.sh" "$root" "$@" ;;
-    preset) preset_main "$root" "${1:-}" ;;
+    add-preset) preset_main "$root" "${1:-}" ;;
   esac
 }
 
@@ -309,7 +312,7 @@ adopted_project_command() {
 # files at the root (never overwriting yours) and the check commands in xaden/xaden.conf.
 preset_main() {
   local root=$1 stack=$2
-  case "$stack" in python | node) ;; *) die "usage: xaden project preset <python|node>" ;; esac
+  case "$stack" in python | node) ;; *) die "usage: xaden project add-preset <python|node>" ;; esac
   # shellcheck source=SCRIPTDIR/adopt-scan.sh
   source "$SCAFFOLD_ROOT/scripts/adopt-scan.sh"
   # shellcheck source=SCRIPTDIR/adopt-lib.sh
@@ -337,8 +340,8 @@ scaffold_command() {
   esac
 }
 
-CORE_COMMANDS="upgrade version"
-PROJECT_COMMANDS="create adopt remove pin fetch doctor rules preset setup release persona ignore-list check req"
+CORE_COMMANDS="upgrade version fetch doctor ignore-list"
+PROJECT_COMMANDS="create adopt remove pin rules add-preset setup release persona check req"
 
 # in_list <word> <list>: true if the word is one of the space separated words.
 in_list() { case " $2 " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
@@ -351,6 +354,7 @@ run_namespace() {
     "usage_$namespace" >&2
     exit 2
   fi
+  case "$command" in help | -h | --help) "usage_$namespace"; return 0 ;; esac
   case "$namespace" in
     core) in_list "$command" "$CORE_COMMANDS" || { usage_core >&2; die "unknown command: xaden core $command"; } ;;
     project) in_list "$command" "$PROJECT_COMMANDS" || { usage_project >&2; die "unknown command: xaden project $command"; } ;;
@@ -373,7 +377,7 @@ run_command() {
     fetch) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" fetch "$@" ;;
     upgrade) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" upgrade "$@" ;;
     pin) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" pin "$@" ;;
-    setup | check | req | context | persona | release | hook | verify-commits | prompt | doc | rules | ignore-list | preset | aidd)
+    setup | check | req | context | persona | release | hook | verify-commits | prompt | doc | rules | ignore-list | add-preset | aidd)
       root="$(project_root)"
       if is_scaffold "$root"; then scaffold_command "$command" "$root" "$@"; fi # the Xaden repository adopts itself (REQ-134)
       if is_adopted "$root"; then
@@ -396,16 +400,13 @@ main() {
   case "$command" in
     core | project) run_namespace "$command" "$@" ;;
     help | -h | --help)
-      case "${1:-}" in
-        "") usage ;;
-        core) usage_core ;;
-        project) usage_project ;;
-        aidd) usage_aidd ;;
-        *) usage >&2; die "unknown namespace: $1" ;;
-      esac ;;
+      [ "$#" -eq 0 ] || { usage >&2; die "unknown command: xaden help $1 (the commands of a namespace: xaden <namespace> help)"; }
+      usage ;;
     check | req) run_command "$command" "$@" ;; # aliases of `xaden project check` and `xaden project req` (REQ-132)
     version) run_command version "$@" ;; # alias of `xaden core version`
-    context | hook | verify-commits | prompt | doc | aidd) run_command "$command" "$@" ;;
+    aidd)
+      case "${1:-}" in help | -h | --help) usage_aidd ;; *) run_command aidd "$@" ;; esac ;;
+    context | hook | verify-commits | prompt | doc) run_command "$command" "$@" ;;
     *)
       usage >&2
       die "unknown command: $command"

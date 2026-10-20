@@ -12,11 +12,8 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Project setup (`project-setup`)
 
-31 done, 5 dropped.
+32 done, 5 dropped.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-131 | job | should | approved | I find every Xaden command under one namespace that says what it acts on |
 
 ## Quality gates (`quality-gates`)
 
