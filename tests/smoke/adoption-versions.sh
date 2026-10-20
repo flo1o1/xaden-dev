@@ -178,6 +178,21 @@ PY
     x_answers y "$signed_worktree" project pin 9.9.9
     assert "a release older than the first signed one is installed with a warning" test "$XRC" -eq 0
     assert "the warning names trust on first use" grep -q 'trust on first use' "$XOUT"
+    # REQ-138 the installed copy must match the pin before it runs
+    local pinned_copy="$signed_worktree-upgrade-xaden-9.9.9"
+    x_in "$pinned_copy" req list
+    assert "REQ-138 an untouched installed copy runs" test "$XRC" -eq 0
+    printf '\n' >>"$home/versions/9.9.9/VERSION"
+    x_in "$pinned_copy" req list
+    assert "REQ-138 a changed installed copy stops with exit 1" test "$XRC" -ne 0
+    assert "REQ-138 the message names the pin and the fix" grep -q 'does not match the checksum pinned.*xaden core fetch 9.9.9' "$XOUT"
+    # REQ-139 a link is not hashed, so a tree that holds one has no checksum
+    mkdir -p "$WORKDIR/linked" && printf 'a\n' >"$WORKDIR/linked/file" && ln -s file "$WORKDIR/linked/link"
+    assert_fails "REQ-139 tree_checksum refuses a tree with a symlink" tree_checksum "$WORKDIR/linked"
+    # REQ-140 a moved Xaden home is named and, without a terminal, nothing is installed
+    XADEN_HOME="$WORKDIR/elsewhere" XADEN_TEST_MODE=0 x_in "$signed_worktree" project pin 9.9.9 </dev/null
+    assert "REQ-140 XADEN_HOME is named" grep -q 'XADEN_HOME is set in the environment' "$XOUT"
+    assert "REQ-140 nothing is installed there" test ! -e "$WORKDIR/elsewhere/versions"
     # REQ-103 require-signature = true: only releases the maintainer signed, on every path
     local policy_worktree policy_pinned
     policy_worktree="$(adopted_copy policy)"
