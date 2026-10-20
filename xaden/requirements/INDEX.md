@@ -20,12 +20,11 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Quality gates (`quality-gates`)
 
-23 done, 1 dropped.
+24 done, 1 dropped.
 
 | ID | Type | Priority | Status | Title |
 |----|------|----------|--------|-------|
 | REQ-086 | job | should | approved | A check started from inside a check stops at once |
-| REQ-152 | quality | should | approved | The release archive check does not fail by chance |
 
 ## Releases and documentation (`release-and-docs`)
 
