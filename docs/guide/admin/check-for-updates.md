@@ -57,7 +57,7 @@ Dependencies: npm: left-pad, react (major); pip: up to date
 - A tool that is not installed shows as `not checked`, never as up to date.
 
 The result is cached in the repository's git folder (`.git/xaden-update-check`), so it is never committed and every worktree shares it.
-`xaden project doctor` and `scripts/context-status.sh` print the cached result and the setting in effect (`update check: 1d (xaden/xaden.conf)`).
+`xaden core doctor` and `scripts/context-status.sh` print the cached result and the setting in effect (`update check: 1d (xaden/xaden.conf)`).
 They, the commit hooks and the pre-commit checks never use the network.
 
 ## What is sent

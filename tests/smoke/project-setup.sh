@@ -41,21 +41,30 @@ test_xaden_command() {
   assert "install links xaden to this checkout" test "$(readlink "$xaden")" = "$SCAFFOLD_ROOT/scripts/xaden.sh"
   assert "xaden version prints the scaffold version" \
     test "$("$xaden" version)" = "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
-  assert "xaden help project lists the commands" bash -c "'$xaden' help project | grep -q 'create <name>'"
+  assert "xaden project help lists the commands" bash -c "'$xaden' project help | grep -q 'create <name>'"
   assert_fails "unknown xaden command fails" "$xaden" fly
   # REQ-131 the moved commands live under core and project; their old top-level spellings are unknown
   assert "REQ-131 xaden core version prints the version" \
     test "$("$xaden" core version)" = "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
   assert "REQ-131 xaden help lists the namespaces" bash -c "'$xaden' help | grep -q 'xaden <core|project|aidd>'"
-  assert "REQ-131 xaden help project lists the project commands" bash -c "'$xaden' help project | grep -q 'pin \[--check\]'"
-  assert "REQ-131 xaden help core lists the core commands" bash -c "'$xaden' help core | grep -q 'upgrade'"
+  assert "REQ-131 xaden project help lists the project commands" bash -c "'$xaden' project help | grep -q 'pin \[--check\]' && '$xaden' project help | grep -q '^  add-preset '"
+  assert "REQ-131 xaden core help lists the core commands" \
+    bash -c "for c in upgrade version fetch doctor ignore-list help; do '$xaden' core help | grep -q \"^  \$c\" || exit 1; done"
+  assert "REQ-131 -h and --help after a namespace list its commands" \
+    bash -c "test \"\$('$xaden' core -h)\" = \"\$('$xaden' core help)\" && test \"\$('$xaden' project --help)\" = \"\$('$xaden' project help)\""
+  assert "REQ-131 the project list no longer has fetch, doctor, ignore-list or preset" \
+    bash -c "! '$xaden' project help | grep -qE '^  (fetch|doctor|ignore-list|preset) '"
+  for old in fetch doctor ignore-list preset; do
+    assert_fails_with "REQ-131 xaden project $old is unknown" "unknown command: xaden project $old" "$xaden" project "$old"
+  done
+  assert_fails_with "REQ-131 xaden help takes no namespace" "unknown command: xaden help core" "$xaden" help core
   assert_fails_with "REQ-131 xaden core without a command lists its commands" "xaden core <command>" "$xaden" core
   assert_fails_with "REQ-131 xaden project without a command lists its commands" "xaden project <command>" "$xaden" project
   assert_fails_with "REQ-131 an unknown project command is named" "unknown command: xaden project fly" "$xaden" project fly
   # REQ-132 version, check and req are aliases; aidd is a namespace with its own help
   assert "REQ-132 xaden version is xaden core version" test "$("$xaden" version)" = "$("$xaden" core version)"
-  assert "REQ-132 xaden help project lists check and req" bash -c "'$xaden' help project | grep -q '^  check ' && '$xaden' help project | grep -q '^  req '"
-  assert "REQ-132 xaden help aidd lists its commands" bash -c "'$xaden' help aidd | grep -q 'enable' && '$xaden' help | grep -q 'xaden <core|project|aidd>'"
+  assert "REQ-132 xaden project help lists check and req" bash -c "'$xaden' project help | grep -q '^  check ' && '$xaden' project help | grep -q '^  req '"
+  assert "REQ-132 xaden aidd help lists its commands" bash -c "'$xaden' aidd help | grep -q 'enable' && '$xaden' aidd --help | grep -q '^  help ' && '$xaden' help | grep -q 'xaden <core|project|aidd>'"
   for old in create adopt remove pin fetch doctor upgrade rules preset setup release persona ignore-list; do
     assert_fails_with "REQ-131 xaden $old is unknown at the top level" "unknown command: $old" "$xaden" "$old"
   done
@@ -80,8 +89,8 @@ test_xaden_command() {
     bash -c "cd '$elsewhere/xaden-app' && test \"\$('$xaden' project check --bogus 2>&1)\" = \"\$('$xaden' check --bogus 2>&1)\""
   local nowhere="$WORKDIR/no-repository" unadopted="$WORKDIR/unadopted-repository" command
   mkdir -p "$nowhere" "$unadopted" && git -C "$unadopted" init -q -b main
-  for command in "project setup" "project pin" "project doctor" "project rules" "project preset python" "project release patch" \
-    "project persona new x" "project ignore-list" "project fetch 9.9.9" "project check" "project req list" check "req list" context "prompt feature" "doc security" "aidd status"; do
+  for command in "project setup" "project pin" "core doctor" "project rules" "project add-preset python" "project release patch" \
+    "project persona new x" "core ignore-list" "core fetch 9.9.9" "project check" "project req list" check "req list" context "prompt feature" "doc security" "aidd status"; do
     # shellcheck disable=SC2086 # the command words are split on purpose
     assert_fails_with "REQ-132 outside a git repository '$command' names create and adopt" "xaden project create <name>, or adopt an existing repository with: xaden project adopt" \
       bash -c "cd '$nowhere' && '$xaden' $command"
@@ -95,7 +104,7 @@ test_xaden_command() {
   assert "foreign link left in place" test -L "$WORKDIR/other-bin/xaden"
   printf 'x\n' >"$elsewhere/xaden-app/leftover.md-dist"
   assert "doctor names a leftover -dist file (REQ-100)" \
-    bash -c "cd '$elsewhere/xaden-app' && '$xaden' project doctor 2>&1 | grep -q 'leftover.md-dist'"
+    bash -c "cd '$elsewhere/xaden-app' && '$xaden' core doctor 2>&1 | grep -q 'leftover.md-dist'"
   rm "$elsewhere/xaden-app/leftover.md-dist"
   assert "uninstall removes the link" "$SCAFFOLD_ROOT/scripts/install.sh" --uninstall "$bin"
   assert_fails "link gone after uninstall" test -L "$xaden"

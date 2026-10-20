@@ -41,7 +41,7 @@ rules were read or followed, so review its work.
    You set the ones you approve to `approved`; nothing is built for a requirement that is still a draft.
 3. **The threat model.** What you protect, who could attack it, where untrusted input enters, and which security level you aim for. It goes into `xaden/threat-model.md`; the assistant also fills the `TODO` markers of `SECURITY.md` with facts you give it.
 4. **The stack.** The assistant records the decision, builds a minimal skeleton that runs, and adds Xaden's preset for the stack
-   (`xaden project preset python` or `xaden project preset node`), which also maps the checks. You install the tools it lists.
+   (`xaden project add-preset python` or `xaden project add-preset node`), which also maps the checks. You install the tools it lists.
 
 Check that it worked: `xaden check` runs the new checks and ends with a summary. A skipped check is named; install the tool and run it
 again.

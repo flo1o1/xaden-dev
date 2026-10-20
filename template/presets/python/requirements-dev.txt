@@ -1,4 +1,4 @@
-# Pinned analysis and test tools (xaden project preset python). CI installs exactly these.
+# Pinned analysis and test tools (xaden project add-preset python). CI installs exactly these.
 # Update deliberately: bump a version, run scripts/check.sh, commit as `build(deps): ...`.
 ruff==0.16.10
 mypy==2.4.0

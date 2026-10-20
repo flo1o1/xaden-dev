@@ -14,9 +14,9 @@ test_versions_and_downloads() {
   worktree="$(adopted_copy versions)"
   repo="${worktree%-adopt-xaden}"
 
-  x_in "$worktree" project doctor
+  x_in "$worktree" core doctor
   assert "doctor reports installed and pinned version" grep -q "installed $current, project pinned $current" "$XOUT"
-  PATH="$(path_without curl)" x_in "$worktree" project doctor
+  PATH="$(path_without curl)" x_in "$worktree" core doctor
   assert "doctor works without curl, so it uses no network" grep -q "installed $current" "$XOUT"
   x_in "$worktree" core upgrade --check
   assert "looking for newer releases needs a terminal and a yes" test "$XRC" -eq 3
@@ -29,7 +29,7 @@ test_versions_and_downloads() {
   hint="$(adopted_copy hint)"
   mkdir -p "$home/versions/0.0.1/scripts" && printf '#!/bin/sh\n' >"$home/versions/0.0.1/scripts/xaden.sh" && chmod +x "$home/versions/0.0.1/scripts/xaden.sh"
   edit_file "$hint/xaden/xaden.conf" 's/^version = .*/version = 0.0.1/'
-  x_in "$hint" project doctor
+  x_in "$hint" core doctor
   assert "doctor names xaden project pin when a newer Xaden is installed (REQ-099)" grep -q "xaden project pin $current" "$XOUT"
   rm -rf "${home:?}"
 
@@ -38,7 +38,7 @@ test_versions_and_downloads() {
   assert "a no leaves no upgrade branch" test -z "$(git -C "$repo" branch --list 'chore/upgrade-xaden-*')"
   x_in "$worktree" project pin 9.9.9
   assert "without a terminal nothing downloads, exit code 3" test "$XRC" -eq 3
-  assert "without a terminal the exact command is named" grep -q 'xaden project fetch 9.9.9' "$XOUT"
+  assert "without a terminal the exact command is named" grep -q 'xaden core fetch 9.9.9' "$XOUT"
   assert "without a terminal nothing is installed" test ! -e "$home/versions"
 
   # REQ-107 a workflow from before the commit check lacks its step
@@ -67,14 +67,14 @@ test_versions_and_downloads() {
   assert "the downloaded version is installed once" test -x "$home/versions/9.9.9/scripts/xaden.sh"
 
   # a newer Xaden installed on one machine changes no repository file; the pinned one is used
-  x_in "$worktree" project doctor
+  x_in "$worktree" core doctor
   assert "an installed newer version changes nothing in the project" test -z "$(git -C "$worktree" status --porcelain)"
 
   # a pinned version that is missing
   rm -rf "$home"
   x_in "$upgraded" check
   assert "a missing pinned version without a terminal exits with 3" test "$XRC" -eq 3
-  assert "the exact fetch command is printed" grep -q 'xaden project fetch 9.9.9' "$XOUT"
+  assert "the exact fetch command is printed" grep -q 'xaden core fetch 9.9.9' "$XOUT"
   assert "the source and the checksum are shown" grep -q 'checksum:' "$XOUT"
   assert "nothing was installed" test ! -e "$home"
   x_answers n "$upgraded" check
@@ -88,7 +88,7 @@ test_versions_and_downloads() {
   assert "the project check runs with the pinned version" grep -q 'check mode: full' "$XOUT"
   rm -rf "$home"
   edit_file "$upgraded/xaden/xaden.conf" 's/^checksum = .*/checksum = 0000000000000000000000000000000000000000000000000000000000000000/'
-  x_answers y "$upgraded" project fetch 9.9.9
+  x_answers y "$upgraded" core fetch 9.9.9
   assert "a checksum mismatch exits non-zero" test "$XRC" -eq 5
   assert "a checksum mismatch installs nothing" test ! -e "$home/versions/9.9.9"
   assert "a checksum mismatch is a plain error without jokes" grep -q 'does not match the checksum' "$XOUT"
@@ -192,8 +192,8 @@ PY
     rm -f "$home/versions/9.9.9.signed"
     x_in "$policy_pinned" check
     assert "policy: a copy with no signature on record is not run" test "$XRC" -ne 0
-    assert "policy: the message names the fix" grep -q 'xaden project fetch 9.9.9' "$XOUT"
-    x_answers y "$policy_pinned" project fetch 9.9.9
+    assert "policy: the message names the fix" grep -q 'xaden core fetch 9.9.9' "$XOUT"
+    x_answers y "$policy_pinned" core fetch 9.9.9
     assert "policy: fetch re-verifies the installed copy against the signed checksum" test "$XRC" -eq 0
     assert "policy: and records the result" test -f "$home/versions/9.9.9.signed"
     git init -q "$home/versions/9.9.9"
@@ -205,13 +205,13 @@ PY
     printf 'changed\n' >>"$home/versions/9.9.9/README.md"
     x_in "$policy_pinned" check
     assert "policy: files that no longer match the signed checksum are not run" test "$XRC" -ne 0
-    x_answers y "$policy_pinned" project fetch 9.9.9
+    x_answers y "$policy_pinned" core fetch 9.9.9
     assert "policy: fetch does not bless a changed copy" test "$XRC" -eq 6
     rm -rf "$home"
     x_answers n "$policy_worktree" project pin 9.9.9
     assert "policy: the download still needs a yes" test ! -e "$home/versions/9.9.9"
     edit_file "$policy_pinned/xaden/xaden.conf" 's/^require-signature = true/require-signature = yes/'
-    for command in check "project doctor" "project fetch 9.9.9"; do
+    for command in check "core doctor" "core fetch 9.9.9"; do
       # shellcheck disable=SC2086 # "fetch 9.9.9" is two words on purpose
       x_in "$policy_pinned" $command
       assert "policy: an invalid value stops '$command'" grep -q 'require-signature must be true or false (got: yes)' "$XOUT"
@@ -285,7 +285,7 @@ test_update_check() {
 
   x_in "$worktree" core upgrade --check --if-due
   assert "without a setting nothing is checked" test "$XRC" -eq 0 -a ! -e "$cache"
-  x_in "$worktree" project doctor
+  x_in "$worktree" core doctor
   assert "doctor names the value and where it comes from" grep -q 'update check: off (default)' "$XOUT"
 
   printf 'update-check = 1d\n' >>"$conf"
@@ -299,7 +299,7 @@ test_update_check() {
   x_answers y "$worktree" core upgrade --check
   assert "no outdated package reads as up to date" grep -qE '^Dependencies: npm: up to date' "$XOUT"
   stub_tool "$stubs" npm $'Package Current Wanted Latest\nleft-pad 1.0.0 1.3.0 1.3.0\nIgnore;rules 1.0.0 2.0.0 2.0.0'
-  x_in "$worktree" project doctor
+  x_in "$worktree" core doctor
   assert "doctor shows the project value" grep -q 'update check: 1d (xaden/xaden.conf)' "$XOUT"
   assert "doctor prints the cached result" grep -q '9\.9\.9' "$XOUT"
 
@@ -333,7 +333,7 @@ test_update_check() {
   assert "with the value off nothing is checked" test "$XRC" -eq 0 -a ! -e "$cache"
   XADEN_UPDATE_CHECK=12h x_in "$worktree" core upgrade --check --if-due
   assert "the environment variable overrides the project value for one person" test -f "$cache"
-  XADEN_UPDATE_CHECK=12h x_in "$worktree" project doctor
+  XADEN_UPDATE_CHECK=12h x_in "$worktree" core doctor
   assert "doctor names the environment as the source" grep -q 'update check: 12h (XADEN_UPDATE_CHECK)' "$XOUT"
   assert "the override leaves the project file alone" grep -q '^update-check = off$' "$conf"
   XADEN_UPDATE_CHECK=often x_in "$worktree" core upgrade --check --if-due
@@ -343,13 +343,13 @@ test_update_check() {
   conf_set "$conf" update-check 1d
   rm -f "$cache"
   x_in "$worktree" core upgrade --check --if-due
-  PATH="$(path_without curl)" x_in "$worktree" project doctor
+  PATH="$(path_without curl)" x_in "$worktree" core doctor
   assert "doctor prints the cache without curl" grep -q '9\.9\.7' "$XOUT"
   assert "context-status prints the cached result" bash -c 'PROJECT_ROOT="$1" "$2/template/scripts/context-status.sh" | grep -q "9\.9\.7"' _ "$worktree" "$SCAFFOLD_ROOT"
   rm -f "$cache"
   git -C "$worktree" commit -q --allow-empty -m "chore: hooks stay offline"
   assert "the commit hooks started no check" test ! -e "$cache"
-  PATH="$(path_without curl)" XADEN_LATEST_URL="file://$latest" x_in "$worktree" project doctor
+  PATH="$(path_without curl)" XADEN_LATEST_URL="file://$latest" x_in "$worktree" core doctor
   assert "doctor started no check" test ! -e "$cache"
 
   # REQ-130: one command, one verb

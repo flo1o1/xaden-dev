@@ -6,7 +6,7 @@ Check that the Xaden you install is the release the maintainer published, and un
 
 | Check | What it proves | Where |
 |-------|----------------|-------|
-| Checksum | The files are exactly those the project pinned | `checksum` in `xaden/xaden.conf`; compared by `xaden project fetch`, `xaden project pin` and the CI workflow |
+| Checksum | The files are exactly those the project pinned | `checksum` in `xaden/xaden.conf`; compared by `xaden core fetch`, `xaden project pin` and the CI workflow |
 | Signature | The checksum of a release was signed by the maintainer's key | `release-signers` in the Xaden folder holds the public key |
 | Zip signature | The release zip is the file the maintainer signed | `xaden-<version>.zip.sig` on the release page; the one-command installer verifies it before it opens the zip ([Install Xaden](install-xaden.md)) |
 
@@ -15,7 +15,7 @@ archive of the same release give the same value, because the release leaves out 
 
 ## What happens on install and upgrade
 
-`xaden project fetch`, `xaden project pin` and `xaden core upgrade` download the release archive and, next to it, the signed checksum. If a key is listed in
+`xaden core fetch`, `xaden project pin` and `xaden core upgrade` download the release archive and, next to it, the signed checksum. If a key is listed in
 `release-signers` and the signature verifies, the checksum that gets pinned is the signed one, and the output says `signature verified`.
 
 - **The signature does not verify:** nothing is installed and the command exits with code 6.
@@ -37,12 +37,12 @@ require-signature = true
 
 Then, for that project:
 
-- `xaden project fetch`, `xaden project pin` and `xaden core upgrade` install nothing and exit with code 6 when the key is missing from `release-signers`,
+- `xaden core fetch`, `xaden project pin` and `xaden core upgrade` install nothing and exit with code 6 when the key is missing from `release-signers`,
   `ssh-keygen` is not installed, no signature is published, or the signature cannot be downloaded. A signature that does not verify
   blocks with or without the setting. The first download of a version is covered too: the signed checksum is the one that gets pinned.
 - Xaden runs for the project only when the installed files are exactly what the maintainer signed and what the project pins. Xaden keeps
   the signed checksum of every verified install in `<versions folder>/<version>.signed`, next to the version, not inside it. A copy with
-  no record (installed before you set the option) is verified once: `xaden project fetch <version>` downloads the
+  no record (installed before you set the option) is verified once: `xaden core fetch <version>` downloads the
   signed checksum after your yes, compares it with the installed files, and records the result. A git clone or worktree of Xaden is never accepted, whatever its committed files hold.
 - Any value other than `true` or `false`, an empty one included, stops every `xaden` command in the project, so a typo cannot switch the control off. Only a missing line means `false`.
 - Setting it back to `false`, or removing it, weakens a control: do it in a pull request your team reviews.

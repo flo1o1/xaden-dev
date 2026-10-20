@@ -1,4 +1,4 @@
-# Clean-code preset for Python (xaden project preset python).
+# Clean-code preset for Python (xaden project add-preset python).
 # Each rule group is mapped to the AGENTS.md rule it enforces. Tighten, never loosen silently:
 # a project-specific relaxation needs the user's approval and a comment with the reason (AGENTS.md §5).
 line-length = 100

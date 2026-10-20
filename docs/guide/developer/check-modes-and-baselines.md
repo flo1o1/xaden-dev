@@ -77,10 +77,10 @@ You can close a gap in two ways:
 - Use Xaden's preset for Python or Node: `xaden project adopt --preset` while adopting, or later:
 
 ```bash
-xaden project preset python
+xaden project add-preset python
 ```
 
-- `xaden project preset python`: writes the preset's configuration at the repository root where its tools expect it, maps the check commands in `xaden/xaden.conf` (including `pip-audit` and Bandit for Python, `npm audit` for Node), and prints the command that installs the tools. You run that command yourself. A file you already have is never overwritten; Xaden shows the difference and asks before it saves its version next to yours as `<file>.xaden-new`.
+- `xaden project add-preset python`: writes the preset's configuration at the repository root where its tools expect it, maps the check commands in `xaden/xaden.conf` (including `pip-audit` and Bandit for Python, `npm audit` for Node), and prints the command that installs the tools. You run that command yourself. A file you already have is never overwritten; Xaden shows the difference and asks before it saves its version next to yours as `<file>.xaden-new`.
 
 Which checks each layout runs, and which an adopted project does not: [What Xaden checks](what-xaden-checks.md).
 

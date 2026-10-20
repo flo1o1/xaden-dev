@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The only script of Xaden that talks to the network (REQ-072), and the version changes built on it.
-# Usage: xaden project fetch <version>             install the version this project pins, after you confirm
+# Usage: xaden core fetch <version>             install the version this project pins, after you confirm
 #        xaden core upgrade [--check [--if-due]] update Xaden itself: install the newest release, switch `current` (REQ-097);
 #                                          --check only reports Xaden and the project's outdated dependencies (REQ-130)
 #        xaden project pin [--check] [version]     move the project to another Xaden on a branch (REQ-071, REQ-099)
@@ -54,7 +54,7 @@ confirm_download() {
   echo "  source:   $(release_url "$version")"
   echo "  checksum: ${checksum:-not pinned yet; it is shown after the download and goes into xaden/xaden.conf}"
   if ! has_terminal; then
-    warn "No terminal, so nothing was downloaded. Run this yourself in a terminal: xaden project fetch $version"
+    warn "No terminal, so nothing was downloaded. Run this yourself in a terminal: xaden core fetch $version"
     exit "$EXIT_NO_TERMINAL"
   fi
   ask "Download and install Xaden $version now?"
@@ -177,7 +177,7 @@ ensure_authenticated() {
   [ "$SIGNATURE_REQUIRED" = 1 ] || return 0
   if installation_authenticated "$version" "$dir" "${3:-}"; then return 0; fi
   info "This project requires signed releases; Xaden $version in $dir has no verified signature on record." >&2
-  has_terminal || { warn "No terminal, so nothing was verified. Run this yourself in a terminal: xaden project fetch $version" >&2; exit "$EXIT_NO_TERMINAL"; }
+  has_terminal || { warn "No terminal, so nothing was verified. Run this yourself in a terminal: xaden core fetch $version" >&2; exit "$EXIT_NO_TERMINAL"; }
   ask "Download the signed checksum of Xaden $version from github.com and verify the installed copy against it?" ||
     { echo "Nothing was verified." >&2; exit 1; }
   signed="$(signed_checksum "$version")" || status=$?
@@ -201,7 +201,7 @@ ensure_authenticated() {
 # fetch_main <version>: installs the version the project pins.
 fetch_main() {
   local version=${1:-} conf pinned checksum
-  [ -n "$version" ] || die "usage: xaden project fetch <version>"
+  [ -n "$version" ] || die "usage: xaden core fetch <version>"
   require_version "$version"
   conf="$(project_conf)"
   pinned="$(conf_get "$conf" version)"

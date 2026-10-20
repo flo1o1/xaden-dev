@@ -41,7 +41,7 @@ git -C ~/.xaden checkout v<version>
 - `git -C ~/.xaden tag -l`: lists the releases.
 - `git -C ~/.xaden checkout v<version>`: switches to the release you choose. Switch back with `git -C ~/.xaden checkout main` before the next `git pull`.
 
-A project that pins a Xaden version needs that release installed by `xaden project fetch`, not the clone; a clone is never accepted when a team requires signed releases
+A project that pins a Xaden version needs that release installed by `xaden core fetch`, not the clone; a clone is never accepted when a team requires signed releases
 ([Verify releases](../admin/verify-releases.md)).
 
 ## Uninstall
