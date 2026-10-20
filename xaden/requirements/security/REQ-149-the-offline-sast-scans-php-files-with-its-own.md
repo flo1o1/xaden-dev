@@ -3,7 +3,7 @@ id: REQ-149
 type: job
 epic: security
 priority: should
-status: approved
+status: done
 updated: 2026-10-20
 ---
 
