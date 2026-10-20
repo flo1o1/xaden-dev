@@ -167,3 +167,6 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-077 | job | should | done | Releases are signed so a pinned checksum comes from the maintainer |
 | REQ-106 | job | must | done | An adopted project audits its dependencies and runs Bandit like a new one |
 | REQ-136 | job | should | done | A release that should be signed is refused when its signature is missing |
+| REQ-138 | job | should | done | The installed Xaden is checked against the pin before it runs |
+| REQ-139 | job | should | done | The tree checksum refuses what it cannot see |
+| REQ-140 | job | could | done | A moved Xaden home is confirmed like a moved download |
