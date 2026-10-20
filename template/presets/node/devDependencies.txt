@@ -1,4 +1,4 @@
-# Exact versions of the tools the node preset needs (read by `xaden create --autopilot` and `xaden adopt`).
+# Exact versions of the tools the node preset needs (read by `xaden project create --autopilot` and `xaden project adopt`).
 # Existence and reputation checked on 2026-10-14 against the npm registry (REQ-052): each package and
 # version exists, comes from the project's official maintainers, and is current; typescript-eslint
 # 8.71.2 declares support for TypeScript >=4.8.4 <6.1.0 and ESLint 10, so TypeScript stays on 6.0.x.

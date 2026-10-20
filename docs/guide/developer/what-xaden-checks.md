@@ -25,27 +25,27 @@ plus Xaden's own checks.
 | `npm audit` (Node dependencies) | **unless mapped**: `check.audit` | skipped; fails with `--strict` and in CI | yes | no |
 
 A skipped check makes the run INCOMPLETE, never a success. The three audit rows are check kinds of an adopted project like `test` and
-`lint`: `check.audit` (every stack) and `check.security` (Bandit, Python only). `xaden adopt` finds an existing command (a Makefile
-target `audit` or `security`, an npm script `audit`); `xaden preset python` maps `pip-audit` and `bandit -q -r . -x ./.venv,./node_modules,./tests`,
-`xaden preset node` maps `npm audit --audit-level=high`. The audits never run in the pre-commit hook (they need the network and are slow); the
+`lint`: `check.audit` (every stack) and `check.security` (Bandit, Python only). `xaden project adopt` finds an existing command (a Makefile
+target `audit` or `security`, an npm script `audit`); `xaden project preset python` maps `pip-audit` and `bandit -q -r . -x ./.venv,./node_modules,./tests`,
+`xaden project preset node` maps `npm audit --audit-level=high`. The audits never run in the pre-commit hook (they need the network and are slow); the
 generated CI workflow installs the pinned tools before `xaden check --strict`. An audit finding names no file, so it cannot be baselined: it
 fails in `changed-files` and `strict` and warns in `advisory`.
 
 ## What an adopted project is told
 
 A new adoption expects the audits: `expect` names `audit` (and `security` for Python), so an unmapped one is a gap until you map it. An
-adoption from before keeps its `expect` line; `xaden upgrade` and `xaden pin` never add to it, so no run turns red by an update. Its full run
+adoption from before keeps its `expect` line; `xaden core upgrade` and `xaden project pin` never add to it, so no run turns red by an update. Its full run
 prints a `NOT COVERED:` line for each check Xaden knows for your stack and nothing
 maps, and names the key that would map it:
 
 ```
-NOT COVERED: pip-audit; a project made by xaden create runs it. Map it with check.audit in xaden/xaden.conf (see "What Xaden checks")
+NOT COVERED: pip-audit; a project made by xaden project create runs it. Map it with check.audit in xaden/xaden.conf (see "What Xaden checks")
 ```
 
 The line only informs. When `expect` in `xaden/xaden.conf` names the kind (`expect = test,lint,audit`), a missing mapping is a gap
 instead: a warning in `advisory` and `changed-files`, a failure in `strict`.
 
-A project made by `xaden create` never prints this line for what its stacks run.
+A project made by `xaden project create` never prints this line for what its stacks run.
 
 ## Make the gates blocking
 

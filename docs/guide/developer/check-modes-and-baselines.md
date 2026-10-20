@@ -39,7 +39,7 @@ check.lint = my-linter --all
 findings-status.lint = 1,3
 ```
 
-`xaden adopt` writes `findings-status.<name> = 1` for you when the command exited with status 1 while it recorded the baseline (review the line in the adoption pull request). Any other status is not written, because a tool that crashes after printing findings would be accepted for good; the output tells you the line to add if that status does mean "violations found". The check `test` never has one:
+`xaden project adopt` writes `findings-status.<name> = 1` for you when the command exited with status 1 while it recorded the baseline (review the line in the adoption pull request). Any other status is not written, because a tool that crashes after printing findings would be accepted for good; the output tells you the line to add if that status does mean "violations found". The check `test` never has one:
 a failing test is always a failure. A command without the line fails on every non-zero status.
 
 **Upgrading from an earlier version:** a mapped command that exits non-zero with only baselined output used to pass. It now fails until
@@ -58,7 +58,7 @@ In `changed-files` mode a finding fails when its file is in the change. Xaden wo
 
 If Xaden cannot tell (a first push, a rewritten history, a shallow clone, a target branch that is not fetched, CI without an event),
 that run checks all files as `strict` does and says so. An empty list of files never stands in for "unknown". `xaden/xaden.conf` stays
-as it is. The workflows `xaden adopt` writes, and the template's `ci.yml`, hand `EVENT_NAME`, `BASE_REF` and `BEFORE_SHA` to the check step;
+as it is. The workflows `xaden project adopt` writes, and the template's `ci.yml`, hand `EVENT_NAME`, `BASE_REF` and `BEFORE_SHA` to the check step;
 a workflow of your own that runs `xaden check` needs the same three variables and `fetch-depth: 0`.
 
 ## Commit convention
@@ -68,19 +68,19 @@ If your repository does not use Conventional Commits, the `Refs:` checks only ad
 
 ## Gaps: no tests or linters yet
 
-If the repository lacks tests, linters or a type checker for its stack, `xaden adopt --scan` lists each gap. A gap is reported by
+If the repository lacks tests, linters or a type checker for its stack, `xaden project adopt --scan` lists each gap. A gap is reported by
 `xaden check`: a warning in `advisory` and `changed-files`, an error in `strict`.
 
 You can close a gap in two ways:
 
 - Name your own command: add `check.test = <command>` (or `check.lint`, `check.typecheck`, and for the security checks `check.audit` and, in Python, `check.security`) to `xaden/xaden.conf`. What each kind covers: [What Xaden checks](what-xaden-checks.md).
-- Use Xaden's preset for Python or Node: `xaden adopt --preset` while adopting, or later:
+- Use Xaden's preset for Python or Node: `xaden project adopt --preset` while adopting, or later:
 
 ```bash
-xaden preset python
+xaden project preset python
 ```
 
-- `xaden preset python`: writes the preset's configuration at the repository root where its tools expect it, maps the check commands in `xaden/xaden.conf` (including `pip-audit` and Bandit for Python, `npm audit` for Node), and prints the command that installs the tools. You run that command yourself. A file you already have is never overwritten; Xaden shows the difference and asks before it saves its version next to yours as `<file>.xaden-new`.
+- `xaden project preset python`: writes the preset's configuration at the repository root where its tools expect it, maps the check commands in `xaden/xaden.conf` (including `pip-audit` and Bandit for Python, `npm audit` for Node), and prints the command that installs the tools. You run that command yourself. A file you already have is never overwritten; Xaden shows the difference and asks before it saves its version next to yours as `<file>.xaden-new`.
 
 Which checks each layout runs, and which an adopted project does not: [What Xaden checks](what-xaden-checks.md).
 

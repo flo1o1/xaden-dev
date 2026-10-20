@@ -75,12 +75,24 @@ test_xaden_command() {
     test "$("$xaden" version)" = "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
   assert "xaden help lists the commands" bash -c "'$xaden' help | grep -q 'create <name>'"
   assert_fails "unknown xaden command fails" "$xaden" fly
+  # REQ-131 the moved commands live under core and project; their old top-level spellings are unknown
+  assert "REQ-131 xaden core version prints the version" \
+    test "$("$xaden" core version)" = "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
+  assert "REQ-131 xaden help lists the namespaces" bash -c "'$xaden' help | grep -q 'xaden <core|project>'"
+  assert "REQ-131 xaden help project lists the project commands" bash -c "'$xaden' help project | grep -q 'pin \[--check\]'"
+  assert "REQ-131 xaden help core lists the core commands" bash -c "'$xaden' help core | grep -q 'upgrade'"
+  assert_fails_with "REQ-131 xaden core without a command lists its commands" "xaden core <command>" "$xaden" core
+  assert_fails_with "REQ-131 xaden project without a command lists its commands" "xaden project <command>" "$xaden" project
+  assert_fails_with "REQ-131 an unknown project command is named" "unknown command: xaden project fly" "$xaden" project fly
+  for old in create adopt remove pin fetch doctor upgrade rules preset setup release persona ignore-list; do
+    assert_fails_with "REQ-131 xaden $old is unknown at the top level" "unknown command: $old" "$xaden" "$old"
+  done
   assert_fails_with "project command outside a project fails" "inside a project" \
     bash -c "cd '$elsewhere' && '$xaden' check"
 
-  assert_fails_with "xaden create --classic is an unknown option (REQ-001)" "unknown option: --classic" \
-    bash -c "cd '$elsewhere' && '$xaden' create --classic xaden-app"
-  assert "xaden create --classic creates nothing (REQ-001)" test ! -e "$elsewhere/xaden-app"
+  assert_fails_with "xaden project create --classic is an unknown option (REQ-001)" "unknown option: --classic" \
+    bash -c "cd '$elsewhere' && '$xaden' project create --classic xaden-app"
+  assert "xaden project create --classic creates nothing (REQ-001)" test ! -e "$elsewhere/xaden-app"
   assert "the maintainers' fixture makes a project with its own tooling" "$SCAFFOLD_ROOT/scripts/new-project.sh" xaden-app "$elsewhere/xaden-app"
   assert "new project has its first commit" git -C "$elsewhere/xaden-app" log -1 --format=%s
   assert "xaden new is an unknown command and creates nothing (REQ-130)" \
@@ -95,7 +107,7 @@ test_xaden_command() {
   assert "foreign link left in place" test -L "$WORKDIR/other-bin/xaden"
   printf 'x\n' >"$elsewhere/xaden-app/prompts/leftover.md-dist"
   assert "doctor names a leftover -dist file (REQ-100)" \
-    bash -c "cd '$elsewhere/xaden-app' && '$xaden' doctor 2>&1 | grep -q 'prompts/leftover.md-dist'"
+    bash -c "cd '$elsewhere/xaden-app' && '$xaden' project doctor 2>&1 | grep -q 'prompts/leftover.md-dist'"
   rm "$elsewhere/xaden-app/prompts/leftover.md-dist"
   assert "uninstall removes the link" "$SCAFFOLD_ROOT/scripts/install.sh" --uninstall "$bin"
   assert_fails "link gone after uninstall" test -L "$xaden"

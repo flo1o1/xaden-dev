@@ -35,6 +35,49 @@ TOOLS="$SCAFFOLD_ROOT/template/scripts"
 usage() {
   cat <<'EOF'
 Usage: xaden <command> [args...]
+       xaden <core|project> <command> [args...]
+
+Xaden itself, on this machine (`xaden help core`):
+  core upgrade [--check [--if-due]] [version]
+                     update Xaden itself to the newest release or to <version> (asks first; older versions stay installed);
+                     --check only reports: the newest Xaden and, in a project, its outdated dependencies
+  core version       print the installed Xaden version
+
+One project and the Xaden version it uses (`xaden help project`):
+  project create <name> [dir]      project adopt     project remove     project doctor
+  project fetch <version>          project pin       project rules      project preset
+  project setup                    project release   project persona    project ignore-list
+
+Daily work (anywhere inside a project):
+  check [...]        static analysis (--staged, --strict)
+  req [...]          requirements: list, show, new, index
+  context            rule IDs, requirement counts and the CONTEXT CHECK fingerprint
+  verify-commits --ci
+                     check the commit messages a CI run introduces (adopted projects; advises only while commit-convention is other)
+  prompt <name>      print a task prompt (kickoff, feature, bugfix, ...)
+  doc <name>         print a guide (clean-code, security, optional-tools, local-llm)
+  aidd <enable|status|disable|pin>
+                     switch the AI-Driven Development framework on at a pinned version, or off (asks before it downloads)
+  version            print the installed Xaden version
+  help [core|project]
+                     show this list, or one namespace
+EOF
+}
+
+usage_core() {
+  cat <<'EOF'
+Usage: xaden core <command> [args...]
+
+  upgrade [--check [--if-due]] [version]
+                     update Xaden itself to the newest release or to <version> (asks first; older versions stay installed);
+                     --check only reports: the newest Xaden and, in a project, its outdated dependencies
+  version            print the installed Xaden version
+EOF
+}
+
+usage_project() {
+  cat <<'EOF'
+Usage: xaden project <command> [args...]
 
 Start and keep (any directory):
   create <name> [dir]
@@ -44,11 +87,6 @@ Start and keep (any directory):
   adopt [--scan|--plan]
                      add Xaden to the repository you are in, on a branch (scan and plan change nothing)
   remove             take Xaden out of the repository you are in
-  version            print the installed Xaden version
-  upgrade [--check] [version]
-                     update Xaden itself to the newest release or to <version> (asks first; older versions stay installed);
-                     --check only reports: the newest Xaden and, in a project, its outdated dependencies
-  help               show this list
 
 Inside a project that adopted Xaden:
   doctor             compare the installed version with the pinned one (no network)
@@ -58,21 +96,10 @@ Inside a project that adopted Xaden:
   rules              regenerate xaden/RULES.md from the pinned version
   preset <python|node>
                      add Xaden's preset for a stack and map its checks
-  aidd <enable|status|disable|pin>
-                     switch the AI-Driven Development framework on at a pinned version, or off (asks before it downloads)
-  prompt <name>      print a task prompt (kickoff, feature, bugfix, ...)
-  doc <name>         print a guide (clean-code, security, optional-tools, local-llm)
-  ignore-list        print the paths Xaden owns, for .dockerignore and archive excludes
-
-Project commands (anywhere inside a project):
   setup              activate git hooks, report missing tools
-  check [...]        static analysis (--staged, --strict)
-  req [...]          requirements: list, show, new, index
-  context            rule IDs, requirement counts and the CONTEXT CHECK fingerprint
+  release <part>     cut a release: major, minor or patch
   persona new <name> create a user persona
-  verify-commits --ci
-                     check the commit messages a CI run introduces (adopted projects; advises only while commit-convention is other)
-  release <part>     cut a release: major, minor or patch (projects created by `create`)
+  ignore-list        print the paths Xaden owns, for .dockerignore and archive excludes
 EOF
 }
 
@@ -98,12 +125,12 @@ require_signed_installation() {
   if [ "$2" = "$(running_version)" ]; then dir="$SCAFFOLD_ROOT"; else dir="$(versions_dir)/$2"; fi
   [ -d "$dir" ] || return 0
   installation_authenticated "$2" "$dir" "$(conf_get "$1" checksum)" ||
-    die "this project requires signed releases (require-signature = true), and Xaden $2 in $dir has no matching signature on record. Verify it once with: xaden fetch $2"
+    die "this project requires signed releases (require-signature = true), and Xaden $2 in $dir has no matching signature on record. Verify it once with: xaden project fetch $2"
 }
 
 # select_pinned_version <root> <args...>: runs the Xaden version the project pins. When it is
-# not the running one, hands over to the installed copy; when it is not installed, asks before
-# anything downloads.
+# not the running one, hands over to the installed copy with the arguments as typed (ORIGINAL_ARGS);
+# when it is not installed, asks before anything downloads.
 select_pinned_version() {
   local root=$1 conf pinned
   shift
@@ -114,12 +141,12 @@ select_pinned_version() {
   [ "$pinned" != "$(running_version)" ] || return 0
   [ -z "${XADEN_HANDED_OVER:-}" ] || die "Xaden $(running_version) was started for a project that pins $pinned"
   if [ -x "$(versions_dir)/$pinned/scripts/xaden.sh" ]; then
-    XADEN_HANDED_OVER=1 exec "$(versions_dir)/$pinned/scripts/xaden.sh" "$@"
+    XADEN_HANDED_OVER=1 exec "$(versions_dir)/$pinned/scripts/xaden.sh" "${ORIGINAL_ARGS[@]}"
   fi
   info "this project pins Xaden $pinned; this machine has $(running_version)"
   # fetch.sh shows version, source and checksum, asks, and downloads only after a yes
   "$SCAFFOLD_ROOT/scripts/fetch.sh" fetch "$pinned" || exit $?
-  XADEN_HANDED_OVER=1 exec "$(versions_dir)/$pinned/scripts/xaden.sh" "$@"
+  XADEN_HANDED_OVER=1 exec "$(versions_dir)/$pinned/scripts/xaden.sh" "${ORIGINAL_ARGS[@]}"
 }
 
 # run_tool_script <root> <script> [args...]: runs one of the installed tooling scripts on the project.
@@ -144,7 +171,7 @@ doctor_main() {
   local root conf pinned checksum
   root="$(project_root)"
   report_leftover_dist "$root"
-  is_adopted "$root" || die "this project has not adopted Xaden (xaden/xaden.conf is missing); see: xaden adopt"
+  is_adopted "$root" || die "this project has not adopted Xaden (xaden/xaden.conf is missing); see: xaden project adopt"
   conf="$root/xaden/xaden.conf"
   load_signature_policy "$conf"
   pinned="$(conf_get "$conf" version)"
@@ -160,10 +187,10 @@ doctor_main() {
   elif [ -x "$(versions_dir)/$pinned/scripts/xaden.sh" ]; then
     ok "Xaden $pinned is installed in $(versions_dir)/$pinned and is used for this project"
     if [ "$(newest_version "$pinned" "$(running_version)")" != "$pinned" ]; then
-      info "Xaden $(running_version) is installed; move the project with: xaden pin $(running_version)"
+      info "Xaden $(running_version) is installed; move the project with: xaden project pin $(running_version)"
     fi
   else
-    warn "Xaden $pinned is not installed. Install it with: xaden fetch $pinned"
+    warn "Xaden $pinned is not installed. Install it with: xaden project fetch $pinned"
     exit 1
   fi
   print_update_check "$root"
@@ -277,7 +304,7 @@ adopted_project_command() {
 # files at the root (never overwriting yours) and the check commands in xaden/xaden.conf.
 preset_main() {
   local root=$1 stack=$2
-  case "$stack" in python | node) ;; *) die "usage: xaden preset <python|node>" ;; esac
+  case "$stack" in python | node) ;; *) die "usage: xaden project preset <python|node>" ;; esac
   # shellcheck source=SCRIPTDIR/adopt-scan.sh
   source "$SCAFFOLD_ROOT/scripts/adopt-scan.sh"
   # shellcheck source=SCRIPTDIR/adopt-lib.sh
@@ -318,16 +345,38 @@ classic_project_command() {
     release) script=release.sh ;;
     context) script=context-status.sh ;;
     persona) script=persona.sh ;;
-    *) die "xaden $command works in a project that adopted Xaden (xaden adopt); this project keeps its own copy of the tooling" ;;
+    *) die "xaden $command works in a project that adopted Xaden (xaden project adopt); this project keeps its own copy of the tooling" ;;
   esac
-  [ -x "$root/scripts/$script" ] || die "not a Xaden project: $root/scripts/$script is missing (to add Xaden to a repository: xaden adopt)"
+  [ -x "$root/scripts/$script" ] || die "not a Xaden project: $root/scripts/$script is missing (to add Xaden to a repository: xaden project adopt)"
   cd "$root"
   exec "$root/scripts/$script" "$@"
 }
 
-main() {
-  local command=${1:-help} root
-  [ "$#" -gt 0 ] && shift
+CORE_COMMANDS="upgrade version"
+PROJECT_COMMANDS="create adopt remove pin fetch doctor rules preset setup release persona ignore-list"
+
+# in_list <word> <list>: true if the word is one of the space separated words.
+in_list() { case " $2 " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+
+# run_namespace <core|project> [<command> <args...>]: the command after the namespace, or the namespace's commands.
+run_namespace() {
+  local namespace=$1 command=${2:-}
+  if [ "$#" -gt 1 ]; then shift 2; else shift; fi
+  if [ -z "$command" ]; then
+    "usage_$namespace" >&2
+    exit 2
+  fi
+  case "$namespace" in
+    core) in_list "$command" "$CORE_COMMANDS" || { usage_core >&2; die "unknown command: xaden core $command"; } ;;
+    project) in_list "$command" "$PROJECT_COMMANDS" || { usage_project >&2; die "unknown command: xaden project $command"; } ;;
+  esac
+  run_command "$command" "$@"
+}
+
+# run_command <command> <args...>: one command by its own name; main() decides which names a person can type.
+run_command() {
+  local command=$1 root
+  shift
   case "$command" in
     create)
       exec "$SCAFFOLD_ROOT/scripts/create.sh" "$@"
@@ -335,7 +384,6 @@ main() {
     adopt) exec "$SCAFFOLD_ROOT/scripts/adopt.sh" "$@" ;;
     remove) exec "$SCAFFOLD_ROOT/scripts/adopt.sh" __remove "$@" ;;
     version) tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION" && echo ;;
-    help | -h | --help) usage ;;
     doctor) doctor_main ;;
     fetch) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" fetch "$@" ;;
     upgrade) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" upgrade "$@" ;;
@@ -350,6 +398,25 @@ main() {
         classic_project_command "$command" "$root" "$@"
       fi
       ;;
+  esac
+}
+
+# main <args...>: a person types the namespaces `core` and `project` (REQ-131) or one of the daily commands;
+# a moved command under its old top-level name is unknown.
+main() {
+  ORIGINAL_ARGS=("$@")
+  local command=${1:-help}
+  [ "$#" -gt 0 ] && shift
+  case "$command" in
+    core | project) run_namespace "$command" "$@" ;;
+    help | -h | --help)
+      case "${1:-}" in
+        "") usage ;;
+        core) usage_core ;;
+        project) usage_project ;;
+        *) usage >&2; die "unknown namespace: $1" ;;
+      esac ;;
+    version | check | req | context | hook | verify-commits | prompt | doc | aidd) run_command "$command" "$@" ;;
     *)
       usage >&2
       die "unknown command: $command"

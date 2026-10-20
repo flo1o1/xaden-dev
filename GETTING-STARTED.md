@@ -7,7 +7,7 @@ the pages on https://xaden.dev. Nothing here assumes a particular person's machi
 
 1. [Check the requirements](docs/guide/admin/requirements-and-platforms.md): Linux or macOS with git and bash (Windows: WSL).
 2. [Install Xaden](docs/guide/admin/install-xaden.md): one command that asks first, checks the signature of the release and installs it.
-3. [Create a project](docs/guide/developer/create-a-project.md) with `xaden create my-app`, or [add Xaden to a repository](docs/guide/developer/add-xaden-to-a-repository.md) with `xaden adopt`.
+3. [Create a project](docs/guide/developer/create-a-project.md) with `xaden project create my-app`, or [add Xaden to a repository](docs/guide/developer/add-xaden-to-a-repository.md) with `xaden project adopt`.
 4. [Kick off with your assistant](docs/guide/developer/kick-off-with-your-assistant.md): `xaden prompt kickoff`.
 5. [Build features](docs/guide/developer/build-features.md) and [release a version](docs/guide/developer/release-a-version.md).
 

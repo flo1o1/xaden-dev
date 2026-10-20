@@ -497,7 +497,7 @@ test_area_selection() {
 
 test_quiet_output
 # shellcheck disable=SC2016 # the bash -c script reads its file as $1
-# REQ-105 a project made by xaden create runs the audits itself, so it never reports them as not covered
+# REQ-105 a project made by xaden project create runs the audits itself, so it never reports them as not covered
 test_classic_runs_what_adopted_lacks() {
   local out="$WORKDIR/classic-not-covered.out"
   printf '[project]\nname = "probe"\n' >"$PROJECT/pyproject.toml"

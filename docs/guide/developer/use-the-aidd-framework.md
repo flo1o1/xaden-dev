@@ -1,6 +1,6 @@
 # Use the AIDD framework
 
-The [AI-Driven Dev framework](https://github.com/ai-driven-dev/framework) (MIT) adds a workflow to your assistant: skills and agents that take a task from spec to review. Xaden stays the rule and check layer; the framework is an optional add-on you switch on per project. It needs a project that adopted Xaden (`xaden adopt`, or a project made by `xaden create`).
+The [AI-Driven Dev framework](https://github.com/ai-driven-dev/framework) (MIT) adds a workflow to your assistant: skills and agents that take a task from spec to review. Xaden stays the rule and check layer; the framework is an optional add-on you switch on per project. It needs a project that adopted Xaden (`xaden project adopt`, or a project made by `xaden project create`).
 
 ## Before you start
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # The only script of Xaden that talks to the network (REQ-072), and the version changes built on it.
-# Usage: xaden fetch <version>             install the version this project pins, after you confirm
-#        xaden upgrade [--check [--if-due]] update Xaden itself: install the newest release, switch `current` (REQ-097);
+# Usage: xaden project fetch <version>             install the version this project pins, after you confirm
+#        xaden core upgrade [--check [--if-due]] update Xaden itself: install the newest release, switch `current` (REQ-097);
 #                                          --check only reports Xaden and the project's outdated dependencies (REQ-130)
-#        xaden pin [--check] [version]     move the project to another Xaden on a branch (REQ-071, REQ-099)
+#        xaden project pin [--check] [version]     move the project to another Xaden on a branch (REQ-071, REQ-099)
 # Nothing downloads without a person's yes: the question shows version, source and checksum, ends
 # the output, and anything but yes means no. Without a terminal nothing downloads and the command
 # exits with code 3 and prints the command to run. A yes is not remembered. A download is installed
@@ -42,7 +42,7 @@ require_version() { is_semver "$1" || die "not a version like 1.2.3: $1"; }
 project_conf() {
   local root
   root="$(git rev-parse --show-toplevel 2>/dev/null)" || die "run this inside a project (no git repository here)"
-  [ -f "$root/xaden/xaden.conf" ] || die "this project has not adopted Xaden (xaden/xaden.conf is missing); see: xaden adopt"
+  [ -f "$root/xaden/xaden.conf" ] || die "this project has not adopted Xaden (xaden/xaden.conf is missing); see: xaden project adopt"
   printf '%s' "$root/xaden/xaden.conf"
 }
 
@@ -54,7 +54,7 @@ confirm_download() {
   echo "  source:   $(release_url "$version")"
   echo "  checksum: ${checksum:-not pinned yet; it is shown after the download and goes into xaden/xaden.conf}"
   if ! has_terminal; then
-    warn "No terminal, so nothing was downloaded. Run this yourself in a terminal: xaden fetch $version"
+    warn "No terminal, so nothing was downloaded. Run this yourself in a terminal: xaden project fetch $version"
     exit "$EXIT_NO_TERMINAL"
   fi
   ask "Download and install Xaden $version now?"
@@ -177,7 +177,7 @@ ensure_authenticated() {
   [ "$SIGNATURE_REQUIRED" = 1 ] || return 0
   if installation_authenticated "$version" "$dir" "${3:-}"; then return 0; fi
   info "This project requires signed releases; Xaden $version in $dir has no verified signature on record." >&2
-  has_terminal || { warn "No terminal, so nothing was verified. Run this yourself in a terminal: xaden fetch $version" >&2; exit "$EXIT_NO_TERMINAL"; }
+  has_terminal || { warn "No terminal, so nothing was verified. Run this yourself in a terminal: xaden project fetch $version" >&2; exit "$EXIT_NO_TERMINAL"; }
   ask "Download the signed checksum of Xaden $version from github.com and verify the installed copy against it?" ||
     { echo "Nothing was verified." >&2; exit 1; }
   signed="$(signed_checksum "$version")" || status=$?
@@ -201,12 +201,12 @@ ensure_authenticated() {
 # fetch_main <version>: installs the version the project pins.
 fetch_main() {
   local version=${1:-} conf pinned checksum
-  [ -n "$version" ] || die "usage: xaden fetch <version>"
+  [ -n "$version" ] || die "usage: xaden project fetch <version>"
   require_version "$version"
   conf="$(project_conf)"
   pinned="$(conf_get "$conf" version)"
   checksum="$(conf_get "$conf" checksum)"
-  [ "$version" = "$pinned" ] || die "this project pins Xaden $pinned, not $version. To move it to $version: xaden pin $version"
+  [ "$version" = "$pinned" ] || die "this project pins Xaden $pinned, not $version. To move it to $version: xaden project pin $version"
   if [ "$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")" = "$version" ]; then
     ensure_authenticated "$version" "$SCAFFOLD_ROOT" "$checksum"
     ok "Xaden $version is installed already"
@@ -280,7 +280,7 @@ pin_main() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --check) check_only=1 ;;
-      -*) die "usage: xaden pin [--check] [version]" ;;
+      -*) die "usage: xaden project pin [--check] [version]" ;;
       *) target=$1 ;;
     esac
     shift
@@ -290,14 +290,14 @@ pin_main() {
   pinned="$(conf_get "$conf" version)"
   if [ "$check_only" = 1 ] || [ -z "$target" ]; then
     if ! has_terminal; then
-      warn "No terminal, so Xaden did not look for a newer release. Run 'xaden pin --check' in a terminal, or name the version: xaden pin <version>"
+      warn "No terminal, so Xaden did not look for a newer release. Run 'xaden project pin --check' in a terminal, or name the version: xaden project pin <version>"
       exit "$EXIT_NO_TERMINAL"
     fi
     ask "Look up the newest Xaden release on github.com? Nothing else is sent." || { echo "Nothing was looked up."; exit 1; }
     target="$(latest_version)"
     [ -n "$target" ] || die "could not read the newest version from $LATEST_URL"
     if [ "$check_only" = 1 ]; then
-      if [ "$target" = "$pinned" ]; then ok "project pins Xaden $pinned, the newest release"; else info "project pins Xaden $pinned, newest release is $target (xaden pin $target)"; fi
+      if [ "$target" = "$pinned" ]; then ok "project pins Xaden $pinned, the newest release"; else info "project pins Xaden $pinned, newest release is $target (xaden project pin $target)"; fi
       return 0
     fi
   fi
@@ -350,14 +350,14 @@ self_upgrade_main() {
       --check) check_only=1 ;;
       --if-due) update_check_due; return ;;
       --self) ;;
-      -*) die "usage: xaden upgrade [--check [--if-due]] [version]" ;;
+      -*) die "usage: xaden core upgrade [--check [--if-due]] [version]" ;;
       *) target=$arg ;;
     esac
   done
   installed="$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
   if [ "$check_only" = 1 ] || [ -z "$target" ]; then
     if ! has_terminal; then
-      warn "No terminal, so Xaden did not look for a newer release. Run 'xaden upgrade --check' in a terminal, or name the version: xaden upgrade <version>"
+      warn "No terminal, so Xaden did not look for a newer release. Run 'xaden core upgrade --check' in a terminal, or name the version: xaden core upgrade <version>"
       exit "$EXIT_NO_TERMINAL"
     fi
     root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
@@ -368,7 +368,7 @@ self_upgrade_main() {
     target="$(latest_version)"
     [ -n "$target" ] || die "could not read the newest version from $LATEST_URL"
     if [ "$check_only" = 1 ]; then
-      if [ "$target" = "$installed" ]; then ok "Xaden $installed is the newest release"; else info "Xaden $installed is installed, newest release is $target (xaden upgrade)"; fi
+      if [ "$target" = "$installed" ]; then ok "Xaden $installed is the newest release"; else info "Xaden $installed is installed, newest release is $target (xaden core upgrade)"; fi
       [ -z "$root" ] || outdated_dependencies "$root"
       return 0
     fi
@@ -378,7 +378,7 @@ self_upgrade_main() {
   if [ -e "$SCAFFOLD_ROOT/.git" ]; then die "this Xaden runs from a git clone; update it with: git -C $SCAFFOLD_ROOT pull"; fi
   case "$SCAFFOLD_ROOT" in
     "$(current_link)" | "$(versions_dir)"/*) ;;
-    *) die "this Xaden does not live in $(xaden_home); install it once with: curl -fsSL https://xaden.dev/install | bash, then use xaden upgrade" ;;
+    *) die "this Xaden does not live in $(xaden_home); install it once with: curl -fsSL https://xaden.dev/install | bash, then use xaden core upgrade" ;;
   esac
   if [ ! -x "$(versions_dir)/$target/scripts/xaden.sh" ]; then
     confirm_download "$target" "" || { echo "Nothing was downloaded."; exit 1; }
@@ -389,7 +389,7 @@ self_upgrade_main() {
   switch_current "$target"
   ok "Xaden $target is active (was $installed); $installed stays in $(versions_dir) for projects that pin it"
   changelog_between "$(versions_dir)/$target/CHANGELOG.md" "$installed" "$target"
-  [ ! -f "$(git rev-parse --show-toplevel 2>/dev/null || echo /nonexistent)/xaden/xaden.conf" ] || info "this project still pins its own Xaden version; move it with: xaden pin $target"
+  [ ! -f "$(git rev-parse --show-toplevel 2>/dev/null || echo /nonexistent)/xaden/xaden.conf" ] || info "this project still pins its own Xaden version; move it with: xaden project pin $target"
 }
 
 # outdated_names: reads "name current newest" lines and prints the names as "a, b (major)". A name that is no
@@ -425,7 +425,7 @@ outdated_dependencies() {
   printf 'Dependencies: %s\n' "${parts:-no npm or pip project found}"
 }
 
-# update_check_due: `xaden upgrade --check --if-due`, what commands call: silent, only when the setting is on and the
+# update_check_due: `xaden core upgrade --check --if-due`, what commands call: silent, only when the setting is on and the
 # interval has passed, and never an error for a network that is down (REQ-084, REQ-130).
 update_check_due() {
   local root conf setting value origin seconds cache newest installed pinned tmp
@@ -447,7 +447,7 @@ update_check_due() {
     if [ "$newest" = "$pinned" ]; then
       printf 'Xaden: pinned %s, installed %s, up to date\n' "$pinned" "$installed"
     else
-      printf 'Xaden: pinned %s, installed %s, newest %s (move the project with: xaden pin %s)\n' "$pinned" "$installed" "$newest" "$newest"
+      printf 'Xaden: pinned %s, installed %s, newest %s (move the project with: xaden project pin %s)\n' "$pinned" "$installed" "$newest" "$newest"
     fi
     outdated_dependencies "$root"
   } >"$tmp"

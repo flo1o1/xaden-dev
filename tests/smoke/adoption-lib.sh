@@ -80,7 +80,7 @@ make_repo() {
 adopted_copy() {
   local repo="$WORKDIR/repos/$1"
   make_repo "$repo" shop
-  x_in "$repo" adopt --yes --assistants claude,copilot,vibe >/dev/null || true
+  x_in "$repo" project adopt --yes --assistants claude,copilot,vibe >/dev/null || true
   printf '%s' "$repo-adopt-xaden"
 }
 

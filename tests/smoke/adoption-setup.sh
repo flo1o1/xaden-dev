@@ -35,7 +35,7 @@ test_scan_and_plan() {
   local repo="$WORKDIR/repos/scan-shop" before
   make_repo "$repo" shop
   before="$(git -C "$repo" status --porcelain; git -C "$repo" branch --list | wc -l)"
-  x_in "$repo" adopt --scan
+  x_in "$repo" project adopt --scan
   assert "scan succeeds" test "$XRC" -eq 0
   assert "scan names the stack" grep -q 'stack .*node' "$XOUT"
   assert "scan finds the test runner" grep -q 'test runner .*npm test' "$XOUT"
@@ -49,7 +49,7 @@ test_scan_and_plan() {
   assert "scan changes nothing" test "$(git -C "$repo" status --porcelain; git -C "$repo" branch --list | wc -l)" = "$before"
   assert "scan wrote no xaden folder" test ! -e "$repo/xaden"
 
-  x_in "$repo" adopt --plan
+  x_in "$repo" project adopt --plan
   assert "plan succeeds" test "$XRC" -eq 0
   assert "plan lists the created files" grep -q 'A.xaden/xaden.conf' "$XOUT"
   assert "plan lists the touched file" grep -q 'M.AGENTS.md' "$XOUT"
@@ -57,15 +57,15 @@ test_scan_and_plan() {
   assert "plan changes nothing" test "$(git -C "$repo" status --porcelain; git -C "$repo" branch --list | wc -l)" = "$before"
   assert "plan creates no worktree" test "$(git -C "$repo" worktree list | wc -l | tr -d ' ')" = "1"
 
-  x_in "$repo" adopt
+  x_in "$repo" project adopt
   assert "without a terminal nothing is applied" test ! -e "$repo-adopt-xaden"
-  assert "without a terminal the apply command is named" grep -q 'xaden adopt --yes' "$XOUT"
+  assert "without a terminal the apply command is named" grep -q 'xaden project adopt --yes' "$XOUT"
 
   local unknown="$WORKDIR/repos/unknown"
   make_repo "$unknown" empty
   printf 'int main(void) { return 0; }\n' >"$unknown/main.c"
   git -C "$unknown" add -A && git -C "$unknown" commit -q -m "initial"
-  x_in "$unknown" adopt --scan
+  x_in "$unknown" project adopt --scan
   assert "an unrecognised build is said, not guessed" grep -q 'not recognised.*no build system recognised' "$XOUT"
   assert "no command is guessed" bash -c '! grep -q "test runner .*[a-z]" "$1" || grep -q "test runner .*none" "$1"' _ "$XOUT"
 }
@@ -74,7 +74,7 @@ test_scan_and_plan() {
 test_adopt_and_remove() {
   local repo="$WORKDIR/repos/adopt-shop" worktree changed
   make_repo "$repo" shop
-  x_in "$repo" adopt --yes --assistants claude
+  x_in "$repo" project adopt --yes --assistants claude
   worktree="$repo-adopt-xaden"
   assert "adopt succeeds" test "$XRC" -eq 0
   assert "adopt works on its own branch and worktree" test "$(git -C "$worktree" branch --show-current)" = "chore/adopt-xaden"
@@ -115,7 +115,7 @@ test_adopt_and_remove() {
 
   printf '%s\n' 'text added by the team' >>"$worktree/AGENTS.md"
   git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -am "docs: team text"
-  x_in "$worktree" remove --yes
+  x_in "$worktree" project remove --yes
   assert "remove succeeds" test "$XRC" -eq 0
   assert "remove deletes the xaden folder" test ! -e "$worktree/xaden"
   assert "remove deletes the workflow and CLAUDE.md" test ! -e "$worktree/.github/workflows/xaden.yml" -a ! -e "$worktree/CLAUDE.md"
@@ -126,7 +126,7 @@ test_adopt_and_remove() {
 
   local no_ci="$WORKDIR/repos/no-ci" plain
   make_repo "$no_ci" shop
-  x_in "$no_ci" adopt --yes --skip-ci
+  x_in "$no_ci" project adopt --yes --skip-ci
   assert "--skip-ci adds no workflow" test ! -e "$no_ci-adopt-xaden/.github/workflows/xaden.yml"
   assert "without Claude users there is no CLAUDE.md" test ! -e "$no_ci-adopt-xaden/CLAUDE.md"
   plain="$(git -C "$no_ci-adopt-xaden" diff --name-only main HEAD | grep -Ev '^(xaden/|AGENTS\.md$)' || true)"
@@ -136,19 +136,19 @@ test_adopt_and_remove() {
   make_repo "$claude" shop
   printf '# Claude\n@AGENTS.md\n' >"$claude/CLAUDE.md"
   git -C "$claude" add -A && git -C "$claude" commit -q -m "docs: claude"
-  x_in "$claude" adopt --yes --assistants claude --skip-ci
+  x_in "$claude" project adopt --yes --assistants claude --skip-ci
   assert "an existing CLAUDE.md that has the line stays as it is" cmp -s "$claude/CLAUDE.md" "$claude-adopt-xaden/CLAUDE.md"
   local claude2="$WORKDIR/repos/claude2"
   make_repo "$claude2" shop
   printf '# Claude\nown rules\n' >"$claude2/CLAUDE.md"
   git -C "$claude2" add -A && git -C "$claude2" commit -q -m "docs: claude"
-  x_in "$claude2" adopt --yes --assistants claude --skip-ci
+  x_in "$claude2" project adopt --yes --assistants claude --skip-ci
   assert "an existing CLAUDE.md gains the line" test "$(tail -n 1 "$claude2-adopt-xaden/CLAUDE.md")" = "@AGENTS.md"
   assert "an existing CLAUDE.md keeps its text" grep -q 'own rules' "$claude2-adopt-xaden/CLAUDE.md"
 
   local empty="$WORKDIR/repos/empty"
   make_repo "$empty" empty
-  x_in "$empty" adopt --yes --skip-ci
+  x_in "$empty" project adopt --yes --skip-ci
   assert "an empty repository gets the same layout" test -f "$empty/xaden/xaden.conf" -a -f "$empty/xaden/RULES.md" -a -f "$empty/AGENTS.md"
   assert "an empty repository gets a commit on the adoption branch" test "$(git -C "$empty" branch --show-current)" = "chore/adopt-xaden"
 }
@@ -161,12 +161,12 @@ test_claude_commands() {
   printf 'my own feature command\n' >"$repo/.claude/commands/xaden-feature.md"
   git -C "$repo" add -A && git -C "$repo" commit -q -m "docs: own feature command"
 
-  x_in "$repo" adopt --plan
+  x_in "$repo" project adopt --plan
   assert "the plan lists a command file" grep -Eq 'A[[:space:]]+\.claude/commands/xaden-bugfix\.md' "$XOUT"
   assert "the plan names the file it skips" grep -q 'skipped .claude/commands/xaden-feature.md' "$XOUT"
   assert "the plan writes nothing" test ! -e "$wt"
 
-  x_in "$repo" adopt --yes --assistants claude
+  x_in "$repo" project adopt --yes --assistants claude
   assert "adopt succeeds" test "$XRC" -eq 0
   for name in kickoff feature bugfix refactor review security requirements docs persona release; do
     assert "command $name exists" test -f "$wt/.claude/commands/xaden-$name.md"
@@ -185,14 +185,14 @@ test_claude_commands() {
   assert "the footprint lists a created file" grep -qx 'file .claude/commands/xaden-bugfix.md' "$wt/xaden/footprint.txt"
   assert "adopt creates exactly the new command files" test "$(git -C "$wt" diff --name-only main HEAD | grep -c '^\.claude/commands/')" -eq 10
 
-  x_in "$wt" remove --yes
+  x_in "$wt" project remove --yes
   assert "remove deletes the files Xaden created" test ! -e "$wt/.claude/commands/xaden-bugfix.md" -a ! -e "$wt/.claude/commands/xaden-release.md"
   assert "remove keeps the team's own command" test "$(cat "$wt/.claude/commands/xaden-feature.md")" = "my own feature command"
   assert "remove leaves no stray file" test -z "$(git -C "$wt" status --porcelain | grep -Ev ' (xaden/|AGENTS\.md|CLAUDE\.md|\.claude/commands/[a-z-]+\.md|\.github/workflows/xaden\.yml)' || true)"
 
   local plain="$WORKDIR/repos/commands-plain"
   make_repo "$plain" shop
-  x_in "$plain" adopt --yes --skip-ci
+  x_in "$plain" project adopt --yes --skip-ci
   assert "without Claude there are no command files" test ! -e "$plain-adopt-xaden/.claude"
 }
 
@@ -204,12 +204,12 @@ test_other_assistant_commands() {
   printf 'my own feature prompt\n' >"$repo/.github/prompts/xaden-feature.prompt.md"
   git -C "$repo" add -A && git -C "$repo" commit -q -m "docs: own feature prompt"
 
-  x_in "$repo" adopt --plan --assistants copilot,vibe,codex
+  x_in "$repo" project adopt --plan --assistants copilot,vibe,codex
   assert "the plan lists a Copilot prompt file" grep -Eq 'A[[:space:]]+\.github/prompts/xaden-bugfix\.prompt\.md' "$XOUT"
   assert "the plan lists a skill" grep -Eq 'A[[:space:]]+\.agents/skills/xaden-bugfix/SKILL\.md' "$XOUT"
   assert "the plan names the file it skips" grep -q 'skipped .github/prompts/xaden-feature.prompt.md' "$XOUT"
 
-  x_in "$repo" adopt --yes --assistants copilot,vibe,codex
+  x_in "$repo" project adopt --yes --assistants copilot,vibe,codex
   assert "adopt succeeds" test "$XRC" -eq 0
   for name in kickoff feature bugfix refactor review security requirements docs persona release; do
     assert "skill $name exists" test -f "$wt/.agents/skills/xaden-$name/SKILL.md"
@@ -230,7 +230,7 @@ test_other_assistant_commands() {
   assert "adopt creates one skill for each prompt" test "$(git -C "$wt" diff --name-only main HEAD | grep -c '^\.agents/skills/')" -eq 11
   assert "without Claude there are no Claude files" test ! -e "$wt/CLAUDE.md" -a ! -e "$wt/.claude"
 
-  x_in "$wt" remove --yes
+  x_in "$wt" project remove --yes
   assert "remove deletes the Copilot prompts and skills Xaden created" test ! -e "$wt/.github/prompts/xaden-bugfix.prompt.md" -a ! -e "$wt/.agents"
   assert "remove keeps the team's own prompt" test "$(cat "$wt/.github/prompts/xaden-feature.prompt.md")" = "my own feature prompt"
   assert "remove leaves no stray file" test -z "$(git -C "$wt" status --porcelain | grep -Ev ' (xaden/|AGENTS\.md|\.github/prompts/[a-z-]+\.prompt\.md|\.agents/skills/[a-z-]+/SKILL\.md|\.github/workflows/xaden\.yml)' || true)"
@@ -240,19 +240,19 @@ test_other_assistant_commands() {
   make_repo "$vibe" shop
   mkdir -p "$vibe/.vibe" && printf 'x = 1\n' >"$vibe/.vibe/config.toml"
   git -C "$vibe" add -A && git -C "$vibe" commit -q -m "chore: vibe"
-  x_in "$vibe" adopt --yes --skip-ci
+  x_in "$vibe" project adopt --yes --skip-ci
   assert "Vibe is detected and gets skills" test -f "$vibe-adopt-xaden/.agents/skills/xaden-feature/SKILL.md"
   assert "only the detected assistant gets files" test ! -e "$vibe-adopt-xaden/.github/prompts" -a ! -e "$vibe-adopt-xaden/.claude"
   make_repo "$copilot" shop
   printf 'Be kind.\n' >"$copilot/.github/copilot-instructions.md"
   git -C "$copilot" add -A && git -C "$copilot" commit -q -m "chore: copilot"
-  x_in "$copilot" adopt --yes --skip-ci
+  x_in "$copilot" project adopt --yes --skip-ci
   assert "Copilot is detected and gets prompt files" test -f "$copilot-adopt-xaden/.github/prompts/xaden-feature.prompt.md"
   assert "Copilot alone gets no skills" test ! -e "$copilot-adopt-xaden/.agents"
   make_repo "$codex" shop
   mkdir -p "$codex/.codex" && printf 'x = 1\n' >"$codex/.codex/config.toml"
   git -C "$codex" add -A && git -C "$codex" commit -q -m "chore: codex"
-  x_in "$codex" adopt --yes --skip-ci
+  x_in "$codex" project adopt --yes --skip-ci
   assert "Codex is detected and gets skills" test -f "$codex-adopt-xaden/.agents/skills/xaden-feature/SKILL.md"
   assert "Codex alone gets no Copilot files" test ! -e "$codex-adopt-xaden/.github/prompts"
 }
@@ -262,13 +262,13 @@ test_reuse_of_existing_tooling() {
   local repo="$WORKDIR/repos/hook-plain" husky="$WORKDIR/repos/hook-husky" worktree out
   make_repo "$repo" shop
   printf '#!/bin/sh\necho team hook\n' >"$repo/.git/hooks/pre-commit" && chmod +x "$repo/.git/hooks/pre-commit"
-  x_in "$repo" adopt --yes --skip-ci
+  x_in "$repo" project adopt --yes --skip-ci
   assert "an existing plain git hook keeps its content" grep -q 'echo team hook' "$repo/.git/hooks/pre-commit"
   assert "Xaden is chained into the existing hook" grep -q 'xaden hook pre-commit' "$repo/.git/hooks/pre-commit"
   assert "a commit-msg hook is added" grep -q 'xaden hook commit-msg' "$repo/.git/hooks/commit-msg"
 
   make_repo "$husky" husky
-  x_in "$husky" adopt --yes --skip-ci
+  x_in "$husky" project adopt --yes --skip-ci
   worktree="$husky-adopt-xaden"
   assert "husky: the existing hook keeps its command" grep -q 'npm run lint' "$worktree/.husky/pre-commit"
   assert "husky: Xaden is chained into the tracked hook" grep -q 'xaden hook pre-commit' "$worktree/.husky/pre-commit"
@@ -280,28 +280,28 @@ test_reuse_of_existing_tooling() {
   for manager in pre-commit lefthook; do
     make_repo "$WORKDIR/repos/$manager" $manager
     printf '#!/usr/bin/env bash\n# File generated by %s\necho %s ran\n' "$manager" "$manager" >"$WORKDIR/repos/$manager/.git/hooks/pre-commit" && chmod +x "$WORKDIR/repos/$manager/.git/hooks/pre-commit"
-    x_in "$WORKDIR/repos/$manager" adopt --scan
+    x_in "$WORKDIR/repos/$manager" project adopt --scan
     assert "$manager: the hook manager is recognised" grep -q "hook manager .*$manager" "$XOUT"
-    x_in "$WORKDIR/repos/$manager" adopt --yes --skip-ci
+    x_in "$WORKDIR/repos/$manager" project adopt --yes --skip-ci
     assert "$manager: adoption succeeds" test "$XRC" -eq 0
     assert "$manager: the generated hook keeps its content" grep -q "$manager ran" "$WORKDIR/repos/$manager/.git/hooks/pre-commit"
     assert "$manager: Xaden is chained into it" grep -q 'xaden hook pre-commit' "$WORKDIR/repos/$manager/.git/hooks/pre-commit"
     assert "$manager: no tracked file changes for the hook" test -z "$(git -C "$WORKDIR/repos/$manager-adopt-xaden" diff --name-only main HEAD | grep -E 'lefthook|pre-commit-config|husky' || true)"
-    x_in "$WORKDIR/repos/$manager-adopt-xaden" setup
-    assert "$manager: xaden setup is idempotent" test "$(grep -c 'xaden hook pre-commit' "$WORKDIR/repos/$manager/.git/hooks/pre-commit")" = "1"
+    x_in "$WORKDIR/repos/$manager-adopt-xaden" project setup
+    assert "$manager: xaden project setup is idempotent" test "$(grep -c 'xaden hook pre-commit' "$WORKDIR/repos/$manager/.git/hooks/pre-commit")" = "1"
   done
 
   make_repo "$WORKDIR/repos/overcommit" shop
   : >"$WORKDIR/repos/overcommit/.overcommit.yml"
-  x_in "$WORKDIR/repos/overcommit" adopt --yes
+  x_in "$WORKDIR/repos/overcommit" project adopt --yes
   assert "an unsupported hook manager stops with a manual step" test "$XRC" -eq 4
   assert "the manual step is named" grep -q 'Manual step' "$XOUT"
   assert "nothing was created for the unsupported hook manager" test ! -e "$WORKDIR/repos/overcommit-adopt-xaden"
   make_repo "$WORKDIR/repos/gitlab" shop
   : >"$WORKDIR/repos/gitlab/.gitlab-ci.yml" && rm -rf "$WORKDIR/repos/gitlab/.github"
-  x_in "$WORKDIR/repos/gitlab" adopt --yes
+  x_in "$WORKDIR/repos/gitlab" project adopt --yes
   assert "an unsupported CI system stops with a manual step" test "$XRC" -eq 4
-  x_in "$WORKDIR/repos/gitlab" adopt --yes --skip-ci
+  x_in "$WORKDIR/repos/gitlab" project adopt --yes --skip-ci
   assert "--skip-ci adopts without the unsupported CI system" test "$XRC" -eq 0
 
   out="$WORKDIR/repos/hook-plain-adopt-xaden"
@@ -313,21 +313,21 @@ test_reuse_of_existing_tooling() {
   # gaps and presets
   local bare="$WORKDIR/repos/bare"
   make_repo "$bare" bare-python
-  x_in "$bare" adopt --scan
+  x_in "$bare" project adopt --scan
   assert "the scan lists each gap" grep -q 'gaps .*test lint typecheck' "$XOUT"
-  x_in "$bare" adopt --yes --skip-ci --mode strict
+  x_in "$bare" project adopt --yes --skip-ci --mode strict
   assert "without the preset no configuration file is added" test ! -e "$bare-adopt-xaden/ruff.toml"
   x_in "$bare-adopt-xaden" check
   assert "strict: a gap is an error" test "$XRC" -ne 0
   assert "the gap is named" grep -q "gap: no 'lint' check is configured" "$XOUT"
   git -C "$bare" worktree remove --force "$bare-adopt-xaden" && git -C "$bare" branch -D chore/adopt-xaden >/dev/null
-  x_in "$bare" adopt --yes --skip-ci --mode advisory
+  x_in "$bare" project adopt --yes --skip-ci --mode advisory
   x_in "$bare-adopt-xaden" check
   assert "advisory: a gap is a warning" grep -q "WARNING: gap: no 'lint' check" "$XOUT"
   git -C "$bare" worktree remove --force "$bare-adopt-xaden" && git -C "$bare" branch -D chore/adopt-xaden >/dev/null
   printf '[lint]\nselect = ["E"]\n' >"$bare/ruff.toml"
   git -C "$bare" add -A && git -C "$bare" commit -q -m "build: own ruff configuration"
-  x_in "$bare" adopt --yes --skip-ci --preset
+  x_in "$bare" project adopt --yes --skip-ci --preset
   worktree="$bare-adopt-xaden"
   assert "the preset is its own commit" bash -c 'git -C "$1" log --format=%s main..HEAD | grep -q "python preset"' _ "$worktree"
   assert "the preset writes its configuration at the root" test -f "$worktree/mypy.ini" -a -f "$worktree/requirements-dev.txt"
@@ -340,29 +340,29 @@ test_reuse_of_existing_tooling() {
   # the scan finds unittest, conservatively: pytest wins, and the command runs from the root
   local ut="$WORKDIR/repos/unittest"
   make_repo "$ut" unittest-python
-  x_in "$ut" adopt --scan
+  x_in "$ut" project adopt --scan
   assert "the scan finds unittest" grep -q 'test runner .*python3 -m unittest discover -s tests' "$XOUT"
   assert "the found command runs the tests from the repository root" bash -c 'cd "$1" && python3 -m unittest discover -s tests >/dev/null 2>&1' _ "$ut"
   printf '[pytest]\n' >"$ut/pytest.ini"
-  x_in "$ut" adopt --scan
+  x_in "$ut" project adopt --scan
   assert "pytest wins over unittest" grep -q 'test runner  *pytest$' "$XOUT"
   rm "$ut/pytest.ini" && printf 'print(1)\n' >"$ut/tests/test_app.py"
-  x_in "$ut" adopt --scan
+  x_in "$ut" project adopt --scan
   assert "a test file without unittest is no unittest evidence" grep -q 'test runner  *none$' "$XOUT"
 
   # REQ-090 the worktrees/ folder is its own question and its own commit
   local plain="$WORKDIR/repos/plain-worktrees"
   make_repo "$plain" bare-python
-  x_in "$plain" adopt --yes --skip-ci
+  x_in "$plain" project adopt --yes --skip-ci
   assert "without the option no worktrees folder is added" test ! -e "$plain-adopt-xaden/worktrees"
   git -C "$plain" worktree remove --force "$plain-adopt-xaden" && git -C "$plain" branch -D chore/adopt-xaden >/dev/null
-  x_in "$plain" adopt --yes --skip-ci --worktrees
+  x_in "$plain" project adopt --yes --skip-ci --worktrees
   worktree="$plain-adopt-xaden"
   assert "the worktrees folder is its own commit" bash -c 'git -C "$1" log --format=%s main..HEAD | grep -q "worktrees/"' _ "$worktree"
   assert "the folder ignores its contents" bash -c 'mkdir -p "$1/worktrees/x" && : >"$1/worktrees/x/f" && git -C "$1" check-ignore -q worktrees/x/f' _ "$worktree"
   assert "the footprint lists the file" grep -qx 'file worktrees/.gitignore' "$worktree/xaden/footprint.txt"
   rm -rf "$worktree/worktrees/x"
-  x_in "$worktree" remove --yes
+  x_in "$worktree" project remove --yes
   assert "remove takes the folder away again" test ! -e "$worktree/worktrees"
 }
 
@@ -381,11 +381,11 @@ test_prompts_and_ignore_list() {
 
   local before
   before="$(git -C "$worktree" status --porcelain)"
-  x_in "$worktree" ignore-list
+  x_in "$worktree" project ignore-list
   assert "the ignore list names the Xaden paths" test "$(cat "$XOUT")" = "$(printf 'xaden/\nAGENTS.md\nCLAUDE.md')"
   assert "the ignore list changes no file" test "$(git -C "$worktree" status --porcelain)" = "$before"
   rm "$worktree/CLAUDE.md"
-  x_in "$worktree" ignore-list
+  x_in "$worktree" project ignore-list
   assert "CLAUDE.md is listed only when present" test "$(cat "$XOUT")" = "$(printf 'xaden/\nAGENTS.md')"
 }
 
@@ -393,19 +393,19 @@ test_prompts_and_ignore_list() {
 test_autopilot() {
   local base="$WORKDIR/autopilot" project
   rm -rf "$base" && mkdir -p "$base"
-  x_in "$base" create --autopilot --stack python demo
+  x_in "$base" project create --autopilot --stack python demo
   assert "without a terminal autopilot prints the plan and changes nothing" test ! -e "$base/demo"
   assert "the plan names the install commands" grep -q 'pip install -r requirements-dev.txt' "$XOUT"
-  x_answers n "$base" create --autopilot --stack python demo
+  x_answers n "$base" project create --autopilot --stack python demo
   assert "anything but yes changes nothing" test ! -e "$base/demo"
 
   mkdir -p "$base/existing" && printf 'print(1)\n' >"$base/existing/app.py"
-  x_answers y "$base" create --autopilot --stack python existing
+  x_answers y "$base" project create --autopilot --stack python existing
   assert "a folder with code stops and points to adopt" test "$XRC" -eq 2
-  assert "it points to xaden adopt" grep -q 'xaden adopt' "$XOUT"
+  assert "it points to xaden project adopt" grep -q 'xaden project adopt' "$XOUT"
   assert "it changes nothing" test "$(ls -A "$base/existing")" = "app.py"
 
-  PATH="$(path_without curl)" x_answers y "$base" create --autopilot --stack python demo
+  PATH="$(path_without curl)" x_answers y "$base" project create --autopilot --stack python demo
   project="$base/demo"
   assert "autopilot succeeds without curl, so it downloads nothing" test "$XRC" -eq 0
   assert "the project is a git repository with the first commit on main" test "$(git -C "$project" branch --show-current)" = "main"
@@ -418,20 +418,20 @@ test_autopilot() {
   assert "nothing is pushed: no remote" test -z "$(git -C "$project" remote)"
   assert "skipped checks end with a warning, never a success sign" bash -c 'tail -n 3 "$1" | grep -q "^WARNING:" && ! grep -q "^OK: all checks passed" "$1"' _ "$XOUT"
 
-  x_answers y "$base" create --autopilot --stack node webapp
+  x_answers y "$base" project create --autopilot --stack node webapp
   assert "the node stack prints exact package versions" grep -q 'npm install --save-dev --save-exact eslint@10.12.0' "$XOUT"
-  x_answers y "$base" create --autopilot --stack python demo
+  x_answers y "$base" project create --autopilot --stack python demo
   assert "an existing project is not touched again" test "$XRC" -eq 2
 }
 
-# REQ-071 a project with a copy of the tooling moves to the pinned layout with `xaden adopt`
+# REQ-071 a project with a copy of the tooling moves to the pinned layout with `xaden project adopt`
 test_migration() {
   local repo="$WORKDIR/repos/classic" worktree
   rm -rf "$repo"
   env ALLOW_MAIN_COMMIT=0 "$SCAFFOLD_ROOT/scripts/new-project.sh" classic-app "$repo" >/dev/null 2>&1
   printf '\nOur own twist.\n' >>"$repo/prompts/feature.md"
   git -C "$repo" commit -q -n -am "docs: our feature prompt"
-  x_in "$repo" adopt --yes --skip-ci
+  x_in "$repo" project adopt --yes --skip-ci
   worktree="$repo-adopt-xaden"
   assert "migration succeeds" test "$XRC" -eq 0
   assert "requirements move into xaden/" test -f "$worktree/xaden/requirements/INDEX.md" -a -d "$worktree/xaden/requirements/first-epic"
@@ -445,13 +445,13 @@ test_migration() {
   assert "the migrated project passes the checks" test "$XRC" -eq 0
 }
 
-# REQ-066 `xaden create` creates the same layout `xaden adopt` gives an empty repository
+# REQ-066 `xaden project create` creates the same layout `xaden project adopt` gives an empty repository
 test_new_project_layout() {
   local base="$WORKDIR/new-layout" project
   rm -rf "$base" && mkdir -p "$base"
-  x_in "$base" create demo
+  x_in "$base" project create demo
   project="$base/demo"
-  assert "xaden create succeeds" test "$XRC" -eq 0
+  assert "xaden project create succeeds" test "$XRC" -eq 0
   assert "the layout is the xaden folder, as adopt writes it" test -f "$project/xaden/xaden.conf" -a -f "$project/xaden/RULES.md" -a -f "$project/AGENTS.md" -a -d "$project/xaden/baselines"
   assert "the project's own files exist" test -f "$project/README.md" -a -f "$project/.gitignore" -a -f "$project/VERSION" -a -f "$project/CHANGELOG.md" -a -f "$project/SECURITY.md" -a -f "$project/xaden/threat-model.md"
   assert "no copy of the tooling" test ! -e "$project/scripts" -a ! -e "$project/prompts" -a ! -e "$project/.scaffold"
@@ -465,16 +465,16 @@ test_new_project_layout() {
   assert "requirements are created in xaden/requirements" test -f "$project/xaden/requirements/core/REQ-001-first-job.md"
   git -C "$project" checkout -q -- . && git -C "$project" clean -qfd
 
-  x_in "$base" create demo
+  x_in "$base" project create demo
   assert "an existing project is not created again" test "$XRC" -eq 2
-  x_in "$base" create --assistants claude with-claude
+  x_in "$base" project create --assistants claude with-claude
   assert "--assistants claude adds CLAUDE.md with one line" test "$(cat "$base/with-claude/CLAUDE.md")" = "@AGENTS.md"
-  x_in "$base" create "Bad Name"
+  x_in "$base" project create "Bad Name"
   assert "a bad project name is refused" test "$XRC" -ne 0
-  GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.useConfigOnly GIT_CONFIG_VALUE_0=true x_in "$base" env -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL "$XADEN" create fails
+  GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.useConfigOnly GIT_CONFIG_VALUE_0=true x_in "$base" env -u GIT_AUTHOR_NAME -u GIT_AUTHOR_EMAIL -u GIT_COMMITTER_NAME -u GIT_COMMITTER_EMAIL "$XADEN" project create fails
   assert "a failed creation fails" test "$XRC" -ne 0
   assert "a failed creation leaves no partial folder" test ! -e "$base/fails"
-  x_in "$base" create --classic classic
+  x_in "$base" project create --classic classic
   assert "--classic is an unknown option and creates nothing (REQ-001)" test "$XRC" -ne 0 -a ! -e "$base/classic"
   x_in "$base" update
   assert "xaden update is an unknown command (REQ-001)" test "$XRC" -ne 0
@@ -484,22 +484,22 @@ test_new_project_layout() {
   x_in "$project" check
   assert "strict: a stack without checks is an error" test "$XRC" -ne 0
   assert "the gap is named" grep -q "gap: no 'test' check is configured" "$XOUT"
-  x_in "$project" preset node
-  assert "xaden preset adds the preset's configuration" test -f "$project/eslint.config.mjs"
-  assert "xaden preset maps the checks" grep -q '^check.lint = npx eslint \.$' "$project/xaden/xaden.conf"
-  assert "xaden preset prints the install command" grep -q 'npm install --save-dev --save-exact eslint@' "$XOUT"
+  x_in "$project" project preset node
+  assert "xaden project preset adds the preset's configuration" test -f "$project/eslint.config.mjs"
+  assert "xaden project preset maps the checks" grep -q '^check.lint = npx eslint \.$' "$project/xaden/xaden.conf"
+  assert "xaden project preset prints the install command" grep -q 'npm install --save-dev --save-exact eslint@' "$XOUT"
 
   # release works without guides
   if need_tool gitleaks "release in an adopted project"; then
     local rel="$base/rel"
-    x_in "$base" create rel
-    x_in "$rel" release minor
+    x_in "$base" project create rel
+    x_in "$rel" project release minor
     assert "a release is blocked while the security documents have TODO markers" test "$XRC" -ne 0
     assert "the unfilled documents are named" grep -q 'unfilled TODO marker' "$XOUT"
     sed -i.bak 's/<!-- TODO/<!-- done/' "$rel/SECURITY.md" "$rel/xaden/threat-model.md" && rm -f "$rel/SECURITY.md.bak" "$rel/xaden/threat-model.md.bak"
     git -C "$rel" add -A && git -C "$rel" -c core.hooksPath=/dev/null commit -q -m "docs: fill the security documents"
-    x_in "$rel" release minor
-    assert "xaden release succeeds in an adopted project" test "$XRC" -eq 0
+    x_in "$rel" project release minor
+    assert "xaden project release succeeds in an adopted project" test "$XRC" -eq 0
     assert "release bumps VERSION and tags" bash -c 'test "$(cat "$1/VERSION")" = 0.1.0 && git -C "$1" tag | grep -qx v0.1.0' _ "$rel"
     assert "release stamps the changelog" grep -q '^## \[0.1.0\]' "$rel/CHANGELOG.md"
   fi

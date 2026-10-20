@@ -12,10 +12,10 @@ The result is one pull request that your team reviews.
 
 ```bash
 cd ~/code/shop
-xaden adopt
+xaden project adopt
 ```
 
-- `xaden adopt`: reads the repository and reports its stack, test runner, linters, CI system and git hooks. Then it prints exactly which files it would create or touch and asks once.
+- `xaden project adopt`: reads the repository and reports its stack, test runner, linters, CI system and git hooks. Then it prints exactly which files it would create or touch and asks once.
 
 On a yes it works on a new branch, `chore/adopt-xaden`, in its own folder next to the repository (`shop-adopt-xaden`), so nothing
 lands on your default branch. When it is done, push the branch and open the pull request. If `gh` is installed, Xaden offers to do
@@ -27,15 +27,15 @@ check.
 ## Look first, change nothing
 
 ```bash
-xaden adopt --scan
-xaden adopt --plan
+xaden project adopt --scan
+xaden project adopt --plan
 ```
 
-- `xaden adopt --scan`: reports what the repository has and changes no file. It also lists rules in an existing `AGENTS.md` or `CLAUDE.md` that contradict `xaden/RULES.md`, with file and line. You decide what to do about them.
-- `xaden adopt --plan`: prints the exact diff and the list of files that would be created or changed, and writes nothing.
+- `xaden project adopt --scan`: reports what the repository has and changes no file. It also lists rules in an existing `AGENTS.md` or `CLAUDE.md` that contradict `xaden/RULES.md`, with file and line. You decide what to do about them.
+- `xaden project adopt --plan`: prints the exact diff and the list of files that would be created or changed, and writes nothing.
 
 What Xaden cannot recognise it says so, and it never guesses a command. Name one yourself with `--check test="make verify"`.
-Without a terminal (a script, a CI job) `xaden adopt` stops after the plan and prints the command that applies it: `xaden adopt --yes`.
+Without a terminal (a script, a CI job) `xaden project adopt` stops after the plan and prints the command that applies it: `xaden project adopt --yes`.
 
 ## What it adds, and nothing else
 
@@ -59,11 +59,11 @@ The scan chooses from your history and shows its evidence, for example `conventi
 - 5 or more commits: `conventional` when at least 60 percent of the last 30 subjects follow Conventional Commits;
 - fewer than 5 commits: `conventional` only when every subject follows them, because a few commits say too little about a share.
 
-When the answer is `other`, the scan says so and names the setting. To enforce the rule, set `commit-convention = conventional` in `xaden/xaden.conf` (a change that tightens a gate, so your team reviews it), or adopt with `xaden adopt --commit-convention conventional`. `xaden adopt --commit-convention other` does the opposite. A full `xaden check` in a project with `other` prints one `TIP:` line about it.
+When the answer is `other`, the scan says so and names the setting. To enforce the rule, set `commit-convention = conventional` in `xaden/xaden.conf` (a change that tightens a gate, so your team reviews it), or adopt with `xaden project adopt --commit-convention conventional`. `xaden project adopt --commit-convention other` does the opposite. A full `xaden check` in a project with `other` prints one `TIP:` line about it.
 
 ## CI is the gate, the hooks are a convenience
 
-`git commit --no-verify`, a clone that never ran `xaden setup` and an unattended assistant all skip the local hooks. The workflow
+`git commit --no-verify`, a clone that never ran `xaden project setup` and an unattended assistant all skip the local hooks. The workflow
 `xaden.yml` therefore checks every commit a push or pull request brings, with the same rules as the commit hook (see the commit
 convention above): a wrong format, a `feat` without `Refs: REQ-nnn`, or an unknown ID fails the job and the log names the commit.
 With `commit-convention = other` the same findings are warnings. Commits from before the adoption are never checked, not even on the first push of the default branch: the check starts after the commit that added `xaden/xaden.conf`.
@@ -72,9 +72,9 @@ The check needs the full history. In a shallow checkout (the default depth of `a
 
 A failing job only stops a merge when the repository requires it. In GitHub, add a branch ruleset (or branch protection) for your default
 branch with "Require status checks to pass" and select the `xaden` job. Xaden changes no repository setting. A project adopted before this
-check existed gets the step through `xaden pin`, on the branch it prepares for the upgrade pull request.
+check existed gets the step through `xaden project pin`, on the branch it prepares for the upgrade pull request.
 
-`xaden pin` also never rewrites a workflow you may have edited beyond that step. When yours differs from the one the new version
+`xaden project pin` also never rewrites a workflow you may have edited beyond that step. When yours differs from the one the new version
 generates (for example it lacks the step that records the pinned checksum, which a project with `require-signature = true` needs on a
 fresh runner, or the Python audit tools), the new workflow comes as `.github/workflows/xaden.yml-dist` on the same branch, and `pin`
 prints the `diff` command. Merge what you need in the pull request and delete the `-dist` file.
@@ -93,7 +93,7 @@ report. How strict the checks are from then on is explained in [Check modes and 
 
 Xaden chains into husky, plain git hooks, pre-commit and lefthook, and keeps what your hooks already do. It never sets
 `core.hooksPath` over a manager. husky hooks are files in the repository, so that step is its own commit. The others live inside
-`.git`, so each teammate runs `xaden setup` once after cloning.
+`.git`, so each teammate runs `xaden project setup` once after cloning.
 
 A hook manager or CI system outside this list stops the run with exit code 4 and a manual step. Adopt without that part with
 `--skip-hooks` or `--skip-ci`.
@@ -101,12 +101,12 @@ A hook manager or CI system outside this list stops the run with exit code 4 and
 ## Take it out again
 
 ```bash
-xaden remove
+xaden project remove
 ```
 
-- `xaden remove`: deletes `xaden/` and undoes exactly the paths listed in `xaden/footprint.txt`. Review the result with `git status`, then commit.
+- `xaden project remove`: deletes `xaden/` and undoes exactly the paths listed in `xaden/footprint.txt`. Review the result with `git status`, then commit.
 
-`xaden ignore-list` prints `xaden/`, `AGENTS.md` and, when present, `CLAUDE.md`, one per line, for `.dockerignore`, `.npmignore` and archive
+`xaden project ignore-list` prints `xaden/`, `AGENTS.md` and, when present, `CLAUDE.md`, one per line, for `.dockerignore`, `.npmignore` and archive
 excludes.
 
 ## Working with assistants afterwards

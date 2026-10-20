@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Creates a new project in the adopted layout (REQ-066: one code path for new and existing projects),
 # or, with --autopilot, in the recommended setup for a stack after one confirmation (REQ-076).
-# Usage: xaden create [--autopilot [--stack python|node]] [--assistants <list>] <name> [dir]
+# Usage: xaden project create [--autopilot [--stack python|node]] [--assistants <list>] <name> [dir]
 # Plain: the xaden/ folder, the marked AGENTS.md block, hooks, a CI workflow, mode strict, a first
 # commit on main. Autopilot adds the stack's preset and prints one plan with everything it will do;
 # it asks once. A yes applies the plan; anything else changes nothing. Neither pushes, publishes or
 # downloads: the commands that install the development tools are printed for you to run. A folder
-# that already holds code, a build file or history is a job for `xaden adopt`: both stop there and
+# that already holds code, a build file or history is a job for `xaden project adopt`: both stop there and
 # change nothing.
 # shellcheck disable=SC2034 # TOOLS_DIR is read by layout.sh, ADOPT_PRESET by the steps in adopt-lib.sh
 set -euo pipefail
@@ -59,20 +59,20 @@ parse_arguments() {
     esac
     shift
   done
-  [ -n "$NAME" ] || die "usage: xaden create [--autopilot [--stack python|node]] <name> [dir]"
+  [ -n "$NAME" ] || die "usage: xaden project create [--autopilot [--stack python|node]] <name> [dir]"
   [ "$AUTOPILOT" = 1 ] || [ -z "$STACK" ] || die "--stack belongs to --autopilot"
   is_project_name "$NAME" || die "invalid project name '$NAME' (use lowercase letters, digits, hyphens)"
   TARGET="${TARGET:-$PWD/$NAME}"
 }
 
-# refuse_existing_work: a folder with code, a build file or history is for `xaden adopt`.
+# refuse_existing_work: a folder with code, a build file or history is for `xaden project adopt`.
 refuse_existing_work() {
   [ -e "$TARGET" ] || return 0
   [ -d "$TARGET" ] || die "$TARGET exists and is not a folder"
   if [ -n "$(find "$TARGET" -mindepth 1 -maxdepth 1 ! -name .git | head -n 1)" ] ||
     git -C "$TARGET" rev-parse -q --verify HEAD >/dev/null 2>&1; then
     warn "$TARGET already contains code, a build file or history. Nothing was changed."
-    echo "Use 'cd $TARGET && xaden adopt' to add Xaden to it, or choose another name." >&2
+    echo "Use 'cd $TARGET && xaden project adopt' to add Xaden to it, or choose another name." >&2
     exit 2
   fi
 }
@@ -80,10 +80,10 @@ refuse_existing_work() {
 # choose_stack: from --stack, else one question per stack.
 choose_stack() {
   [ -z "$STACK" ] || return 0
-  has_terminal || die "name the stack: xaden create --autopilot --stack python|node $NAME"
+  has_terminal || die "name the stack: xaden project create --autopilot --stack python|node $NAME"
   if ask "Is this a Python project?"; then STACK=python
   elif ask "Is this a Node (JavaScript or TypeScript) project?"; then STACK=node
-  else die "autopilot knows python and node; for other stacks use: xaden create $NAME"
+  else die "autopilot knows python and node; for other stacks use: xaden project create $NAME"
   fi
 }
 

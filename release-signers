@@ -1,6 +1,6 @@
 # Public keys that sign Xaden releases, in the format of ssh-keygen's allowed signers file:
 #   <principal> namespaces="xaden-release" <key type> <public key>
-# `xaden fetch` and `xaden upgrade` verify the checksum of a release against these keys.
+# `xaden project fetch` and `xaden core upgrade` verify the checksum of a release against these keys.
 # While this file holds no key, they say so and fall back to trusting the first download.
 # The maintainer adds the key here and publishes it at https://xaden.dev as well (docs/release-signing.md).
 release@xaden.dev namespaces="xaden-release" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIY0fmJjw8aLB9x1otNvJkgIgZ2Q7w5vHcwjskJTOgQy

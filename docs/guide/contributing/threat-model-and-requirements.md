@@ -18,9 +18,9 @@ Xaden stores no sensitive data. Its scripts read git metadata (author names and 
 
 ## Accepted risks
 
-- `xaden check` and the hooks run the commands listed in `xaden/xaden.conf`, with the same trust as running the repository's own test and lint scripts. A pull request that changes `xaden.conf` needs the same review as one that changes a build script. The adoption pull request and every `xaden pin` show the change.
+- `xaden check` and the hooks run the commands listed in `xaden/xaden.conf`, with the same trust as running the repository's own test and lint scripts. A pull request that changes `xaden.conf` needs the same review as one that changes a build script. The adoption pull request and every `xaden project pin` show the change.
 - A release without a signature, or while `release-signers` holds no key, is pinned by the checksum of the archive just downloaded (trust on first use). The person sees the checksum and the team reviews it in the pull request. A stolen signing key, or a maintainer who signs something malicious, is not covered.
-- `xaden setup`, `check`, `req` and `release` run the current repository's own `scripts/*.sh`, with the same trust as running them by hand. Use them only in projects you trust.
+- `xaden project setup`, `check`, `req` and `release` run the current repository's own `scripts/*.sh`, with the same trust as running them by hand. Use them only in projects you trust.
 - The macOS CI job installs the current versions of shellcheck, semgrep, ruff and gitleaks without pinning; the Linux job is the pinned reference. semgrep and ruff are pinned by version, not by hash.
 
 ## The full documents
