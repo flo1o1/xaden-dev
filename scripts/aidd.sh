@@ -17,6 +17,8 @@ SCAFFOLD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$SCAFFOLD_ROOT/template/scripts/lib.sh"
 # shellcheck source=SCRIPTDIR/../template/scripts/layout.sh
 source "$SCAFFOLD_ROOT/template/scripts/layout.sh"
+# shellcheck source=SCRIPTDIR/scaffold-lib.sh
+source "$SCAFFOLD_ROOT/scripts/scaffold-lib.sh"
 # shellcheck source=SCRIPTDIR/adopt-lib.sh
 source "$SCAFFOLD_ROOT/scripts/adopt-lib.sh"
 
@@ -231,7 +233,7 @@ aidd_main() {
   local root=$1 sub=${2:-}
   shift
   [ "$#" -eq 0 ] || shift
-  [ -f "$root/xaden/xaden.conf" ] || die "xaden aidd works in a project that adopted Xaden (xaden project adopt)"
+  [ -f "$root/xaden/xaden.conf" ] || die "$NOT_ADOPTED_MESSAGE"
   case "$sub" in
     enable) enable_main "$root" "$@" ;;
     status) status_main "$root" ;;

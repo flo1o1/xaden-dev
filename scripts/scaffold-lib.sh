@@ -6,6 +6,11 @@
 # Everything else (code, requirements, guides, README, CHANGELOG, VERSION, .gitignore,
 # .env.example) belongs to the project and is never updated. .claude/settings.json is managed
 # (REQ-059): a project that edited it keeps its file and gets <file>-dist to merge (REQ-100).
+# shellcheck disable=SC2034 # read by xaden.sh, fetch.sh and aidd.sh
+# The two answers every project-scoped command gives when there is no project to act on (REQ-132).
+NO_REPOSITORY_MESSAGE="run this inside a project (no git repository here); start one with: xaden project create <name>, or adopt an existing repository with: xaden project adopt"
+NOT_ADOPTED_MESSAGE="this repository has not adopted Xaden; run: xaden project adopt"
+
 MANAGED_PATHS="scripts/ prompts/ presets/ .claude/commands/ .claude/settings.json .semgrep/ .github/workflows/
 .github/copilot-instructions.md .continue/ .clinerules .aider.conf.yml .obsidian/app.json
 .obsidian/core-plugins.json .obsidian/templates.json AGENTS.md CLAUDE.md docs/clean-code.md docs/rules/

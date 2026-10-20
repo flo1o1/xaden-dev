@@ -12,11 +12,8 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Project setup (`project-setup`)
 
-32 done, 2 dropped.
+33 done, 2 dropped.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-132 | job | should | approved | I run check and req as project commands and keep the short spellings |
 
 ## Quality gates (`quality-gates`)
 
