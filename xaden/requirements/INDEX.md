@@ -40,3 +40,6 @@ lists them, and `INDEX-full.md` holds the full table.
 
 13 done.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-136 | job | should | approved | A release that should be signed is refused when its signature is missing |
