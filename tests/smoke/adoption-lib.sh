@@ -10,29 +10,6 @@ ADOPTION_LIB_LOADED=1
 # message_of <function> <args...>: what a lib.sh message helper prints on both streams.
 message_of() { bash -c 'source "$1"; shift; "$@"' _ "$SCAFFOLD_ROOT/template/scripts/lib.sh" "$@" 2>&1 || true; }
 
-XADEN="$SCAFFOLD_ROOT/scripts/xaden.sh"
-# The git hooks of the fixtures call `xaden`: it must be this checkout's command, not one installed on the machine.
-mkdir -p "$WORKDIR/bin" && ln -sf "$XADEN" "$WORKDIR/bin/xaden"
-export PATH="$WORKDIR/bin:$PATH"
-XOUT="$WORKDIR/xaden.out"
-XRC=0
-
-# x_in <dir> <args...>: runs the xaden command in a directory; output in $XOUT, status in $XRC.
-# shellcheck disable=SC2034 # XRC is read by the areas
-x_in() {
-  local dir=$1
-  shift
-  XRC=0
-  (cd "$dir" && env -u CI "$XADEN" "$@") >"$XOUT" 2>&1 || XRC=$? # CI=true would make the scope of a check unknown (REQ-102)
-}
-
-# x_answers <answer> <dir> <args...>: like x_in, with a test answer for every question.
-x_answers() {
-  local answer=$1
-  shift
-  XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=$answer x_in "$@"
-}
-
 # make_repo <dir> <kind>: a repository with history. Kinds: shop (npm test, make lint, CI, an
 # AGENTS.md that contradicts the rules), bare-python (no tests or linters), unittest-python, husky, empty.
 make_repo() {

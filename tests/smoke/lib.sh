@@ -21,7 +21,8 @@ export ALLOW_MAIN_COMMIT=1
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 PROJECT="$WORKDIR/demo app/demo-app" # space in the path on purpose (REQ-018)
-mkdir -p "$(dirname "$PROJECT")"
+DEMO="$WORKDIR/demo adopted/demo-app" # the demo project in the layout every project has (REQ-133)
+mkdir -p "$(dirname "$PROJECT")" "$(dirname "$DEMO")"
 OUTPUT="$WORKDIR/last-command.log"
 PASSED=0
 SKIPPED=0
@@ -139,6 +140,29 @@ path_without() {
   printf '%s' "$bin"
 }
 
+XADEN="$SCAFFOLD_ROOT/scripts/xaden.sh"
+# The git hooks of the fixtures call `xaden`: it must be this checkout's command, not one installed on the machine.
+mkdir -p "$WORKDIR/bin" && ln -sf "$XADEN" "$WORKDIR/bin/xaden"
+export PATH="$WORKDIR/bin:$PATH"
+XOUT="$WORKDIR/xaden.out"
+XRC=0
+
+# x_in <dir> <args...>: runs the xaden command in a directory; output in $XOUT, status in $XRC.
+# shellcheck disable=SC2034 # XRC is read by the areas
+x_in() {
+  local dir=$1
+  shift
+  XRC=0
+  (cd "$dir" && env -u CI "$XADEN" "$@") >"$XOUT" 2>&1 || XRC=$? # CI=true would make the scope of a check unknown (REQ-102)
+}
+
+# x_answers <answer> <dir> <args...>: like x_in, with a test answer for every question.
+x_answers() {
+  local answer=$1
+  shift
+  XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=$answer x_in "$@"
+}
+
 # REQ-001 project creation, REQ-013 template separation
 test_new_project() {
   assert_fails "reject bad project name" "$SCAFFOLD_ROOT/scripts/new-project.sh" "Bad Name" "$WORKDIR/x"
@@ -147,7 +171,11 @@ test_new_project() {
   assert "scaffold-only files not copied" test ! -e "$PROJECT/tests" -a ! -e "$PROJECT/template" -a ! -e "$PROJECT/scripts/new-project.sh"
   assert "project gets template rules" grep -q 'CC-09' "$PROJECT/AGENTS.md"
   assert "own git repo with first commit" git -C "$PROJECT" log --oneline -1
-  assert "hooks path configured" test "$(git -C "$PROJECT" config core.hooksPath)" = "scripts/hooks"
+  assert "hooks path configured" test "$(git -C "$PROJECT" config core.hooksPath)" = "scripts/hooks"  # REQ-133: the same project in the layout every project has, made by xaden itself
+  x_in "$(dirname "$DEMO")" project create demo-app "$DEMO"
+  assert "create the adopted demo project" test "$XRC" -eq 0
+  assert "the adopted demo project has its team folder" test -f "$DEMO/xaden/xaden.conf" -a -d "$DEMO/xaden/requirements"
+  assert "the adopted demo project has a first commit" git -C "$DEMO" log --oneline -1
 }
 
 # git needs an identity inside the sandbox project.

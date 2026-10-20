@@ -8,6 +8,15 @@ test_license() {
   assert "generated projects do not inherit the scaffold license" test ! -e "$PROJECT/LICENSE"
 }
 
+# REQ-001, REQ-133: the hooks of a project made by `xaden project create` run Xaden's checks
+test_adopted_demo_hooks() {
+  assert_fails_with "REQ-001 the commit-msg hook of a created project refuses a bad message" "types: feat fix" \
+    git -C "$DEMO" commit -q --allow-empty -m "bad message"
+  assert "REQ-001 the commit-msg hook of a created project accepts a conventional message" \
+    git -C "$DEMO" commit -q --allow-empty -m "docs: a valid message"
+  git -C "$DEMO" reset -q --keep HEAD~1
+}
+
 # REQ-018 safe generation: a git copy of the scaffold with junk that must never be copied
 test_generation_safety() {
   local source="$WORKDIR/source-scaffold" target="$WORKDIR/safety/generated app"
@@ -270,6 +279,7 @@ STUB
 }
 
 test_license
+test_adopted_demo_hooks
 test_command_dist
 test_generation_safety
 test_generation_ignores_project_root
