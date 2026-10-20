@@ -3,8 +3,8 @@ id: REQ-018
 type: job
 epic: project-setup
 priority: must
-status: done
-updated: 2026-10-11
+status: dropped
+updated: 2026-10-20
 ---
 
 # Project generation copies only reviewed template content
@@ -20,3 +20,5 @@ When I generate a project, I want only reviewed, tracked template files copied, 
 - symlinks and existing targets refused
 - partial output removed on failure
 - paths with spaces work
+
+Dropped 2026-10-20 by REQ-133: `xaden project create` writes the `xaden/` layout from the installed Xaden and copies no template files into the project; the copying generator and its safety rules went with the classic project.
