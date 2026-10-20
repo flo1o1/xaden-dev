@@ -38,7 +38,8 @@ Usage: xaden <command> [args...]
        xaden <core|project|aidd> <command> [args...]
 
 Namespaces (`xaden <namespace> help` lists the commands of one):
-  core               Xaden itself, on this machine: upgrade, version, fetch, doctor, ignore-list, help
+  core               Xaden itself, on this machine: upgrade, version, fetch, doctor, ignore-list,
+                     completion, help
   project            one project and the Xaden version it uses: create, adopt, remove, pin, rules,
                      add-preset, setup, release, persona, check, req, help
   aidd               the AI-Driven Development framework, pinned per project: enable, status, disable, pin, help
@@ -67,6 +68,7 @@ Usage: xaden core <command> [args...]
   fetch <version>    install the pinned version if it is missing (asks first)
   doctor             compare the installed version with the pinned one (no network)
   ignore-list        print the paths Xaden owns, for .dockerignore and archive excludes (inside a project)
+  completion bash    print a bash completion script: eval "$(xaden core completion bash)" in ~/.bashrc
   help               list these commands
 EOF
 }
@@ -340,8 +342,49 @@ scaffold_command() {
   esac
 }
 
-CORE_COMMANDS="upgrade version fetch doctor ignore-list"
+CORE_COMMANDS="upgrade version fetch doctor ignore-list completion"
 PROJECT_COMMANDS="create adopt remove pin rules add-preset setup release persona check req"
+AIDD_COMMANDS="enable status disable pin"
+TOP_LEVEL_COMMANDS="core project aidd check req version context verify-commits prompt doc"
+
+# completion_main <shell>: the completion script of a shell on stdout; its command lists are the ones above (REQ-135).
+completion_main() {
+  [ "${1:-}" = bash ] && [ "$#" -eq 1 ] || { usage_core >&2; exit 2; }
+  local prompts="" file name
+  for file in "$SCAFFOLD_ROOT"/template/prompts/*.md; do
+    name=${file##*/}
+    name=${name%.md}
+    [ "$name" = 00-index ] || prompts="$prompts $name"
+  done
+  printf '_xaden() {\n  local top="%s help" core="%s help" project="%s help" aidd="%s help" prompts="%s"\n' \
+    "$TOP_LEVEL_COMMANDS" "$CORE_COMMANDS" "$PROJECT_COMMANDS" "$AIDD_COMMANDS" "$prompts"
+  cat <<'COMPLETION'
+  local cur=${COMP_WORDS[COMP_CWORD]} prev=${COMP_WORDS[COMP_CWORD-1]} command=${COMP_WORDS[1]:-} words=""
+  case "$command" in core | project | aidd) command=${COMP_WORDS[2]:-} ;; esac
+  if [ "$COMP_CWORD" -eq 1 ]; then
+    words=$top
+  elif [ "$COMP_CWORD" -eq 2 ]; then
+    case "${COMP_WORDS[1]}" in core) words=$core ;; project) words=$project ;; aidd) words=$aidd ;; esac
+  fi
+  if [ -z "$words" ]; then
+    case "$prev" in
+      --stack) words="python node" ;;
+      *)
+        case "$cur:$command" in
+          -*:upgrade) words="--check --if-due" ;;
+          -*:pin) words="--check" ;;
+          -*:create) words="--autopilot --stack" ;;
+          *:add-preset) words="python node" ;;
+          *:prompt) words=$prompts ;;
+          *:doc) words="clean-code security optional-tools local-llm" ;;
+        esac ;;
+    esac
+  fi
+  COMPREPLY=($(compgen -W "$words" -- "$cur"))
+}
+complete -F _xaden xaden
+COMPLETION
+}
 
 # in_list <word> <list>: true if the word is one of the space separated words.
 in_list() { case " $2 " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
@@ -374,6 +417,7 @@ run_command() {
     remove) exec "$SCAFFOLD_ROOT/scripts/adopt.sh" __remove "$@" ;;
     version) tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION" && echo ;;
     doctor) doctor_main ;;
+    completion) completion_main "$@" ;;
     fetch) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" fetch "$@" ;;
     upgrade) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" upgrade "$@" ;;
     pin) exec "$SCAFFOLD_ROOT/scripts/fetch.sh" pin "$@" ;;
