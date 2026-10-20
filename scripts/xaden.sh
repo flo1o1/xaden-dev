@@ -136,7 +136,7 @@ require_signed_installation() {
   [ -d "$dir" ] || return 0
   # The copy that runs is the one the project pinned (REQ-138). A git checkout is the maintainer's own and has no pin to match.
   pinned="$(conf_get "$1" checksum)"
-  if [ -n "$pinned" ] && [ ! -e "$dir/.git" ] && [ "$(tree_checksum "$dir")" != "$pinned" ]; then
+  if [ -n "$pinned" ] && [ ! -e "$dir/.git" ] && ! checksum_matches "$dir" "$pinned"; then
     die "Xaden $2 in $dir does not match the checksum pinned in xaden/xaden.conf (changed files?). Install it again with: xaden core fetch $2"
   fi
   [ "$SIGNATURE_REQUIRED" = 1 ] || return 0
@@ -194,7 +194,7 @@ doctor_main() {
   checksum="$(conf_get "$conf" checksum)"
   info "installed $(running_version), project pinned $pinned"
   if [ "$pinned" = "$(running_version)" ]; then
-    if [ "$(tree_checksum "$SCAFFOLD_ROOT")" = "$checksum" ]; then
+    if checksum_matches "$SCAFFOLD_ROOT" "$checksum"; then
       ok "the installed Xaden is the pinned one (checksum matches)"
     else
       warn "the installed Xaden $pinned does not match the pinned checksum (local changes in the Xaden folder?)"

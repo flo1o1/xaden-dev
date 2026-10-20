@@ -12,6 +12,10 @@ Check that the Xaden you install is the release the maintainer published, and un
 
 The checksum is the SHA-256 of the paths and contents of all files of a release (the "tree checksum"). A git clone and an extracted
 archive of the same release give the same value, because the release leaves out the files only maintainers need.
+Two versions of the checksum exist (REQ-147). A bare 64-character value, like every pin made before, covers paths and contents. A value
+written `mode1:<hex>` also covers which files are executable, so flipping a script's mode changes it. Both stay valid: Xaden verifies a
+pin in the version it is written in, and a new pin takes the newest version the signed release has. The signed checksum file of a new
+release holds both, the bare one first, so an older Xaden can still install it.
 
 ## What happens on install and upgrade
 

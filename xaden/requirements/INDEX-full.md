@@ -170,4 +170,4 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-138 | job | should | done | The installed Xaden is checked against the pin before it runs |
 | REQ-139 | job | should | done | The tree checksum refuses what it cannot see |
 | REQ-140 | job | could | done | A moved Xaden home is confirmed like a moved download |
-| REQ-147 | job | should | approved | The tree checksum covers which files are executable |
+| REQ-147 | job | should | done | The tree checksum covers which files are executable |

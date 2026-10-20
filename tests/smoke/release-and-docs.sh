@@ -323,6 +323,9 @@ test_sign_release() {
   assert "signing prints no shell error" test ! -s "$err"
   assert "the checksum and its signature are written" test -s "$copy/dist/xaden-0.1.0.checksum" -a -s "$copy/dist/xaden-0.1.0.checksum.sig"
   assert "signing leaves no temp folder behind" test -z "$(ls -A "$tmp")"
+  assert "REQ-147 the checksum file has the bare checksum line" grep -Eq '^[0-9a-f]{64}  xaden-0.1.0$' "$copy/dist/xaden-0.1.0.checksum"
+  assert "REQ-147 the checksum file has the mode1 checksum line" grep -Eq '^mode1:[0-9a-f]{64}  xaden-0.1.0$' "$copy/dist/xaden-0.1.0.checksum"
+  assert "REQ-147 the bare checksum line comes first" test "$(grep -n -E '^[0-9a-f]{64}  ' "$copy/dist/xaden-0.1.0.checksum" | cut -d: -f1)" = 1
   # REQ-094 the release zip is written and signed too; the signature verifies against the key
   printf 'release@xaden.dev namespaces="xaden-release" %s\n' "$(cat "$WORKDIR/sign-key.pub")" >"$WORKDIR/sign-signers"
   assert "the zip and its signature are written" test -s "$copy/dist/xaden-0.1.0.zip" -a -s "$copy/dist/xaden-0.1.0.zip.sig"
