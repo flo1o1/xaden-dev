@@ -148,7 +148,8 @@ finish_checks() {
 # shellcheck disable=SC2034 # read by stacks/common.sh
 SOURCE_FILE_PATTERN='\.(py|js|jsx|mjs|cjs|ts|tsx)$'
 # SAST_FILE_PATTERN (REQ-144): the files the local semgrep rules scan; one rules file per language in .semgrep/.
-SAST_FILE_PATTERN='\.(py|js|jsx|mjs|cjs|ts|tsx|go)$'
+# A language without a rules file in .semgrep/ finds nothing, so listing it here is harmless.
+SAST_FILE_PATTERN='\.(py|js|jsx|mjs|cjs|ts|tsx|go|java|php|rb|rs)$'
 # Files selected by the last collect_files call (bash array).
 TARGETS=()
 # Staged mode (REQ-020): the real repository, a temporary export of its index (exactly what
