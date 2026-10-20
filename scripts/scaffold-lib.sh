@@ -22,14 +22,21 @@ sha256_stdin() {
 # tree_checksum <dir>: SHA-256 over the paths and contents of the files of an Xaden tree.
 # A git checkout counts the files its last commit puts into a release archive (maintainer files are
 # export-ignored, REQ-094), an extracted release all files; both give the same value for the same
-# release. The CI workflow of an adopted project recomputes it with the same find, sed, sort and
+# release; it fails when the tree holds a link or special file (REQ-139). The CI workflow of an adopted project recomputes it with the same find, sed, sort and
 # sha256 steps (scripts/adopt/ci.yml).
 tree_checksum() {
-  local dir=$1 staging="" checksum
+  local dir=$1 staging="" checksum odd
   if [ -e "$dir/.git" ]; then
     staging="$(mktemp -d)"
     git -C "$dir" archive HEAD | tar -x -C "$staging" || { rm -rf "${staging:?}"; return 1; }
     dir=$staging
+  fi
+  # A link or special file is not hashed by the find below, so it could carry code the checksum skips (REQ-139).
+  odd="$(cd "$dir" && find . ! -type f ! -type d | head -n 1)"
+  if [ -n "$odd" ]; then
+    [ -z "$staging" ] || rm -rf "${staging:?}"
+    echo "ERROR: ${odd#./} is neither a regular file nor a folder; the checksum of a tree needs plain files only" >&2
+    return 1
   fi
   checksum="$(
     cd "$dir" || exit
