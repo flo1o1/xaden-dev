@@ -463,7 +463,7 @@ test_signed_only_in_generated_ci() {
   printf 'changed\n' >>"$ci/temp/xaden-$version/README.md"
   XRC=0
   (cd "$worktree" && env -u CI -u XADEN_HOME -u XDG_DATA_HOME HOME="$ci/home" "$ci/temp/xaden-$version/scripts/xaden.sh" check) >"$XOUT" 2>&1 || XRC=$?
-  assert "CI: a changed tree is refused" grep -q 'requires signed releases' "$XOUT"
+  assert "CI: a changed tree is refused" grep -q 'does not match the checksum pinned' "$XOUT"
 }
 
 # REQ-129 an older workflow (no signed-record step, no Python audit tools): pin keeps it and writes the generated one
