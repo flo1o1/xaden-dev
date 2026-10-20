@@ -48,22 +48,25 @@ jobs:
           mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/xaden/versions"
           printf '%s\n' "$XADEN_CHECKSUM" >"${XDG_DATA_HOME:-$HOME/.local/share}/xaden/versions/${XADEN_VERSION}.signed"
           echo "$RUNNER_TEMP/xaden-${XADEN_VERSION}/scripts" >>"$GITHUB_PATH"
+      - name: Set up Python (semgrep is installed from a hashed lock file for 3.12)
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
       - name: Install analysis tools
         run: |
           archive="shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
           curl -fsSLO "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/${archive}"
           echo "${SHELLCHECK_SHA256}  ${archive}" | sha256sum -c -
           tar -xJf "$archive" && sudo install "shellcheck-v${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck
-          pipx install "semgrep==$SEMGREP_VERSION"
+          # Every wheel is checked against the hashes in the lock file of the Xaden tree verified above.
+          python -m venv "$RUNNER_TEMP/semgrep-venv"
+          "$RUNNER_TEMP/semgrep-venv/bin/python" -m pip install --require-hashes --only-binary=:all: \
+            -r "$RUNNER_TEMP/xaden-${XADEN_VERSION}/scripts/adopt/semgrep.lock"
+          echo "$RUNNER_TEMP/semgrep-venv/bin" >>"$GITHUB_PATH"
           archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
           echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum -c -
           tar -xzf "$archive" gitleaks && sudo install gitleaks /usr/local/bin/gitleaks
-      - name: Set up Python (if this is a Python project)
-        if: hashFiles('pyproject.toml', 'setup.py', 'requirements*.txt') != ''
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.12"
       - name: Set up Node (if this is a Node project)
         if: hashFiles('package.json') != ''
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
