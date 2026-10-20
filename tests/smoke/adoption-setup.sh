@@ -21,8 +21,8 @@ test_messages() {
   assert "yes answers a question" env XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=yes bash -c 'source "$1"; ask "Go on?" >/dev/null' _ "$SCAFFOLD_ROOT/template/scripts/lib.sh"
   assert_fails "empty answer is no" env XADEN_TEST_MODE=1 XADEN_TEST_ANSWER= bash -c 'source "$1"; ask "Go on?" >/dev/null' _ "$SCAFFOLD_ROOT/template/scripts/lib.sh"
   assert_fails "other answers are no" env XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=maybe bash -c 'source "$1"; ask "Go on?" >/dev/null' _ "$SCAFFOLD_ROOT/template/scripts/lib.sh"
-  assert_fails "no terminal and no test mode: nothing is asked" bash -c 'source "$1"; ask "Go on?" </dev/null' _ "$SCAFFOLD_ROOT/template/scripts/lib.sh"
-  assert_fails "the test answer is ignored without test mode" env XADEN_TEST_ANSWER=y bash -c 'source "$1"; ask "Go on?" </dev/null >/dev/null' _ "$SCAFFOLD_ROOT/template/scripts/lib.sh"
+  assert_fails "no terminal and no test mode: nothing is asked" env -u XADEN_TEST_MODE bash -c 'source "$1"; ask "Go on?" </dev/null' _ "$SCAFFOLD_ROOT/template/scripts/lib.sh"
+  assert_fails "the test answer is ignored without test mode" env -u XADEN_TEST_MODE XADEN_TEST_ANSWER=y bash -c 'source "$1"; ask "Go on?" </dev/null >/dev/null' _ "$SCAFFOLD_ROOT/template/scripts/lib.sh"
 
   assert "no script prints a sign by hand" bash -c \
     '! grep -rIl -e "🐉" -e "⚠" -e "🔥" -e "✅" "$1/scripts" "$1/template/scripts" | grep -v "template/scripts/lib.sh$" | grep .' _ "$SCAFFOLD_ROOT"
