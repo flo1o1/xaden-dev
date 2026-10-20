@@ -113,7 +113,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-109 | job | must | done | The CI commit check reads a range it can trust, and judges only the commits since the adoption |
 | REQ-114 | job | should | done | A pull request waits only for the checks its change can affect |
 | REQ-121 | job | should | done | A change to adoption waits for three short smoke areas, not one long one |
-| REQ-137 | job | should | approved | A change to the checks is reviewed as code |
+| REQ-137 | job | should | done | A change to the checks is reviewed as code |
 
 ## Releases and documentation (`release-and-docs`)
 
