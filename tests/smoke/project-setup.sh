@@ -32,6 +32,31 @@ test_setup_and_commit_checks() {
 }
 
 # REQ-056: `xaden` runs the scaffold's and the current project's scripts from any directory.
+# REQ-135 `xaden core completion bash` prints a completion script whose lists are the ones `xaden ... help` shows
+test_completion() {
+  local xaden="$SCAFFOLD_ROOT/scripts/xaden.sh" script="$WORKDIR/xaden-completion.bash" namespace prompts
+  "$xaden" core completion bash >"$script"
+  assert "REQ-135 the completion script is valid bash" bash -n "$script"
+  assert_fails_with "REQ-135 completion for another shell is refused" "xaden core completion" "$xaden" core completion zsh
+  assert_fails_with "REQ-135 completion without a shell is refused" "xaden core completion" "$xaden" core completion
+  # offered <words...>: what Tab offers after the words, the last one being the (possibly empty) word under the cursor
+  offered() { bash -c 'source "$1"; shift; COMP_WORDS=("$@"); COMP_CWORD=$(($# - 1)); _xaden; printf "%s\n" "${COMPREPLY[@]}" | sort' _ "$script" "$@"; }
+  listed() { "$xaden" "$@" help | sed -n 's/^  \([a-z][a-z-]*\).*/\1/p' | sort -u; }
+  assert "REQ-135 xaden <Tab> offers the commands of xaden help" test "$(offered xaden '')" = "$(listed)"
+  for namespace in core project aidd; do
+    assert "REQ-135 xaden $namespace <Tab> offers the commands of xaden $namespace help" \
+      test "$(offered xaden "$namespace" '')" = "$(listed "$namespace")"
+  done
+  assert "REQ-135 xaden pr<Tab> narrows the list" test "$(offered xaden pr)" = "$(printf 'project\nprompt')"
+  prompts="$(printf '%s\n' "$SCAFFOLD_ROOT"/template/prompts/*.md | sed 's#.*/##; s#\.md$##' | grep -v '^00-index$' | sort)"
+  assert "REQ-135 xaden prompt <Tab> offers the prompt names" test "$(offered xaden prompt '')" = "$prompts"
+  assert "REQ-135 xaden doc <Tab> offers the guides" test "$(offered xaden doc clean)" = "clean-code"
+  assert "REQ-135 add-preset offers the stacks" test "$(offered xaden project add-preset '')" = "$(printf 'node\npython')"
+  assert "REQ-135 --stack offers the stacks" test "$(offered xaden project create --stack '')" = "$(printf 'node\npython')"
+  assert "REQ-135 a dash offers the options of upgrade" test "$(offered xaden core upgrade -)" = "$(printf -- '--check\n--if-due')"
+  assert "REQ-135 a dash narrows the options of create" test "$(offered xaden project create --a)" = "--autopilot"
+}
+
 test_xaden_command() {
   local bin="$WORKDIR/xaden-bin" elsewhere="$WORKDIR/elsewhere" xaden
   xaden="$bin/xaden"
@@ -248,4 +273,5 @@ test_generation_ignores_project_root
 test_worktrees_folder
 test_setup_and_commit_checks
 test_xaden_command
+test_completion
 test_aidd_framework

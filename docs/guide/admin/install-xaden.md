@@ -38,6 +38,15 @@ xaden version
 
 - `xaden version`: prints the installed Xaden version.
 
+## Complete commands with Tab (bash, optional)
+
+```bash
+echo 'eval "$(xaden core completion bash)"' >> ~/.bashrc
+```
+
+- `xaden core completion bash`: prints a completion script for bash and changes nothing on disk. After a new shell starts, `xaden <Tab>` offers the namespaces and commands, and `xaden project create --<Tab>` its options.
+- `eval "$(...)"` in `~/.bashrc`: loads the script in every new shell. Xaden never edits `~/.bashrc` itself. Other shells are not supported.
+
 ## Verify what you downloaded
 
 The installer checks the signature of the release zip before it opens it. Check that `xaden version` prints the version you expect, and read
