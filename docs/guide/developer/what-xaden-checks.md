@@ -62,3 +62,18 @@ require-signature = true
 - `require-signature = true`: every Xaden your project runs came from a signed release ([Verify releases](../admin/verify-releases.md)).
 
 Loosening any of the three is an approval point.
+
+## A change to the checks is reviewed as code
+
+The settings that decide how a project is checked live in the repository, so a pull request could loosen them and pass by its own rules.
+In a pull request run, CI compares `mode`, `hook-checks`, `expect`, `check.*`, `findings-status.*`, `require-signature`, `version`, `checksum`, the
+baselines and `.github/workflows/xaden.yml` with the merge base. A difference fails the run with `check settings changed` and the changed lines,
+and no mapped command runs: a `check.lint = ...` line from a pull request never executes before someone read it. A baseline that grew counts as a change.
+
+A person who may merge reads the lines and adds the label `xaden-settings-accepted` to the pull request; the run then continues with the changed settings.
+The workflow `xaden project adopt` writes passes the label as `SETTINGS_ACCEPTED`; an older workflow needs the new one (`xaden project pin` writes it beside yours as `xaden.yml-dist`).
+
+Limits: a pull request can also edit the workflow, so protect `xaden/xaden.conf`, `xaden/baselines/` and `.github/workflows/` with required review (CODEOWNERS and branch protection).
+A repository that was not adopted at the merge base, and every run outside a pull request, compares nothing.
+
+In pre-commit, a `check.*` line that differs from the last commit is shown and runs only after a yes; without a terminal it is skipped, and `xaden check` runs it later.
