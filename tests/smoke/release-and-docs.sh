@@ -28,70 +28,65 @@ test_scaffold_release_failures() {
   chmod 644 "$copy/VERSION"
 }
 
-# REQ-007 release, REQ-010 docs gate
+# REQ-007 release, REQ-010 docs gate: in the adopted demo project there are no guides to stamp or fill
 test_release() {
-  assert_fails "release blocked by TODO markers in docs" "$PROJECT/scripts/release.sh" patch
-  edit_file "$(req_file "$PROJECT" REQ-001)" \
+  assert_fails "release blocked by TODO markers in the requirements" bash -c "cd '$DEMO' && xaden project release patch"
+  edit_file "$(req_file "$DEMO" REQ-001)" \
     's/^TODO: When .*/When I close a month, I want to export my data, so I can send it to my accountant./; s/^- TODO: .*/- Given data, when I export, then a CSV file is written./'
   printf '# Reporting\n\n## Goal\n\nWhen I run my business, I want to see my numbers, so I can decide quickly.\n' \
-    >"$PROJECT/docs/requirements/first-epic/EPIC.md"
-  "$PROJECT/scripts/req.sh" index >/dev/null
-  git -C "$PROJECT" commit -q -am "docs(requirements): replace placeholder"
+    >"$DEMO/xaden/requirements/first-epic/EPIC.md"
+  PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/req.sh" index >/dev/null
+  git -C "$DEMO" commit -q --no-verify -am "docs(requirements): replace placeholder"
   if need_tool gitleaks "release without scanner fixture"; then
-    sed -i.bak '/TODO/d' "$PROJECT"/docs/*-guide.md && rm -f "$PROJECT"/docs/*.bak
-    git -C "$PROJECT" commit -q -am "docs: fill guides"
-    assert_fails "release fails when a required scanner is missing" bash -c "PATH='$(path_without gitleaks)' '$PROJECT/scripts/release.sh' patch"
-    assert "failed release left VERSION unchanged" test "$(tr -d '[:space:]' <"$PROJECT/VERSION")" = "0.1.0"
-    git -C "$PROJECT" reset -q --hard HEAD~1
+    assert_fails "release fails when a required scanner is missing" bash -c "cd '$DEMO' && PATH='$(path_without gitleaks)' xaden project release patch"
+    assert "failed release left VERSION unchanged" test "$(tr -d '[:space:]' <"$DEMO/VERSION")" = "0.0.0"
   fi
-  sed -i.bak '/TODO/d' "$PROJECT"/docs/*-guide.md && rm -f "$PROJECT"/docs/*.bak
-  git -C "$PROJECT" commit -q -am "docs: fill guides"
   # REQ-058 security documents must be filled before a release
-  assert_fails_with "release blocked by markers in SECURITY.md" "SECURITY.md" "$PROJECT/scripts/release.sh" patch
-  assert "blocked release left VERSION unchanged" test "$(tr -d '[:space:]' <"$PROJECT/VERSION")" = "0.1.0"
-  edit_file "$PROJECT/SECURITY.md" '/<!-- TODO/d'
-  git -C "$PROJECT" commit -q -am "docs: fill SECURITY.md"
-  assert_fails_with "release blocked by markers in the threat model" "threat-model.md" "$PROJECT/scripts/check-docs.sh" --release
-  edit_file "$PROJECT/docs/threat-model.md" '/<!-- TODO/d'
-  git -C "$PROJECT" commit -q -am "docs: fill threat model"
-  printf 'Mark a TODO item as done.\n' >>"$PROJECT/docs/user-guide.md"
-  printf 'Rotate TODO list API keys yearly.\n' >>"$PROJECT/SECURITY.md"
-  assert "the word TODO in guide prose does not block a release" "$PROJECT/scripts/check-docs.sh" --release
-  git -C "$PROJECT" checkout -q -- docs/user-guide.md SECURITY.md
+  assert_fails_with "release blocked by markers in SECURITY.md" "SECURITY.md" bash -c "cd '$DEMO' && xaden project release patch"
+  assert "blocked release left VERSION unchanged" test "$(tr -d '[:space:]' <"$DEMO/VERSION")" = "0.0.0"
+  edit_file "$DEMO/SECURITY.md" '/<!-- TODO/d'
+  git -C "$DEMO" commit -q --no-verify -am "docs: fill SECURITY.md"
+  assert_fails_with "release blocked by markers in the threat model" "threat-model.md" \
+    env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/check-docs.sh" --release
+  edit_file "$DEMO/xaden/threat-model.md" '/<!-- TODO/d'
+  git -C "$DEMO" commit -q --no-verify -am "docs: fill threat model"
+  printf 'Rotate TODO list API keys yearly.\n' >>"$DEMO/SECURITY.md"
+  assert "the word TODO in prose does not block a release" env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/check-docs.sh" --release
+  git -C "$DEMO" checkout -q -- SECURITY.md
   test_release_failures
-  assert "release patch (release commit on main allowed)" env ALLOW_MAIN_COMMIT=0 "$PROJECT/scripts/release.sh" patch
-  assert "VERSION bumped" test "$(tr -d '[:space:]' <"$PROJECT/VERSION")" = "0.1.1"
-  assert "guide stamped with version" grep -q 'Applies to version:\*\* 0.1.1' "$PROJECT/docs/user-guide.md"
-  assert "tag created" git -C "$PROJECT" rev-parse v0.1.1
+  assert "release patch (release commit on main allowed)" bash -c "cd '$DEMO' && ALLOW_MAIN_COMMIT=0 xaden project release patch"
+  assert "VERSION bumped" test "$(tr -d '[:space:]' <"$DEMO/VERSION")" = "0.0.1"
+  assert "changelog stamped with the version" grep -q '^## \[0.0.1\]' "$DEMO/CHANGELOG.md"
+  assert "tag created" git -C "$DEMO" rev-parse v0.0.1
 }
 
 # REQ-024 releases never leave a partial state
 test_release_failures() {
-  local head hooks="$WORKDIR/failing-hooks"
-  head="$(git -C "$PROJECT" rev-parse HEAD)"
-  git -C "$PROJECT" tag v0.1.1
-  assert_fails "existing tag aborts the release" "$PROJECT/scripts/release.sh" patch
-  assert "nothing changed after tag conflict" test "$(git -C "$PROJECT" rev-parse HEAD)$(git -C "$PROJECT" status --porcelain)" = "$head"
-  git -C "$PROJECT" tag -d v0.1.1 >/dev/null
+  local head hooks="$WORKDIR/failing-hooks" release="cd '$DEMO' && xaden project release patch"
+  head="$(git -C "$DEMO" rev-parse HEAD)"
+  git -C "$DEMO" tag v0.0.1
+  assert_fails "existing tag aborts the release" bash -c "$release"
+  assert "nothing changed after tag conflict" test "$(git -C "$DEMO" rev-parse HEAD)$(git -C "$DEMO" status --porcelain)" = "$head"
+  git -C "$DEMO" tag -d v0.0.1 >/dev/null
   # REQ-007: both release scripts share stamp_changelog, which needs an Unreleased section.
-  edit_file "$PROJECT/CHANGELOG.md" 's/^## \[Unreleased\]/## Pending/'
-  git -C "$PROJECT" commit -q -am "docs: changelog without Unreleased section"
-  assert_fails_with "changelog without Unreleased aborts the release" 'section; nothing was changed' "$PROJECT/scripts/release.sh" patch
-  assert "nothing released without Unreleased section" test "$(tr -d '[:space:]' <"$PROJECT/VERSION")$(git -C "$PROJECT" tag -l v0.1.1)" = "0.1.0"
-  git -C "$PROJECT" reset -q --hard "$head"
+  edit_file "$DEMO/CHANGELOG.md" 's/^## \[Unreleased\]/## Pending/'
+  git -C "$DEMO" commit -q --no-verify -am "docs: changelog without Unreleased section"
+  assert_fails_with "changelog without Unreleased aborts the release" 'section; nothing was changed' bash -c "$release"
+  assert "nothing released without Unreleased section" test "$(tr -d '[:space:]' <"$DEMO/VERSION")$(git -C "$DEMO" tag -l v0.0.1)" = "0.0.0"
+  git -C "$DEMO" reset -q --hard "$head"
   mkdir -p "$hooks" && printf '#!/bin/sh\nexit 1\n' >"$hooks/pre-commit" && chmod +x "$hooks/pre-commit"
-  git -C "$PROJECT" config core.hooksPath "$hooks"
-  assert_fails "failing release commit aborts" "$PROJECT/scripts/release.sh" patch
-  assert "files restored after failed commit" test "$(git -C "$PROJECT" rev-parse HEAD)$(git -C "$PROJECT" status --porcelain)" = "$head"
-  git -C "$PROJECT" config core.hooksPath scripts/hooks
-  chmod 444 "$PROJECT/docs/admin-guide.md"
-  assert_fails "unwritable guide aborts the release" "$PROJECT/scripts/release.sh" patch
-  assert "files restored after failed docs stamp" test "$(git -C "$PROJECT" rev-parse HEAD)$(git -C "$PROJECT" status --porcelain)" = "$head"
-  chmod 644 "$PROJECT/docs/admin-guide.md"
-  chmod 500 "$PROJECT/.git/refs/tags"
-  assert "failed tag is reported with recovery steps" bash -c "! '$PROJECT/scripts/release.sh' patch 2>&1 | tee '$WORKDIR/tag-fail.log' >/dev/null; grep -q 'PARTIAL RELEASE' '$WORKDIR/tag-fail.log'"
-  chmod 700 "$PROJECT/.git/refs/tags"
-  git -C "$PROJECT" reset -q --hard "$head"
+  git -C "$DEMO" config core.hooksPath "$hooks"
+  assert_fails "failing release commit aborts" bash -c "$release"
+  assert "files restored after failed commit" test "$(git -C "$DEMO" rev-parse HEAD)$(git -C "$DEMO" status --porcelain)" = "$head"
+  git -C "$DEMO" config --unset core.hooksPath
+  chmod 444 "$DEMO/CHANGELOG.md"
+  assert_fails "unwritable changelog aborts the release" bash -c "$release"
+  assert "files restored after failed changelog stamp" test "$(git -C "$DEMO" rev-parse HEAD)$(git -C "$DEMO" status --porcelain)" = "$head"
+  chmod 644 "$DEMO/CHANGELOG.md"
+  chmod 500 "$DEMO/.git/refs/tags"
+  assert "failed tag is reported with recovery steps" bash -c "! ($release) 2>&1 | tee '$WORKDIR/tag-fail.log' >/dev/null; grep -q 'PARTIAL RELEASE' '$WORKDIR/tag-fail.log'"
+  chmod 700 "$DEMO/.git/refs/tags"
+  git -C "$DEMO" reset -q --hard "$head"
 }
 
 # REQ-098 the one-line installer: asks first, checks the signature of the zip, then installs
