@@ -41,7 +41,7 @@ choose_update_check() {
 
 # the version and checksum of the Xaden that runs
 running_version() { tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION"; }
-running_checksum() { tree_checksum "$SCAFFOLD_ROOT"; }
+running_checksum() { tree_checksum "$SCAFFOLD_ROOT" "$(signed_like "$(running_version)")"; }
 
 # --- text files with a marked block ---------------------------------------------------
 
