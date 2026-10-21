@@ -134,7 +134,7 @@ finish_checks() {
     "$CHECKS_PASSED" "$FAILURES" "${SKIPPED_CHECKS:-none}"
   [ "$FAILURES" -eq 0 ] || die "$FAILURES check(s) failed"
   if [ -n "$SKIPPED_CHECKS" ]; then
-    warn "INCOMPLETE: not all checks ran. Install the missing tools, or use --strict to require them."
+    warn "INCOMPLETE: not all checks ran. Install the missing tools, or require them with --strict or missing-tools = fail in xaden/xaden.conf."
     exit 0
   fi
   ok "all checks passed"

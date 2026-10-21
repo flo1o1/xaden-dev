@@ -188,14 +188,24 @@ test_commit_bypasses() {
   git -C "$DEMO" rm -q --cached rules/AGENTS.md && rm -rf "$DEMO/rules"
 }
 
-# REQ-019 required checks cannot be skipped silently
+# REQ-019 required checks cannot be skipped silently; REQ-154 the project can require its tools
 test_missing_tools() {
   need_tool gitleaks "missing-scanner fixture" || return 0
-  local restricted
+  local restricted conf
   restricted="$(path_without gitleaks)"
+  conf="$DEMO/xaden/xaden.conf"
   assert "local check reports INCOMPLETE without gitleaks" bash -c "cd '$DEMO' && PATH='$restricted' '$DEMO_TOOLS/check.sh' 2>&1 | grep -q 'INCOMPLETE'"
   assert_fails "strict check fails without gitleaks" bash -c "cd '$DEMO' && PATH='$restricted' '$DEMO_TOOLS/check.sh' --strict"
   assert "summary lists the skipped check" bash -c "cd '$DEMO' && PATH='$restricted' '$DEMO_TOOLS/check.sh' 2>&1 | grep -q 'skipped: secret scan'"
+  printf 'missing-tools = fail\n' >>"$conf"
+  assert_fails "REQ-154 a missing tool fails when the project requires it" \
+    bash -c "cd '$DEMO' && PATH='$restricted' '$DEMO_TOOLS/check.sh'"
+  assert "REQ-154 the failure names the missing tool as required" \
+    bash -c "cd '$DEMO' && PATH='$restricted' '$DEMO_TOOLS/check.sh' 2>&1 | grep -q 'required tool missing: gitleaks'"
+  edit_file "$conf" 's/^missing-tools = fail$/missing-tools = yes/'
+  assert_fails_with "REQ-154 an unknown value is refused, not read as skip" "missing-tools must be skip or fail" \
+    bash -c "cd '$DEMO' && PATH='$restricted' '$DEMO_TOOLS/check.sh'"
+  edit_file "$conf" '/^missing-tools = /d'
 }
 
 # REQ-014: checkers get exactly the matching tracked files, chosen in one pass over the list.

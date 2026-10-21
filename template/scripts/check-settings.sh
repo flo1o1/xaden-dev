@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fails when a pull request changes how the project is checked, unless the team accepted it (REQ-137).
-# The settings of the merge base are the reference: mode, hook-checks, expect, check.*, findings-status.*,
+# The settings of the merge base are the reference: mode, missing-tools, hook-checks, expect, check.*, findings-status.*,
 # require-signature, version, checksum, the baselines and the Xaden workflow. A pull request must not judge itself.
 # SETTINGS_ACCEPTED=true (the workflow sets it from the label xaden-settings-accepted) accepts the changes.
 # Outside a pull request, or in a repository that was not adopted at the merge base, nothing is compared.
@@ -15,7 +15,7 @@ ROOT="${PROJECT_ROOT:-$(cd "$SCRIPTS/.." && pwd)}"
 source "$SCRIPTS/lib.sh"
 layout_init "$ROOT"
 
-CONTROLLED_KEYS='^(mode|hook-checks|expect|check\.[a-z0-9-]+|findings-status\.[a-z0-9-]+|require-signature|version|checksum)[[:space:]]*='
+CONTROLLED_KEYS='^(mode|missing-tools|hook-checks|expect|check\.[a-z0-9-]+|findings-status\.[a-z0-9-]+|require-signature|version|checksum)[[:space:]]*='
 WORKFLOW_PATH=".github/workflows/xaden.yml"
 
 # controlled_lines: the settings that decide how the project is checked, from a conf on stdin.
