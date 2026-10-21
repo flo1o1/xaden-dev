@@ -45,6 +45,7 @@ Without a terminal (a script, a CI job) `xaden project adopt` stops after the pl
 - For Claude Code users, `CLAUDE.md` with the single line `@AGENTS.md`, or that line added to an existing `CLAUDE.md` that lacks it. Xaden pre-selects Claude when it finds `CLAUDE.md` or `.claude/` and asks you to confirm; `--assistants claude` answers in advance.
 - A separate workflow, `.github/workflows/xaden.yml`, in its own commit. It installs the pinned Xaden version, verifies its checksum, runs `xaden check --strict` and checks the messages of the commits the push or pull request brings (`xaden verify-commits --ci`). Your existing workflows are not edited. `--skip-ci` leaves it out.
 - On request, a `worktrees/` folder in its own commit, where change worktrees live. A single `worktrees/.gitignore` makes git ignore everything in the folder. `--worktrees` answers yes in advance, `--no-worktrees` no.
+- On request, a candidate `.github/CODEOWNERS-dist` in its own commit (REQ-141): `xaden/xaden.conf`, `xaden/baselines/`, `AGENTS.md` and `.github/workflows/` assigned to the owner you name with `--codeowner @user` (or `@org/team`), or type at the question. Xaden never guesses the owner and never writes `CODEOWNERS` itself; merge the lines into yours. It bites only with the branch settings in [Make the owners bite](#make-the-owners-bite).
 - Xaden's checks in your git hooks, chained into the hook manager you have (see [Hooks and CI that do not fit](#hooks-and-ci-that-do-not-fit)).
 
 Your `README.md`, `docs/`, `scripts/`, `CHANGELOG.md` and build files are never changed.
@@ -97,6 +98,13 @@ Xaden chains into husky, plain git hooks, pre-commit and lefthook, and keeps wha
 
 A hook manager or CI system outside this list stops the run with exit code 4 and a manual step. Adopt without that part with
 `--skip-hooks` or `--skip-ci`.
+
+## Make the owners bite
+
+A `CODEOWNERS` entry only asks for a review; the repository settings make it binding. On the default branch (Settings, Rules, a
+branch ruleset, or branch protection) turn on "Require a pull request before merging", "Require review from Code Owners" and
+"Require status checks to pass" with the Xaden workflow's check as a required one. Without these, one contributor can still
+change `xaden/xaden.conf`, a baseline or the workflow alone. Xaden cannot set them for you; they need repository admin rights.
 
 ## Take it out again
 

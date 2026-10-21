@@ -12,7 +12,7 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Project setup (`project-setup`)
 
-33 done, 5 dropped.
+34 done, 5 dropped.
 
 
 ## Quality gates (`quality-gates`)
