@@ -14,6 +14,9 @@ lists them, and `INDEX-full.md` holds the full table.
 
 34 done, 5 dropped.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-155 | job | should | draft | A project name may contain dots |
 
 ## Quality gates (`quality-gates`)
 
