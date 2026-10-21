@@ -115,6 +115,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-114 | job | should | done | A pull request waits only for the checks its change can affect |
 | REQ-121 | job | should | done | A change to adoption waits for three short smoke areas, not one long one |
 | REQ-137 | job | should | done | A change to the checks is reviewed as code |
+| REQ-152 | quality | should | done | The release archive check does not fail by chance |
 
 ## Releases and documentation (`release-and-docs`)
 
