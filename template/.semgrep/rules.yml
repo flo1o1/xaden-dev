@@ -275,3 +275,142 @@ rules:
       - pattern: $CP.execSync($A + $B, ...)
       - pattern: $CP.exec(`...${$X}...`, ...)
       - pattern: $CP.execSync(`...${$X}...`, ...)
+
+  # REQ-143: more classes of common mistakes
+
+  - id: python-os-command
+    languages: [python]
+    severity: ERROR
+    message: "os.system/os.popen run a shell command string (command injection). Use subprocess with an argument list and no shell (docs/security.md: Injection)."
+    pattern-either:
+      - pattern: os.system(...)
+      - pattern: os.popen(...)
+      - pattern: subprocess.getoutput(...)
+      - pattern: subprocess.getstatusoutput(...)
+
+  - id: python-jwt-unverified
+    languages: [python]
+    severity: ERROR
+    message: "JWT accepted without a verified signature (alg none or verify_signature False). Verify with a fixed algorithm list and the key."
+    pattern-either:
+      - pattern: 'jwt.decode(..., options={..., "verify_signature": False, ...}, ...)'
+      - pattern: jwt.decode(..., verify=False, ...)
+      - pattern: jwt.decode(..., algorithms=[..., "none", ...], ...)
+
+  - id: python-cors-wildcard
+    languages: [python]
+    severity: WARNING
+    message: "CORS allows every origin. Name the origins that need access (docs/security.md: Headers)."
+    pattern-either:
+      - pattern: CORS(..., origins="*", ...)
+      - pattern: 'CORS(..., resources={..., "*": ...}, ...)'
+      - pattern: $RESP.headers["Access-Control-Allow-Origin"] = "*"
+
+  - id: python-ssrf-from-request
+    languages: [python]
+    severity: ERROR
+    message: "Request data decides which URL the server fetches (SSRF). Allow-list the host, or map an id to a fixed URL (docs/security.md: Network)."
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args
+          - pattern: request.values
+          - pattern: request.form
+          - pattern: request.GET
+          - pattern: request.POST
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: requests.$METHOD($URL, ...)
+              - pattern: urllib.request.urlopen($URL, ...)
+              - pattern: httpx.$METHOD($URL, ...)
+          - focus-metavariable: $URL
+
+  - id: python-path-from-request
+    languages: [python]
+    severity: ERROR
+    message: "Request data decides which file is opened (path traversal). Use secure_filename or a fixed directory plus an id (docs/security.md: Files)."
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: request.args
+          - pattern: request.values
+          - pattern: request.form
+          - pattern: request.GET
+          - pattern: request.POST
+    pattern-sanitizers:
+      - pattern: secure_filename(...)
+      - pattern: os.path.basename(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: open($PATH, ...)
+              - pattern: send_file($PATH, ...)
+              - pattern: send_from_directory($DIR, $PATH, ...)
+          - focus-metavariable: $PATH
+
+  - id: js-jwt-none
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: "JWT accepted without a verified signature (alg none). Verify with a fixed algorithm list and the key."
+    pattern-either:
+      - pattern: "$JWT.verify($TOKEN, $KEY, {..., algorithms: [..., \"none\", ...], ...})"
+      - pattern: "$JWT.verify($TOKEN, $KEY, {..., algorithms: [..., 'none', ...], ...})"
+
+  - id: js-cors-wildcard
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: "CORS allows every origin. Name the origins that need access (docs/security.md: Headers)."
+    pattern-either:
+      - pattern: "cors({..., origin: \"*\", ...})"
+      - pattern: $RES.setHeader("Access-Control-Allow-Origin", "*")
+      - pattern: $RES.header("Access-Control-Allow-Origin", "*")
+
+  - id: js-unsafe-deserialization
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: "unserialize/vm on untrusted data executes code. Use JSON.parse and validate the result."
+    pattern-either:
+      - pattern: $S.unserialize(...)
+      - pattern: vm.runInThisContext(...)
+      - pattern: vm.runInNewContext(...)
+
+  - id: js-ssrf-from-request
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: "Request data decides which URL the server fetches (SSRF). Allow-list the host, or map an id to a fixed URL (docs/security.md: Network)."
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.query
+          - pattern: $REQ.body
+          - pattern: $REQ.params
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fetch($URL, ...)
+              - pattern: axios.$METHOD($URL, ...)
+              - pattern: $HTTP.get($URL, ...)
+              - pattern: got($URL, ...)
+          - focus-metavariable: $URL
+
+  - id: js-path-from-request
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: "Request data decides which file is read (path traversal). Use path.basename or a fixed directory plus an id (docs/security.md: Files)."
+    mode: taint
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.query
+          - pattern: $REQ.body
+          - pattern: $REQ.params
+    pattern-sanitizers:
+      - pattern: path.basename(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fs.readFile($PATH, ...)
+              - pattern: fs.readFileSync($PATH, ...)
+              - pattern: fs.createReadStream($PATH, ...)
+              - pattern: $RES.sendFile($PATH, ...)
+          - focus-metavariable: $PATH
