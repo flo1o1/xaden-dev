@@ -179,3 +179,4 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-148 | job | should | done | The offline SAST scans Java files with its own rules |
 | REQ-149 | job | should | done | The offline SAST scans PHP files with its own rules |
 | REQ-150 | job | should | done | The offline SAST scans Ruby files with its own rules |
+| REQ-151 | job | should | done | The offline SAST scans Rust files with its own rules |

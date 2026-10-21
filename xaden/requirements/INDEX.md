@@ -38,5 +38,5 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Security (`security`)
 
-24 done.
+25 done.
 
