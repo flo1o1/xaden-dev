@@ -1,7 +1,7 @@
 # Signing Xaden releases (REQ-077)
 
 Releases are signed so that nobody has to trust the first download. The signature covers the *tree
-checksum* of the tagged release, the same value a project pins in `xaden/xaden.conf`.
+checksum* of the tagged release, the same value a project pins in `xaden/xaden.conf`. The checksum file has two lines: the bare checksum (read by a Xaden from before mode bits were covered) and the `mode1:` one (REQ-147).
 
 ## One-time setup (maintainer)
 

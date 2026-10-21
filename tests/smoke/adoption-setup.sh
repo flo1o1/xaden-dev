@@ -106,7 +106,7 @@ test_adopt_and_remove() {
   assert "REQ-126 RULES.md stays under the 10240 byte budget" test "$(wc -c <"$worktree/xaden/RULES.md")" -le 10240
   x_in "$worktree" doc rules-nonsense
   assert "REQ-126 an unknown rules topic is refused" test "$XRC" -ne 0
-  assert "the version and checksum are pinned" grep -Eq '^checksum = [0-9a-f]{64}$' "$worktree/xaden/xaden.conf"
+  assert "the version and checksum are pinned" grep -Eq '^checksum = (mode1:)?[0-9a-f]{64}$' "$worktree/xaden/xaden.conf"
   assert "the build's commands are mapped" grep -q '^check.test = npm test$' "$worktree/xaden/xaden.conf"
   assert "git hooks of the clone are chained, not replaced" grep -q 'xaden hook pre-commit' "$repo/.git/hooks/pre-commit"
   assert "core.hooksPath is not set" test -z "$(git -C "$repo" config --get core.hooksPath || true)"

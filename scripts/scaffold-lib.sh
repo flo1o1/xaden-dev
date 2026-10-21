@@ -19,13 +19,17 @@ sha256_stdin() {
   if has_command sha256sum; then sha256sum | awk '{ print $1 }'; else shasum -a 256 | awk '{ print $1 }'; fi
 }
 
-# tree_checksum <dir>: SHA-256 over the paths and contents of the files of an Xaden tree.
+# tree_checksum <dir> [like]: SHA-256 over the paths and contents of the files of an Xaden tree.
 # A git checkout counts the files its last commit puts into a release archive (maintainer files are
 # export-ignored, REQ-094), an extracted release all files; both give the same value for the same
-# release; it fails when the tree holds a link or special file (REQ-139). The CI workflow of an adopted project recomputes it with the same find, sed, sort and
-# sha256 steps (scripts/adopt/ci.yml).
+# release; it fails when the tree holds a link or special file (REQ-139). Two checksum versions exist
+# (REQ-147): a bare hex value (version 1, every pin and signature made so far) hashes paths and contents;
+# "mode1:<hex>" also hashes whether each file is executable. The version is the one <like> is written in
+# (an existing pin or signed checksum); without <like> it is mode1. The CI workflow of an adopted project
+# recomputes both with the same find, sed, sort and sha256 steps (scripts/adopt/ci.yml).
 tree_checksum() {
-  local dir=$1 staging="" checksum odd
+  local dir=$1 like=${2:-} staging="" checksum odd with_mode=1
+  case "$like" in "" | mode1:*) ;; *) with_mode=0 ;; esac
   if [ -e "$dir/.git" ]; then
     staging="$(mktemp -d)"
     git -C "$dir" archive HEAD | tar -x -C "$staging" || { rm -rf "${staging:?}"; return 1; }
@@ -42,12 +46,19 @@ tree_checksum() {
     cd "$dir" || exit
     find . -type f | sed 's|^\./||' |
       LC_ALL=C sort |
-      while IFS= read -r file; do printf '%s  %s\n' "$(sha256_stdin <"$file")" "$file"; done |
+      while IFS= read -r file; do
+        mode=""
+        if [ "$with_mode" = 1 ]; then if [ -x "$file" ]; then mode=" x"; else mode=" -"; fi; fi
+        printf '%s%s  %s\n' "$(sha256_stdin <"$file")" "$mode" "$file"
+      done |
       sha256_stdin
   )"
   [ -z "$staging" ] || rm -rf "${staging:?}"
-  printf '%s\n' "$checksum"
+  if [ "$with_mode" = 1 ]; then printf 'mode1:%s\n' "$checksum"; else printf '%s\n' "$checksum"; fi
 }
+
+# checksum_matches <dir> <checksum>: true when the tree has that checksum, in the version it is written in.
+checksum_matches() { [ "$(tree_checksum "$1" "$2")" = "$2" ]; }
 
 # The installed versions of Xaden besides the one that runs: one folder per version.
 xaden_home() { printf '%s' "${XADEN_HOME:-${XDG_DATA_HOME:-${HOME:?HOME is not set}/.local/share}/xaden}"; }
@@ -77,6 +88,27 @@ load_signature_policy() {
 # Next to the versions folder, not inside it: the folder's checksum must stay the release's.
 signed_record() { printf '%s/%s.signed' "$(versions_dir)" "$1"; }
 
+# pick_checksum <checksums> <like>: the one of the signed <checksums> (one per line) in the checksum version
+# of <like>, a pin or nothing. A release signed before mode1 has only version 1, which then stands for both.
+pick_checksum() {
+  local picked
+  case "$2" in
+    "" | mode1:*) picked="$(printf '%s\n' "$1" | grep -m1 '^mode1:' || true)" ;;
+    *) picked="$(printf '%s\n' "$1" | grep -m1 -v '^mode1:' || true)" ;;
+  esac
+  [ -n "$picked" ] || picked="$(printf '%s\n' "$1" | head -n 1)"
+  printf '%s' "$picked"
+}
+
+# signed_like <version>: the signed checksum on record for an installed version, in the newest checksum version
+# it has, or nothing; it tells tree_checksum which version a new pin of that release is written in (REQ-147).
+signed_like() {
+  local record
+  record="$(signed_record "$1")"
+  [ -f "$record" ] || return 0
+  pick_checksum "$(cat "$record")" ""
+}
+
 # installation_authenticated <version> <dir> [pinned-checksum]: true when the files in <dir> are
 # exactly what the maintainer signed for <version> (and, when given, what the project pins). A git
 # checkout or worktree never is: tree_checksum hashes its last commit, not the files that run.
@@ -85,9 +117,15 @@ installation_authenticated() {
   [ ! -e "$2/.git" ] || return 1
   record="$(signed_record "$1")"
   [ -f "$record" ] || return 1
-  signed="$(tr -d '[:space:]' <"$record")"
-  [ "$(tree_checksum "$2")" = "$signed" ] || return 1
-  [ -z "${3:-}" ] || [ "$3" = "$signed" ]
+  # the record holds every checksum version the maintainer signed (REQ-147); the pin picks the one to match
+  if [ -n "${3:-}" ]; then
+    grep -qxF "$3" "$record" && checksum_matches "$2" "$3"
+    return
+  fi
+  while IFS= read -r signed; do
+    [ -z "$signed" ] || ! checksum_matches "$2" "$signed" || return 0
+  done <"$record"
+  return 1
 }
 
 # The version that runs when you type `xaden`: a link to one folder of versions/ (REQ-097). The

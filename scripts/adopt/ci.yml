@@ -37,9 +37,16 @@ jobs:
             echo "ERROR: Xaden ${XADEN_VERSION} holds a link or special file; its checksum would not cover it" >&2
             exit 1
           fi
+          # A checksum written "mode1:<hex>" also covers which files are executable (REQ-147); a bare hex value does not.
+          with_mode=0
+          case "$XADEN_CHECKSUM" in mode1:*) with_mode=1 ;; esac
           actual="$(find . -type f | sed 's|^\./||' | LC_ALL=C sort |
-            while IFS= read -r file; do printf '%s  %s\n' "$(sha256sum <"$file" | awk '{ print $1 }')" "$file"; done |
-            sha256sum | awk '{ print $1 }')"
+            while IFS= read -r file; do
+              mode=""
+              if [ "$with_mode" = 1 ]; then if [ -x "$file" ]; then mode=" x"; else mode=" -"; fi; fi
+              printf '%s%s  %s\n' "$(sha256sum <"$file" | awk '{ print $1 }')" "$mode" "$file"
+            done | sha256sum | awk '{ print $1 }')"
+          if [ "$with_mode" = 1 ]; then actual="mode1:$actual"; fi
           if [ "$actual" != "$XADEN_CHECKSUM" ]; then
             echo "ERROR: Xaden ${XADEN_VERSION} does not match the checksum in xaden/xaden.conf" >&2
             exit 1
