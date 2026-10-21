@@ -33,6 +33,10 @@ jobs:
           set -euo pipefail
           curl -fsSL "https://github.com/flo1o1/xaden-dev/archive/refs/tags/v${XADEN_VERSION}.tar.gz" | tar -xz -C "$RUNNER_TEMP"
           cd "$RUNNER_TEMP/xaden-${XADEN_VERSION}"
+          if [ -n "$(find . ! -type f ! -type d | head -n 1)" ]; then
+            echo "ERROR: Xaden ${XADEN_VERSION} holds a link or special file; its checksum would not cover it" >&2
+            exit 1
+          fi
           actual="$(find . -type f | sed 's|^\./||' | LC_ALL=C sort |
             while IFS= read -r file; do printf '%s  %s\n' "$(sha256sum <"$file" | awk '{ print $1 }')" "$file"; done |
             sha256sum | awk '{ print $1 }')"

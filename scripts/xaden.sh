@@ -124,16 +124,22 @@ is_adopted() { [ -f "$1/xaden/xaden.conf" ]; }
 # running_version: the version of the Xaden that runs this command.
 running_version() { tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION"; }
 
-# require_signed_installation <conf> <pinned>: with "require-signature = true" the Xaden that runs for
+# require_signed_installation <conf> <pinned>: the Xaden that runs for the project must match the pinned
+# checksum; with "require-signature = true" the Xaden that runs for
 # the project must be exactly what the maintainer signed and what the project pins (REQ-103). An
 # invalid value of the setting stops here too. A pinned version that is not installed is fetch.sh's
 # business: it refuses unsigned downloads itself.
 require_signed_installation() {
-  local dir
+  local dir pinned
   load_signature_policy "$1"
-  [ "$SIGNATURE_REQUIRED" = 1 ] || return 0
   if [ "$2" = "$(running_version)" ]; then dir="$SCAFFOLD_ROOT"; else dir="$(versions_dir)/$2"; fi
   [ -d "$dir" ] || return 0
+  # The copy that runs is the one the project pinned (REQ-138). A git checkout is the maintainer's own and has no pin to match.
+  pinned="$(conf_get "$1" checksum)"
+  if [ -n "$pinned" ] && [ ! -e "$dir/.git" ] && [ "$(tree_checksum "$dir")" != "$pinned" ]; then
+    die "Xaden $2 in $dir does not match the checksum pinned in xaden/xaden.conf (changed files?). Install it again with: xaden core fetch $2"
+  fi
+  [ "$SIGNATURE_REQUIRED" = 1 ] || return 0
   installation_authenticated "$2" "$dir" "$(conf_get "$1" checksum)" ||
     die "this project requires signed releases (require-signature = true), and Xaden $2 in $dir has no matching signature on record. Verify it once with: xaden core fetch $2"
 }

@@ -3,7 +3,7 @@ id: REQ-135
 type: job
 epic: project-setup
 priority: could
-status: approved
+status: done
 updated: 2026-10-20
 ---
 

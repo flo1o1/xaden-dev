@@ -84,7 +84,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-132 | job | should | done | I run check and req as project commands and keep the short spellings |
 | REQ-133 | job | should | done | Xaden knows one project layout |
 | REQ-134 | job | should | done | The Xaden repository is an adopted project |
-| REQ-135 | job | could | approved | I complete Xaden commands with the Tab key |
+| REQ-135 | job | could | done | I complete Xaden commands with the Tab key |
 
 ## Quality gates (`quality-gates`)
 
@@ -168,3 +168,6 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-077 | job | should | done | Releases are signed so a pinned checksum comes from the maintainer |
 | REQ-106 | job | must | done | An adopted project audits its dependencies and runs Bandit like a new one |
 | REQ-136 | job | should | done | A release that should be signed is refused when its signature is missing |
+| REQ-138 | job | should | done | The installed Xaden is checked against the pin before it runs |
+| REQ-139 | job | should | done | The tree checksum refuses what it cannot see |
+| REQ-140 | job | could | done | A moved Xaden home is confirmed like a moved download |

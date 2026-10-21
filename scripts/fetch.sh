@@ -49,12 +49,12 @@ project_conf() {
   printf '%s' "$root/xaden/xaden.conf"
 }
 
-# confirm_url_overrides: names every download address taken from the environment and asks before it is used.
+# confirm_url_overrides: names every download address and the Xaden home taken from the environment and asks before they are used (REQ-136, REQ-140).
 # Test mode skips the question. Without a terminal it only names them: the callers stop there anyway.
 confirm_url_overrides() {
   local name value found=0
   [ "${XADEN_TEST_MODE:-0}" != "1" ] || return 0
-  for name in XADEN_RELEASES_URL XADEN_ASSETS_URL XADEN_LATEST_URL; do
+  for name in XADEN_RELEASES_URL XADEN_ASSETS_URL XADEN_LATEST_URL XADEN_HOME; do
     value="${!name:-}"
     [ -n "$value" ] || continue
     warn "$name is set in the environment: $value" >&2
@@ -62,7 +62,7 @@ confirm_url_overrides() {
   done
   [ "$found" = 1 ] || return 0
   has_terminal || return 0
-  ask "Download from the addresses above instead of github.com?" || { echo "Nothing was downloaded." >&2; exit 1; }
+  ask "Use the settings above instead of github.com and the default Xaden folder?" || { echo "Nothing was downloaded." >&2; exit 1; }
 }
 
 # confirm_download <version> <checksum|"">: shows what would arrive and asks. Returns 0 only for yes.
