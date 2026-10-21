@@ -7,7 +7,9 @@
 #
 # The framework (https://github.com/ai-driven-dev/framework, MIT) installs itself through its own CLI,
 # @ai-driven-dev/cli. Xaden calls that CLI with an exact version and an exact release tag, never "latest",
-# and refuses to install when the pin cannot be held. Nothing is copied from the framework into Xaden.
+# and refuses to run it when the pin cannot be held: before it runs, npm must still answer the integrity
+# the pin records for the CLI version and the release tag must still point at the pinned commit
+# (aidd-integrity, aidd-commit; REQ-153). Nothing is copied from the framework into Xaden.
 # This is the only script besides fetch.sh that reaches the network, and only after a person's yes in a
 # terminal (REQ-072): there is no --yes, and an assistant never answers the question for the person.
 set -euo pipefail
@@ -23,8 +25,11 @@ source "$SCAFFOLD_ROOT/scripts/scaffold-lib.sh"
 source "$SCAFFOLD_ROOT/scripts/adopt-lib.sh"
 
 # The pin a project gets on its first enable. Xaden changes a project's pin only on request (aidd pin).
+# The integrity is npm's dist.integrity of the CLI version, the commit is what the release tag points at.
 AIDD_DEFAULT_CLI="5.5.0"
 AIDD_DEFAULT_RELEASE="v5.12.0"
+AIDD_DEFAULT_INTEGRITY="sha512-+sWxo7SvDLhwBDmSunEHwj1aTCgoJzqtVaCZIB/q1G3eDDTQ7IyN+PO6+IVWaxNL3pfiNhmO4WsGu5LivpOwNg=="
+AIDD_DEFAULT_COMMIT="0768b9edc4c30ad5c98ad2f09a377782ed7ba65a"
 AIDD_NODE_MIN="22.12"
 AIDD_SOURCE="https://github.com/ai-driven-dev/framework"
 AIDD_BEGIN='<!-- xaden:aidd:begin -->'
@@ -42,6 +47,57 @@ aidd_run() {
   else
     npm_config_ignore_scripts=true AIDD_SKIP_UPDATE_CHECK=1 npx --yes "@ai-driven-dev/cli@$version" "$@"
   fi
+}
+
+# aidd_integrity <cli-version>: the integrity npm answers for the CLI version, or nothing. The
+# registry is read only here; XADEN_AIDD_NPM_VIEW replaces the call in tests and gets the version (REQ-153).
+aidd_integrity() {
+  local version=$1
+  if [ -n "${XADEN_AIDD_NPM_VIEW:-}" ]; then
+    XADEN_AIDD_CLI_VERSION=$version "$XADEN_AIDD_NPM_VIEW" "$version"
+  else
+    npm view "@ai-driven-dev/cli@$version" dist.integrity 2>/dev/null || true
+  fi
+}
+
+# aidd_tag_commit <release>: the commit the release tag points at, or nothing. The tag is read
+# only here; XADEN_AIDD_LS_REMOTE replaces the call in tests and gets the release (REQ-153).
+aidd_tag_commit() {
+  local release=$1
+  if [ -n "${XADEN_AIDD_LS_REMOTE:-}" ]; then
+    XADEN_AIDD_RELEASE=$release "$XADEN_AIDD_LS_REMOTE" "$release"
+  else
+    git ls-remote "$AIDD_SOURCE" "refs/tags/$release" | awk 'NR == 1 { print $1 }'
+  fi
+}
+
+# hold_pin <where> <cli> <release> <integrity> <commit>: the framework's CLI runs only when npm
+# still answers the pinned integrity for the CLI version and the release tag still points at the
+# pinned commit (REQ-153). A pin without both values cannot be checked, so the CLI does not run.
+hold_pin() {
+  local where=$1 cli=$2 release=$3 integrity=$4 commit=$5 found
+  [ -n "$integrity" ] && [ -n "$commit" ] ||
+    die "$where: the pin of CLI $cli, release $release has no aidd-integrity or no aidd-commit in xaden/xaden.conf (it was recorded before REQ-153), so the framework's CLI does not run; move the pin once to record them: xaden aidd pin $cli $release"
+  found="$(aidd_integrity "$cli")"
+  [ -n "$found" ] || die "$where: npm answered no integrity for @ai-driven-dev/cli@$cli, so the framework's CLI does not run"
+  [ "$found" = "$integrity" ] ||
+    die "$where: npm answers $found for @ai-driven-dev/cli@$cli, not the pinned integrity (the package changed after the pin was set), so the framework's CLI does not run"
+  found="$(aidd_tag_commit "$release")"
+  [ -n "$found" ] || die "$where: $AIDD_SOURCE answers no commit for the release tag $release, so the framework's CLI does not run"
+  [ "$found" = "$commit" ] ||
+    die "$where: the release tag $release points at $found, not the pinned commit $commit (the tag moved after the pin was set), so the framework's CLI does not run"
+}
+
+# read_pin <cli> <release>: the integrity and the commit a moved pin records, read from npm and
+# from the framework's repository after the person's yes. Sets PIN_INTEGRITY and PIN_COMMIT.
+read_pin() {
+  local cli=$1 release=$2
+  PIN_INTEGRITY="$(aidd_integrity "$cli")"
+  printf '%s' "$PIN_INTEGRITY" | grep -q '^sha512-' ||
+    die "xaden aidd pin: npm answered no sha512 integrity for @ai-driven-dev/cli@$cli, so the pin does not move"
+  PIN_COMMIT="$(aidd_tag_commit "$release")"
+  printf '%s' "$PIN_COMMIT" | grep -Eq '^[0-9a-f]{40,64}$' ||
+    die "xaden aidd pin: the release tag $release points at no commit (got: ${PIN_COMMIT:-nothing}), so the pin does not move"
 }
 
 # version_at_least <found> <minimum>: both "major.minor[.patch]", compared as numbers.
@@ -145,13 +201,17 @@ enable_main() {
   plan="npx @ai-driven-dev/cli@$cli setup --source remote --ai $tools --plugins recommended --release $release --yes"
   info "Xaden will run the framework's installer, pinned (source: $AIDD_SOURCE, license: MIT):"
   echo "  $plan"
-  echo "  On your yes, npx first downloads the CLI and asks it whether it can hold the release (setup --help); then it installs."
+  echo "  On your yes, Xaden first checks that npm still answers the pinned integrity of CLI $cli and that"
+  echo "  the release tag $release still points at the pinned commit; then npx downloads the CLI and asks"
+  echo "  it whether it can hold the release (setup --help), and it installs."
   echo "  It writes .aidd/ and the assistant's own settings into this project, downloads the plugins of release $release"
   echo "  and, for Claude Code, registers the marketplace 'aidd-framework' in your Claude Code user settings (shared by every"
   echo "  project on this machine; 'xaden aidd disable' leaves that registration, like the framework's own clean)."
   ask "Install the AIDD framework now?" || die "nothing was installed (it needs your yes in a terminal)"
-  # the pin must be enforceable: the pinned CLI has to take a release tag. Running its --help is running the
-  # framework's CLI (npx downloads it), so it waits for the yes above (REQ-128).
+  # the pin must be enforceable: npm and GitHub must still answer what it records, and the pinned CLI
+  # has to take a release tag. Both checks and running the CLI's --help run the framework's CLI
+  # (npx downloads it), so they wait for the yes above (REQ-128).
+  hold_pin "xaden aidd enable" "$cli" "$release" "$AIDD_DEFAULT_INTEGRITY" "$AIDD_DEFAULT_COMMIT"
   aidd_run "$cli" setup --help 2>/dev/null | grep -q -- '--release' ||
     die "the framework's CLI $cli cannot be held to release $release (its setup has no --release option); nothing was installed"
   before="$(changed_files "$root")"
@@ -165,6 +225,8 @@ enable_main() {
   conf_set "$conf" aidd-cli "$cli"
   conf_set "$conf" aidd-release "$release"
   conf_set "$conf" aidd-assistants "$tools"
+  conf_set "$conf" aidd-integrity "$AIDD_DEFAULT_INTEGRITY"
+  conf_set "$conf" aidd-commit "$AIDD_DEFAULT_COMMIT"
   set_block "$root/AGENTS.md" "$AIDD_BEGIN" "$AIDD_END" "$(rules_block "$cli" "$release")"
   after="$(changed_files "$root")"
   info "files added or changed by the AIDD framework (git status of this project):"
@@ -173,12 +235,20 @@ enable_main() {
 }
 
 status_main() {
-  local root=$1 conf installed
+  local root=$1 conf installed integrity commit
   conf="$root/xaden/xaden.conf"
   if ! enabled "$root"; then echo "AIDD framework: not enabled (xaden aidd enable)"; return 0; fi
   installed="$(releases_installed "$root" | tr '\n' ' ')"
+  integrity="$(conf_get "$conf" aidd-integrity)"
+  commit="$(conf_get "$conf" aidd-commit)"
   echo "AIDD framework: enabled for $(conf_get "$conf" aidd-assistants)"
   echo "  pinned:    CLI $(conf_get "$conf" aidd-cli), release $(conf_get "$conf" aidd-release)"
+  if [ -n "$integrity" ] && [ -n "$commit" ]; then
+    echo "  integrity: $integrity (what npm must answer for the pinned CLI)"
+    echo "  tag:       $commit (what the release tag must point at)"
+  else
+    echo "  integrity: not recorded (the pin predates REQ-153); the framework's CLI is refused until the pin moves once"
+  fi
   echo "  installed: release ${installed:-none}"
   if pin_holds "$root" "$(conf_get "$conf" aidd-release)"; then ok "the installed plugins match the pin"; else warn "the installed plugins do not match the pin; run: xaden aidd enable after xaden aidd disable"; return 1; fi
 }
@@ -187,12 +257,15 @@ disable_main() {
   local root=$1 conf
   conf="$root/xaden/xaden.conf"
   enabled "$root" || { ok "the AIDD framework is not enabled; nothing to remove"; return 0; }
-  ask "Remove what 'xaden aidd enable' added, using the framework's own clean? It runs the pinned CLI through npx." || die "nothing was removed (it needs your yes in a terminal)"
+  ask "Remove what 'xaden aidd enable' added, using the framework's own clean? It runs the pinned CLI through npx, after Xaden checked the pin against npm and GitHub." || die "nothing was removed (it needs your yes in a terminal)"
+  hold_pin "xaden aidd disable" "$(conf_get "$conf" aidd-cli)" "$(conf_get "$conf" aidd-release)" "$(conf_get "$conf" aidd-integrity)" "$(conf_get "$conf" aidd-commit)"
   (cd "$root" && aidd_run "$(conf_get "$conf" aidd-cli)" clean --force) || die "the framework's own clean failed; see its output above. The pin and the rules block are still in place"
   remove_block "$root/AGENTS.md" "$AIDD_BEGIN" "$AIDD_END"
   conf_unset "$conf" aidd-cli
   conf_unset "$conf" aidd-release
   conf_unset "$conf" aidd-assistants
+  conf_unset "$conf" aidd-integrity
+  conf_unset "$conf" aidd-commit
   ok "AIDD framework removed. A marketplace registered in your Claude Code user settings stays (it is shared by every project); remove it with: claude plugin marketplace remove aidd-framework"
 }
 
@@ -211,7 +284,10 @@ pin_main() {
   branch="chore/pin-aidd-$release"
   worktree="$(dirname "$root")/$(basename "$root")-pin-aidd-$release"
   [ ! -e "$worktree" ] || die "$worktree exists already; remove it first (git worktree remove)"
-  ask "Run the framework's installer, CLI $cli at release $release, on a new branch? npx downloads the CLI first (setup --help), then it installs from $AIDD_SOURCE" || die "nothing was changed"
+  ask "Run the framework's installer, CLI $cli at release $release, on a new branch? Xaden first reads the integrity of that CLI from npm and the commit of that release from GitHub, then npx downloads the CLI (setup --help) and installs from $AIDD_SOURCE" || die "nothing was changed"
+  # the new pin records what npm and GitHub answered when it moved; a reviewer reads both in the
+  # pull request, and every later run has to get the same answers again (hold_pin, REQ-153).
+  read_pin "$cli" "$release"
   aidd_run "$cli" setup --help 2>/dev/null | grep -q -- '--release' || die "the framework's CLI $cli cannot be held to a release (its setup has no --release option); nothing was changed"
   git -C "$root" worktree add -q -b "$branch" "$worktree" "$base"
   (cd "$worktree" && aidd_run "$cli" setup --source remote --ai "$(conf_get "$conf" aidd-assistants)" --plugins recommended --release "$release" --yes) ||
@@ -219,10 +295,13 @@ pin_main() {
   pin_holds "$worktree" "$release" || die "the pin did not hold in $worktree (found: $(releases_installed "$worktree" | tr '\n' ' ')); not committed"
   conf_set "$worktree/xaden/xaden.conf" aidd-cli "$cli"
   conf_set "$worktree/xaden/xaden.conf" aidd-release "$release"
+  conf_set "$worktree/xaden/xaden.conf" aidd-integrity "$PIN_INTEGRITY"
+  conf_set "$worktree/xaden/xaden.conf" aidd-commit "$PIN_COMMIT"
   set_block "$worktree/AGENTS.md" "$AIDD_BEGIN" "$AIDD_END" "$(rules_block "$cli" "$release")"
   git -C "$worktree" add -A
   git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "chore: pin the AIDD framework to $release" \
-    -m "CLI $old_cli to $cli, release $old_release to $release. The framework's changes: $AIDD_SOURCE/compare/$old_release...$release"
+    -m "CLI $old_cli to $cli, release $old_release to $release. The framework's changes: $AIDD_SOURCE/compare/$old_release...$release" \
+    -m "npm's integrity of the CLI and the commit the release tag points at are recorded next to the pin (REQ-153)."
   info "changes of this pin"
   git -C "$worktree" show --stat --format= HEAD
   info "the framework's changes between the releases: $AIDD_SOURCE/compare/$old_release...$release"

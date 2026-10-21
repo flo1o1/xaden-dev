@@ -182,4 +182,4 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-149 | job | should | done | The offline SAST scans PHP files with its own rules |
 | REQ-150 | job | should | done | The offline SAST scans Ruby files with its own rules |
 | REQ-151 | job | should | done | The offline SAST scans Rust files with its own rules |
-| REQ-153 | job | should | approved | The AIDD installer runs only after npm and GitHub answered the pin |
+| REQ-153 | job | should | done | The AIDD installer runs only after npm and GitHub answered the pin |
