@@ -1,0 +1,37 @@
+# Java rules (REQ-148): offline like rules.yml; fixtures in tests/semgrep/java.java.
+rules:
+  - id: java-os-command
+    languages: [java]
+    severity: ERROR
+    message: "A command string or a shell is run (command injection). Pass the program and its arguments separately and never through sh -c (docs/security.md: Injection)."
+    pattern-either:
+      - pattern: Runtime.getRuntime().exec($A + ...)
+      - pattern: Runtime.getRuntime().exec(new String[] {"sh", "-c", ...})
+      - pattern: Runtime.getRuntime().exec(new String[] {"bash", "-c", ...})
+      - pattern: new ProcessBuilder("sh", "-c", ...)
+      - pattern: new ProcessBuilder("bash", "-c", ...)
+
+  - id: java-sql-built-from-strings
+    languages: [java]
+    severity: ERROR
+    message: "SQL built from strings allows injection. Use a PreparedStatement with placeholders (docs/security.md: Injection)."
+    pattern-either:
+      - pattern: $S.executeQuery("..." + ...)
+      - pattern: $S.executeUpdate("..." + ...)
+      - pattern: $S.execute("..." + ...)
+      - pattern: $C.prepareStatement("..." + ...)
+
+  - id: java-unsafe-deserialization
+    languages: [java]
+    severity: ERROR
+    message: "ObjectInputStream.readObject on untrusted data executes code. Use JSON or a schema-validated format, or an ObjectInputFilter."
+    pattern: (ObjectInputStream $OIS).readObject()
+
+  - id: java-weak-hash
+    languages: [java]
+    severity: WARNING
+    message: "MD5 and SHA-1 are broken for security use. Use SHA-256 or better, and a password hash (bcrypt, scrypt, argon2) for passwords."
+    pattern-either:
+      - pattern: MessageDigest.getInstance("MD5")
+      - pattern: MessageDigest.getInstance("SHA-1")
+      - pattern: MessageDigest.getInstance("SHA1")

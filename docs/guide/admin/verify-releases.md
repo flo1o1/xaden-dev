@@ -12,6 +12,10 @@ Check that the Xaden you install is the release the maintainer published, and un
 
 The checksum is the SHA-256 of the paths and contents of all files of a release (the "tree checksum"). A git clone and an extracted
 archive of the same release give the same value, because the release leaves out the files only maintainers need.
+Two versions of the checksum exist (REQ-147). A bare 64-character value, like every pin made before, covers paths and contents. A value
+written `mode1:<hex>` also covers which files are executable, so flipping a script's mode changes it. Both stay valid: Xaden verifies a
+pin in the version it is written in, and a new pin takes the newest version the signed release has. The signed checksum file of a new
+release holds both, the bare one first, so an older Xaden can still install it.
 
 ## What happens on install and upgrade
 
@@ -25,7 +29,9 @@ archive of the same release give the same value, because the release leaves out 
 - **There is no signature** for an older release, or `release-signers` holds no key yet: Xaden says the checksum is taken from the download
   itself, which means you trust the first download, and continues only after your yes.
 - **A download address comes from the environment** (`XADEN_RELEASES_URL`, `XADEN_ASSETS_URL`, `XADEN_LATEST_URL`): Xaden names each one and asks
-  before it downloads from there. Without a terminal it downloads nothing.
+  before it downloads from there. `XADEN_HOME` (another folder for the installed versions) gets the same question (REQ-140). Without a terminal it downloads nothing.
+- **The installed copy differs from the pin** (a file in `~/.local/share/xaden/versions/<version>` was changed): Xaden stops before it runs
+  and names `xaden core fetch <version>` to install it again (REQ-138). A tree that holds a symlink has no checksum at all (REQ-139).
 
 Check which case applies to you: `grep -v '^#' ~/.xaden/release-signers` prints the trusted keys. No output means no key is published
 yet.

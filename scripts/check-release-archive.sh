@@ -31,7 +31,7 @@ main() {
   fi
   missing=""
   for path in $REQUIRED_PATHS; do
-    printf '%s\n' "$files" | grep -qxF "$path" || missing="$missing $path"
+    grep -qxF "$path" <<<"$files" || missing="$missing $path" # not a pipe: grep -q exits early and printf dies of SIGPIPE under pipefail (REQ-152)
   done
   [ -z "$missing" ] || die "the release archive lacks:$missing"
   info "release archive: $(printf '%s\n' "$files" | wc -l | tr -d ' ') files, no maintainer file"
