@@ -44,6 +44,13 @@ test_adopted_ci_shellcheck_pin() {
   assert "REQ-145 the adopted workflow verifies the archive hash" grep -q 'SHELLCHECK_SHA256.*sha256sum -c' "$ci"
 }
 
+# REQ-142: the threat model says which assistant controls are text only.
+test_assistant_controls_risk() {
+  assert "REQ-142 the threat model names the text-only controls and --no-verify" \
+    bash -c "grep -q 'bind only an assistant' '$SCAFFOLD_ROOT/xaden/threat-model.md' && grep -q -- '--no-verify' '$SCAFFOLD_ROOT/xaden/threat-model.md'"
+}
+
 test_dependency_vetting
 test_security_exceptions
 test_adopted_ci_shellcheck_pin
+test_assistant_controls_risk

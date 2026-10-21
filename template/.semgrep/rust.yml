@@ -1,0 +1,35 @@
+# Rust rules (REQ-151): offline like rules.yml; fixtures in tests/semgrep/rust.rs.
+rules:
+  - id: rust-shell-command
+    languages: [rust]
+    severity: ERROR
+    message: "A shell is started (command injection when an argument comes from outside). Run the program directly with .arg() for each argument (docs/security.md: Injection)."
+    pattern-either:
+      - pattern: Command::new("sh")
+      - pattern: Command::new("bash")
+
+  - id: rust-tls-verification-disabled
+    languages: [rust]
+    severity: ERROR
+    message: "TLS certificate or host name verification disabled. Remove the danger_accept_* call."
+    pattern-either:
+      - pattern: $B.danger_accept_invalid_certs(true)
+      - pattern: $B.danger_accept_invalid_hostnames(true)
+
+  - id: rust-sql-built-from-format
+    languages: [rust]
+    severity: ERROR
+    message: "SQL built with format! allows injection. Use placeholders and bind the values (docs/security.md: Injection)."
+    pattern-either:
+      - pattern: sqlx::query(&format!(...))
+      - pattern: $DB.execute(&format!(...), ...)
+      - pattern: $DB.query(&format!(...), ...)
+
+  - id: rust-weak-hash
+    languages: [rust]
+    severity: WARNING
+    message: "MD5 and SHA-1 are broken for security use. Use SHA-256 or better, and a password hash (argon2, bcrypt, scrypt) for passwords."
+    pattern-either:
+      - pattern: Md5::new()
+      - pattern: Sha1::new()
+      - pattern: md5::compute(...)

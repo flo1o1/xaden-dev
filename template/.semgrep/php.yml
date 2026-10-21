@@ -1,0 +1,43 @@
+# PHP rules (REQ-149): offline like rules.yml; fixtures in tests/semgrep/php.php.
+rules:
+  - id: php-eval
+    languages: [php]
+    severity: ERROR
+    message: "eval executes arbitrary code. Parse the input explicitly instead."
+    pattern: eval(...)
+
+  - id: php-os-command
+    languages: [php]
+    severity: ERROR
+    message: "A shell runs a command built from a variable (command injection). Avoid the shell, or pass every argument through escapeshellarg() (docs/security.md: Injection)."
+    patterns:
+      - pattern-either:
+          - pattern: system($CMD, ...)
+          - pattern: exec($CMD, ...)
+          - pattern: shell_exec($CMD)
+          - pattern: passthru($CMD, ...)
+          - pattern: popen($CMD, ...)
+      - pattern-not: $FUNC("...", ...)
+      - pattern-not: $FUNC(escapeshellcmd(...), ...)
+
+  - id: php-unserialize
+    languages: [php]
+    severity: ERROR
+    message: "unserialize on untrusted data executes code through object injection. Use json_decode, or pass allowed_classes => false."
+    patterns:
+      - pattern: unserialize(...)
+      - pattern-not: unserialize($DATA, [..., "allowed_classes" => false, ...])
+
+  - id: php-include-from-input
+    languages: [php]
+    severity: ERROR
+    message: "include/require of a request value allows local and remote file inclusion. Map an id to a fixed file (docs/security.md: Files)."
+    pattern-either:
+      - pattern: include $_GET[...]
+      - pattern: include $_POST[...]
+      - pattern: include $_REQUEST[...]
+      - pattern: require $_GET[...]
+      - pattern: require $_POST[...]
+      - pattern: require $_REQUEST[...]
+      - pattern: include_once $_GET[...]
+      - pattern: require_once $_GET[...]

@@ -223,9 +223,14 @@ test_staged_checks() {
     printf 'from flask import redirect, request\n\n\ndef go():\n    return redirect(request.args.get("next"))\n' >"$DEMO/unsafe.py"
     git -C "$DEMO" add unsafe.py
     assert_fails "staged check blocks an open redirect via local semgrep rule" bash -c "cd '$DEMO' && '$DEMO_TOOLS/check.sh' --staged"
+    # REQ-144 Go files are scanned too
+    git -C "$DEMO" rm -q -f --cached unsafe.py && rm -f "$DEMO/unsafe.py"
+    printf 'package main\n\nfunc run(in string) {\n\texec.Command("sh", "-c", in)\n}\n' >"$DEMO/unsafe.go"
+    git -C "$DEMO" add unsafe.go
+    assert_fails "REQ-144 staged check blocks a Go shell command via local semgrep rule" bash -c "cd '$DEMO' && '$DEMO_TOOLS/check.sh' --staged"
   fi
   git -C "$DEMO" reset -q --hard
-  rm -f "$DEMO/clean.py" "$DEMO/unsafe.py"
+  rm -f "$DEMO/clean.py" "$DEMO/unsafe.py" "$DEMO/unsafe.go"
 }
 
 # REQ-020 staged snapshot: checks and commit-msg validate what will be committed

@@ -323,6 +323,9 @@ test_sign_release() {
   assert "signing prints no shell error" test ! -s "$err"
   assert "the checksum and its signature are written" test -s "$copy/dist/xaden-0.1.0.checksum" -a -s "$copy/dist/xaden-0.1.0.checksum.sig"
   assert "signing leaves no temp folder behind" test -z "$(ls -A "$tmp")"
+  assert "REQ-147 the checksum file has the bare checksum line" grep -Eq '^[0-9a-f]{64}  xaden-0.1.0$' "$copy/dist/xaden-0.1.0.checksum"
+  assert "REQ-147 the checksum file has the mode1 checksum line" grep -Eq '^mode1:[0-9a-f]{64}  xaden-0.1.0$' "$copy/dist/xaden-0.1.0.checksum"
+  assert "REQ-147 the bare checksum line comes first" test "$(grep -n -E '^[0-9a-f]{64}  ' "$copy/dist/xaden-0.1.0.checksum" | cut -d: -f1)" = 1
   # REQ-094 the release zip is written and signed too; the signature verifies against the key
   printf 'release@xaden.dev namespaces="xaden-release" %s\n' "$(cat "$WORKDIR/sign-key.pub")" >"$WORKDIR/sign-signers"
   assert "the zip and its signature are written" test -s "$copy/dist/xaden-0.1.0.zip" -a -s "$copy/dist/xaden-0.1.0.zip.sig"
@@ -352,6 +355,13 @@ test_release_archive() {
   # the check passes on a tree made of the archive and fails when a maintainer file is added
   mkdir -p "$root" && cp -R "$extracted/." "$root/" && git -C "$root" init -q -b main && git -C "$root" add -A
   assert "the archive check passes on the shipped files" "$SCAFFOLD_ROOT/scripts/check-release-archive.sh" "$root"
+  # REQ-152 a long file list must not make a required path look missing (grep -q closes the pipe while printf still writes)
+  python3 -c 'import os, sys
+os.makedirs(sys.argv[1] + "/template/bulk")
+for n in range(30000):
+    open("%s/template/bulk/file-%05d.txt" % (sys.argv[1], n), "w").close()' "$root" && git -C "$root" add template/bulk
+  assert "REQ-152 the archive check passes on a tree with a very long file list" "$SCAFFOLD_ROOT/scripts/check-release-archive.sh" "$root"
+  git -C "$root" rm -rq --cached template/bulk && rm -rf "$root/template/bulk"
   mkdir -p "$root/tests" && printf 'x\n' >"$root/tests/new.sh" && git -C "$root" add tests/new.sh
   assert_fails_with "the archive check names a file that would ship" "tests/new.sh" "$SCAFFOLD_ROOT/scripts/check-release-archive.sh" "$root"
 }
