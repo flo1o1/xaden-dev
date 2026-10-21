@@ -71,6 +71,14 @@ happens when it leaks stay with you and the maintainer.
 A stolen signing key, or a maintainer who signs something malicious. Reading the scripts before you run them is still the final check:
 they are plain shell. The public key is also published on the Xaden website, so you can compare it with the one in `release-signers`.
 
+## What the CI of an adopted project installs
+
+The workflow `xaden project adopt` writes installs its tools by version and hash: the pinned Xaden by its tree checksum, shellcheck and
+gitleaks by the SHA-256 of their release archives, and semgrep with `pip install --require-hashes` from `scripts/adopt/semgrep.lock` in
+the Xaden tree that was just verified (REQ-146). The lock is for Linux x86_64 and Python 3.12 (the workflow sets that Python up), so a
+different runner image fails instead of installing something else. Bandit and pip-audit are pinned by version only, and the macOS jobs of
+Xaden's own CI use Homebrew's current tools (an accepted risk in its threat model).
+
 ## Verify by hand
 
 ```bash

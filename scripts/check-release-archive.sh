@@ -17,7 +17,7 @@ SHIPPED_PATHS='^(CHANGELOG\.md|GETTING-STARTED\.md|LICENSE|README\.md|THIRD-PART
 ^docs/guide/(admin|contributing|developer)/[^/]+\.md$
 ^template/
 ^scripts/(adopt-lib|adopt-scan|adopt|aidd|create|fetch|get-xaden|install|scaffold-lib|xaden)\.sh$
-^scripts/adopt/ci(-commit-step)?\.yml$'
+^scripts/adopt/(ci(-commit-step)?\.yml|semgrep\.lock)$'
 # These must be in it, or Xaden does not run.
 REQUIRED_PATHS="VERSION CHANGELOG.md release-signers scripts/xaden.sh scripts/install.sh scripts/fetch.sh template/AGENTS.md"
 

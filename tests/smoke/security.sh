@@ -44,6 +44,16 @@ test_adopted_ci_shellcheck_pin() {
   assert "REQ-145 the adopted workflow verifies the archive hash" grep -q 'SHELLCHECK_SHA256.*sha256sum -c' "$ci"
 }
 
+# REQ-146: the adopted workflow installs semgrep from the hashed lock file, at the version it names.
+test_adopted_ci_semgrep_lock() {
+  local ci="$SCAFFOLD_ROOT/scripts/adopt/ci.yml" lock="$SCAFFOLD_ROOT/scripts/adopt/semgrep.lock" version
+  version="$(sed -n 's/^  SEMGREP_VERSION: "\(.*\)"$/\1/p' "$ci")"
+  assert "REQ-146 the lock pins semgrep at the version of the workflow" grep -q "^semgrep==$version --hash=sha256:" "$lock"
+  assert_fails "REQ-146 every line of the lock has a hash" bash -c "grep -v '^#' '$lock' | grep -v -- '--hash=sha256:[0-9a-f]\\{64\\}\$'"
+  assert "REQ-146 the workflow installs from the lock with hashes required" grep -q 'pip install --require-hashes --only-binary=:all:' "$ci"
+  assert_fails "REQ-146 the workflow does not pipx install semgrep" grep -q 'pipx install' "$ci"
+}
+
 # REQ-142: the threat model says which assistant controls are text only.
 test_assistant_controls_risk() {
   assert "REQ-142 the threat model names the text-only controls and --no-verify" \
@@ -53,4 +63,5 @@ test_assistant_controls_risk() {
 test_dependency_vetting
 test_security_exceptions
 test_adopted_ci_shellcheck_pin
+test_adopted_ci_semgrep_lock
 test_assistant_controls_risk

@@ -176,6 +176,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-143 | job | should | done | The offline SAST rules cover more classes of common mistakes in Python and JavaScript |
 | REQ-144 | job | should | done | The offline SAST scans Go files with its own rules |
 | REQ-145 | job | should | done | The workflow of an adopted project installs shellcheck at a pinned, verified release |
+| REQ-146 | job | should | done | The CI installs semgrep from a lock file with hashes |
 | REQ-147 | job | should | done | The tree checksum covers which files are executable |
 | REQ-148 | job | should | done | The offline SAST scans Java files with its own rules |
 | REQ-149 | job | should | done | The offline SAST scans PHP files with its own rules |

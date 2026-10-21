@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 ## [Unreleased]
 
 ### Added
+- The workflow `xaden project adopt` writes installs semgrep with `pip install --require-hashes` from `scripts/adopt/semgrep.lock` (Linux x86_64, Python 3.12, a hash for every wheel), taken from the Xaden tree whose checksum was verified, instead of `pipx install`; `scripts/semgrep-lock.sh` regenerates it. Bandit and pip-audit stay pinned by version only (REQ-146).
 - The workflow `xaden project adopt` writes installs shellcheck from its release archive at the version of `.github/shellcheck.version` and only after the SHA-256 matched, instead of whatever `apt-get` has that day; a test fails when the two pins differ. An existing workflow gets the new one as `xaden.yml-dist` on `xaden project pin` (REQ-145).
 - The offline SAST scans Rust files: `.semgrep/rust.yml` flags a shell started with Command::new, disabled TLS verification, SQL built with format!, and MD5 or SHA-1 digests (REQ-151).
 - The offline SAST scans Ruby files: `.semgrep/ruby.yml` flags eval, shell command strings with interpolation, Marshal.load and YAML.load, SQL built by interpolation, and send with a request value (REQ-150).
