@@ -22,6 +22,7 @@ ADOPT_ASSISTANTS=""
 ADOPT_CHECKS=""        # newline separated "kind=command" the person named (--check)
 ADOPT_PRESET=""        # stack whose preset the person accepted, or empty
 ADOPT_WORKTREES=0      # 1 when the person wants a worktrees/ folder
+ADOPT_CODEOWNER=""     # --codeowner: who reviews the control files (REQ-141), or empty: no candidate
 ADOPT_HOOKS=1          # 0 = --skip-hooks
 ADOPT_CI=1             # 0 = --skip-ci
 ADOPT_DEFAULT_BRANCH="main"
@@ -41,7 +42,7 @@ choose_update_check() {
 
 # the version and checksum of the Xaden that runs
 running_version() { tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION"; }
-running_checksum() { tree_checksum "$SCAFFOLD_ROOT"; }
+running_checksum() { tree_checksum "$SCAFFOLD_ROOT" "$(signed_like "$(running_version)")"; }
 
 # --- text files with a marked block ---------------------------------------------------
 
@@ -270,6 +271,17 @@ apply_ci() {
   sed -e "s/@VERSION@/$(running_version)/g" -e "s/@CHECKSUM@/$(running_checksum)/g" \
     -e "s/@DEFAULT_BRANCH@/$ADOPT_DEFAULT_BRANCH/g" "$SCAFFOLD_ROOT/scripts/adopt/ci.yml" >"$dir/$file"
   cat "$SCAFFOLD_ROOT/scripts/adopt/ci-commit-step.yml" >>"$dir/$file" # REQ-107: the step `xaden project pin` adds to older workflows
+  note_footprint "$dir" file "$file"
+}
+
+# apply_codeowners <dir> (REQ-141): a candidate CODEOWNERS file, never over the project's own; the team merges it.
+apply_codeowners() {
+  local dir=$1 file=".github/CODEOWNERS-dist" path
+  mkdir -p "$dir/.github"
+  {
+    printf '# Candidate from Xaden: merge into .github/CODEOWNERS, then turn on "Require review from Code Owners" for the default branch.\n'
+    for path in /xaden/xaden.conf /xaden/baselines/ /AGENTS.md /.github/workflows/; do printf '%s %s\n' "$path" "$ADOPT_CODEOWNER"; done
+  } >"$dir/$file"
   note_footprint "$dir" file "$file"
 }
 
