@@ -117,6 +117,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-121 | job | should | done | A change to adoption waits for three short smoke areas, not one long one |
 | REQ-137 | job | should | done | A change to the checks is reviewed as code |
 | REQ-152 | quality | should | done | The release archive check does not fail by chance |
+| REQ-154 | job | should | approved | A project can make a missing tool fail its checks |
 
 ## Releases and documentation (`release-and-docs`)
 
