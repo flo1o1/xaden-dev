@@ -76,8 +76,9 @@ aidd_tag_commit() {
 # pinned commit (REQ-153). A pin without both values cannot be checked, so the CLI does not run.
 hold_pin() {
   local where=$1 cli=$2 release=$3 integrity=$4 commit=$5 found
-  [ -n "$integrity" ] && [ -n "$commit" ] ||
+  if [ -z "$integrity" ] || [ -z "$commit" ]; then
     die "$where: the pin of CLI $cli, release $release has no aidd-integrity or no aidd-commit in xaden/xaden.conf (it was recorded before REQ-153), so the framework's CLI does not run; move the pin once to record them: xaden aidd pin $cli $release"
+  fi
   found="$(aidd_integrity "$cli")"
   [ -n "$found" ] || die "$where: npm answered no integrity for @ai-driven-dev/cli@$cli, so the framework's CLI does not run"
   [ "$found" = "$integrity" ] ||
