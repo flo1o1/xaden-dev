@@ -28,7 +28,8 @@ main() {
   git -C "$ROOT" archive "v$version" | tar -x -C "$STAGING"
   out="$ROOT/dist"
   mkdir -p "$out"
-  printf '%s  xaden-%s\n' "$(tree_checksum "$STAGING")" "$version" >"$out/xaden-$version.checksum"
+  # two lines (REQ-147): version 1 first, which a Xaden from before mode1 reads, then mode1; the one signature covers both
+  printf '%s  xaden-%s\n%s  xaden-%s\n' "$(tree_checksum "$STAGING" v1)" "$version" "$(tree_checksum "$STAGING")" "$version" >"$out/xaden-$version.checksum"
   git -C "$ROOT" archive --format=zip --prefix="xaden-$version/" -o "$out/xaden-$version.zip" "v$version"
   rm -f "$out/xaden-$version.checksum.sig" "$out/xaden-$version.zip.sig"
   ssh-keygen -q -Y sign -f "$key" -n "$SIGNATURE_NAMESPACE" "$out/xaden-$version.checksum"

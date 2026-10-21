@@ -6,8 +6,10 @@ most common failures. Applies to AI-generated code at least as much as to hand-w
 Sections marked *(web)* apply only to software with a browser client.
 Local semgrep rules (`.semgrep/rules.yml`, run by `scripts/check.sh`) catch simple forms of some
 items — shell and code injection, SQL strings, unsafe deserialization and XML, open redirects,
-regexes from input, weak randomness and password hashes, cookie flags, disabled TLS checks.
-Pattern rules miss data that flows through other functions; everything else needs review and tests.
+regexes from input, weak randomness and password hashes, cookie flags, disabled TLS checks, `os.system`, unverified
+JWTs, wildcard CORS, and request data reaching an outgoing URL (SSRF) or a file path (path traversal).
+They cover Python and JavaScript/TypeScript only. Pattern rules miss data that flows through other functions or
+files; everything else needs review and tests.
 CI also runs semgrep's registry rules (`--config p/default`), which are not pinned: they change
 when semgrep publishes new rules, so CI can report a finding without a code change. Fix it, or
 suppress that line with a `nosemgrep: <rule-id>` comment and a one-line reason (AGENTS.md section 5).

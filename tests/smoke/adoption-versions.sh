@@ -178,6 +178,54 @@ PY
     x_answers y "$signed_worktree" project pin 9.9.9
     assert "a release older than the first signed one is installed with a warning" test "$XRC" -eq 0
     assert "the warning names trust on first use" grep -q 'trust on first use' "$XOUT"
+    # REQ-138 the installed copy must match the pin before it runs
+    local pinned_copy="$signed_worktree-upgrade-xaden-9.9.9"
+    x_in "$pinned_copy" req list
+    assert "REQ-138 an untouched installed copy runs" test "$XRC" -eq 0
+    printf '\n' >>"$home/versions/9.9.9/VERSION"
+    x_in "$pinned_copy" req list
+    assert "REQ-138 a changed installed copy stops with exit 1" test "$XRC" -ne 0
+    assert "REQ-138 the message names the pin and the fix" grep -q 'does not match the checksum pinned.*xaden core fetch 9.9.9' "$XOUT"
+    # REQ-139 a link is not hashed, so a tree that holds one has no checksum
+    mkdir -p "$WORKDIR/linked" && printf 'a\n' >"$WORKDIR/linked/file" && ln -s file "$WORKDIR/linked/link"
+    assert_fails "REQ-139 tree_checksum refuses a tree with a symlink" tree_checksum "$WORKDIR/linked"
+    # REQ-147 mode bits: a new checksum version beside the bare one, which stays valid
+    local plain_tree="$WORKDIR/modetree" bare mode
+    mkdir -p "$plain_tree" && printf 'echo a\n' >"$plain_tree/run.sh" && chmod 644 "$plain_tree/run.sh"
+    bare="$(tree_checksum "$plain_tree" v1)" && mode="$(tree_checksum "$plain_tree")"
+    assert "REQ-147 a checksum without a version is the bare hex of before" bash -c 'printf "%s" "$1" | grep -Eq "^[0-9a-f]{64}$"' _ "$bare"
+    assert "REQ-147 the new checksum version is written mode1:<hex>" bash -c 'printf "%s" "$1" | grep -Eq "^mode1:[0-9a-f]{64}$"' _ "$mode"
+    assert "REQ-147 both versions match the tree they were made of" bash -c '. "$1/scripts/scaffold-lib.sh"; checksum_matches "$2" "$3" && checksum_matches "$2" "$4"' _ "$SCAFFOLD_ROOT" "$plain_tree" "$bare" "$mode"
+    chmod 755 "$plain_tree/run.sh"
+    assert "REQ-147 the bare checksum ignores the executable bit" test "$(tree_checksum "$plain_tree" v1)" = "$bare"
+    assert "REQ-147 the mode1 checksum changes with the executable bit" test "$(tree_checksum "$plain_tree")" != "$mode"
+    assert_fails "REQ-147 a tree with a changed mode no longer matches its mode1 checksum" bash -c '. "$1/scripts/scaffold-lib.sh"; checksum_matches "$2" "$3"' _ "$SCAFFOLD_ROOT" "$plain_tree" "$mode"
+    # a release signed with the bare checksum only (before mode1) is pinned bare and runs
+    rm -rf "${assets:?}"/* "$home"
+    printf '%s  xaden-9.9.9\n' "$(tree_checksum "$sign/tree" v1)" >"$assets/xaden-9.9.9.checksum"
+    ssh-keygen -q -Y sign -f "$sign/key" -n xaden-release "$assets/xaden-9.9.9.checksum"
+    local bare_worktree
+    bare_worktree="$(adopted_copy bare)"
+    x_answers y "$bare_worktree" project pin 9.9.9
+    assert "REQ-147 a bare-signed release can be pinned" test "$XRC" -eq 0
+    assert "REQ-147 the pin is the bare checksum" grep -Eq '^checksum = [0-9a-f]{64}$' "$bare_worktree-upgrade-xaden-9.9.9/xaden/xaden.conf"
+    x_in "$bare_worktree-upgrade-xaden-9.9.9" req list
+    assert "REQ-147 the bare-pinned copy runs" test "$XRC" -eq 0
+    # the same release signed with both lines: a project that pinned the bare checksum keeps working, a new pin is mode1
+    rm -rf "${assets:?}"/* "$home"
+    printf '%s  xaden-9.9.9\n%s  xaden-9.9.9\n' "$(tree_checksum "$sign/tree" v1)" "$(tree_checksum "$sign/tree")" >"$assets/xaden-9.9.9.checksum"
+    ssh-keygen -q -Y sign -f "$sign/key" -n xaden-release "$assets/xaden-9.9.9.checksum"
+    x_answers y "$bare_worktree-upgrade-xaden-9.9.9" core fetch 9.9.9
+    assert "REQ-147 a bare pin still verifies against a release signed with both lines" test "$XRC" -eq 0
+    rm -rf "$home" "$signed_worktree-upgrade-xaden-9.9.9" "$bare_worktree-upgrade-xaden-9.9.9"
+    git -C "${signed_worktree%-adopt-xaden}" worktree prune && git -C "${signed_worktree%-adopt-xaden}" branch -D chore/upgrade-xaden-9.9.9 >/dev/null
+    x_answers y "$signed_worktree" project pin 9.9.9
+    assert "REQ-147 a release signed with both lines pins the mode1 checksum" grep -Eq '^checksum = mode1:[0-9a-f]{64}$' "$signed_worktree-upgrade-xaden-9.9.9/xaden/xaden.conf"
+    rm -rf "${assets:?}"/* "$home"
+    # REQ-140 a moved Xaden home is named and, without a terminal, nothing is installed
+    XADEN_HOME="$WORKDIR/elsewhere" XADEN_TEST_MODE=0 x_in "$signed_worktree" project pin 9.9.9 </dev/null
+    assert "REQ-140 XADEN_HOME is named" grep -q 'XADEN_HOME is set in the environment' "$XOUT"
+    assert "REQ-140 nothing is installed there" test ! -e "$WORKDIR/elsewhere/versions"
     # REQ-103 require-signature = true: only releases the maintainer signed, on every path
     local policy_worktree policy_pinned
     policy_worktree="$(adopted_copy policy)"
@@ -448,7 +496,7 @@ test_signed_only_in_generated_ci() {
   printf 'changed\n' >>"$ci/temp/xaden-$version/README.md"
   XRC=0
   (cd "$worktree" && env -u CI -u XADEN_HOME -u XDG_DATA_HOME HOME="$ci/home" "$ci/temp/xaden-$version/scripts/xaden.sh" check) >"$XOUT" 2>&1 || XRC=$?
-  assert "CI: a changed tree is refused" grep -q 'requires signed releases' "$XOUT"
+  assert "CI: a changed tree is refused" grep -q 'does not match the checksum pinned' "$XOUT"
 }
 
 # REQ-129 an older workflow (no signed-record step, no Python audit tools): pin keeps it and writes the generated one
