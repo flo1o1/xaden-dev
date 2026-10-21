@@ -9,8 +9,12 @@ NO_REPOSITORY_MESSAGE="run this inside a project (no git repository here); start
 NOT_ADOPTED_MESSAGE="this repository has not adopted Xaden; run: xaden project adopt"
 
 # is_project_name <name>: true for a safe directory/package name (lowercase letters, digits,
-# hyphens; starts with a letter; 2-51 characters).
-is_project_name() { printf '%s' "$1" | grep -Eq '^[a-z][a-z0-9-]{1,50}$'; }
+# hyphens and dots; starts with a letter; no trailing dot and no empty part between dots;
+# 2-51 characters).
+is_project_name() {
+  case "$1" in *. | *..*) return 1 ;; esac
+  printf '%s' "$1" | grep -Eq '^[a-z][a-z0-9.-]{1,50}$'
+}
 
 # --- versions and checksums (REQ-071, REQ-072) ------------------------------------------
 

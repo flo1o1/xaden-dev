@@ -3,7 +3,7 @@ id: REQ-155
 type: job
 epic: project-setup
 priority: should
-status: draft
+status: done
 updated: 2026-10-21
 paths: scripts/scaffold-lib.sh, scripts/create.sh
 ---
