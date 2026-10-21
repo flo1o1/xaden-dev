@@ -172,10 +172,19 @@ test_command_dist() {
 
 # REQ-118 the AIDD framework is switched on, checked and off again through its own CLI, pinned. The CLI is a stub
 # (XADEN_AIDD_RUNNER) that writes what the real one writes: .aidd/manifest.json with the release of every plugin.
+# REQ-153 npm and the framework's repository are stubs too (XADEN_AIDD_NPM_VIEW, XADEN_AIDD_LS_REMOTE): they
+# answer the files $npm and $tag hold, so the pin check runs offline and every test can rewrite the answers.
 # shellcheck disable=SC2016 # the stub and the bash -c scripts are single-quoted on purpose
 test_aidd_framework() {
-  local x="$SCAFFOLD_ROOT/scripts/xaden.sh" stub="$WORKDIR/aidd-stub" fakebin="$WORKDIR/aidd-node" log="$WORKDIR/aidd-stub.log" repo="$WORKDIR/aidd-repo" out="$WORKDIR/aidd.out" version
+  local x="$SCAFFOLD_ROOT/scripts/xaden.sh" stub="$WORKDIR/aidd-stub" fakebin="$WORKDIR/aidd-node" log="$WORKDIR/aidd-stub.log" repo="$WORKDIR/aidd-repo" out="$WORKDIR/aidd.out" version npm="$WORKDIR/aidd-npm.txt" tag="$WORKDIR/aidd-tag.txt" npmview="$WORKDIR/aidd-npm-view" gitview="$WORKDIR/aidd-tag-view" integrity commit
   version="$(tr -d '[:space:]' <"$SCAFFOLD_ROOT/VERSION")"
+  integrity="$(sed -n 's/^AIDD_DEFAULT_INTEGRITY="\([^"]*\)"$/\1/p' "$SCAFFOLD_ROOT/scripts/aidd.sh")"
+  commit="$(sed -n 's/^AIDD_DEFAULT_COMMIT="\([^"]*\)"$/\1/p' "$SCAFFOLD_ROOT/scripts/aidd.sh")"
+  printf '%s\n' "$integrity" >"$npm"
+  printf '%s\n' "$commit" >"$tag"
+  printf '#!/bin/sh\ncat %s\n' "$npm" >"$npmview"
+  printf '#!/bin/sh\ncat %s\n' "$tag" >"$gitview"
+  chmod +x "$npmview" "$gitview"
   mkdir -p "$fakebin"
   cat >"$stub" <<'STUB'
 #!/usr/bin/env bash
@@ -201,7 +210,7 @@ STUB
   # aidd <env...> -- <args...>: xaden aidd in the repository, output in $out, status in $aidd_rc
   aidd() {
     aidd_rc=0
-    (cd "$repo" && env -u CI PATH="$fakebin:$PATH" XADEN_AIDD_RUNNER="$stub" STUB_LOG="$log" "$@") >"$out" 2>&1 || aidd_rc=$?
+    (cd "$repo" && env -u CI PATH="$fakebin:$PATH" XADEN_AIDD_RUNNER="$stub" XADEN_AIDD_NPM_VIEW="$npmview" XADEN_AIDD_LS_REMOTE="$gitview" STUB_LOG="$log" "$@") >"$out" 2>&1 || aidd_rc=$?
   }
   aidd_yes() { aidd env XADEN_TEST_MODE=1 XADEN_TEST_ANSWER=y "$x" aidd "$@"; }
 
@@ -226,19 +235,45 @@ STUB
   assert "REQ-118 enable answered no installs nothing" test "$aidd_rc" -ne 0 -a ! -e "$repo/.aidd"
   assert "REQ-128 enable answered no never calls the framework's CLI" test ! -s "$log"
 
+  printf 'sha512-attacker-swapped-the-tarball-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==\n' >"$npm"
+  : >"$log"
+  aidd_yes enable
+  assert "REQ-153 enable stops when npm answers another integrity" test "$aidd_rc" -ne 0 -a ! -e "$repo/.aidd"
+  assert "REQ-153 the refusal says what npm answers" grep -q 'not the pinned integrity' "$out"
+  assert "REQ-153 and the framework's CLI never ran" test ! -s "$log"
+  printf '%s\n' "$integrity" >"$npm"
+
+  printf '0000000000000000000000000000000000000000\n' >"$tag"
+  : >"$log"
+  aidd_yes enable
+  assert "REQ-153 enable stops when the release tag points elsewhere" test "$aidd_rc" -ne 0 -a ! -e "$repo/.aidd"
+  assert "REQ-153 the refusal says the tag moved" grep -q 'the tag moved after the pin was set' "$out"
+  assert "REQ-153 and the framework's CLI never ran" test ! -s "$log"
+  printf '%s\n' "$commit" >"$tag"
+
   aidd_yes enable
   assert "REQ-118 enable installs" test "$aidd_rc" -eq 0 -a -f "$repo/.aidd/manifest.json"
   assert "REQ-118 it skips an assistant the framework does not support" grep -q 'skipped vibe' "$out"
   assert "REQ-118 it lists the files it added" grep -q '\.aidd/manifest.json' "$out"
   assert "REQ-118 it warns about the user-level marketplace before the question" grep -q "registers the marketplace 'aidd-framework'" "$out"
   assert "REQ-118 the pinned CLI version and release are recorded" bash -c 'grep -q "^aidd-cli = 5.5.0$" "$1" && grep -q "^aidd-release = v5.12.0$" "$1"' _ "$repo/xaden/xaden.conf"
+  assert "REQ-153 enable records the integrity and the commit of the pin" bash -c 'grep -qF "aidd-integrity = $2" "$1" && grep -qF "aidd-commit = $3" "$1"' _ "$repo/xaden/xaden.conf" "$integrity" "$commit"
   assert "REQ-118 the CLI is called with the exact version and the release, never latest" bash -c '! grep -qi latest "$1" && grep -q "^5.5.0 setup .*--release v5.12.0" "$1"' _ "$log"
   assert "REQ-118 the rules file gets the mapping block" bash -c 'grep -q "xaden:aidd:begin" "$1" && grep -q "these rules win" "$1"' _ "$repo/AGENTS.md"
   aidd "$x" aidd status
   assert "REQ-118 status shows the pin next to the installed release" bash -c 'grep -q "pinned:    CLI 5.5.0, release v5.12.0" "$1" && grep -q "installed: release v5.12.0" "$1"' _ "$out"
+  assert "REQ-153 status shows what npm and the release tag must answer" bash -c 'grep -qF "$2" "$1" && grep -qF "$3" "$1"' _ "$out" "$integrity" "$commit"
   aidd_yes enable
   assert "REQ-118 enable twice is harmless" test "$aidd_rc" -eq 0
   assert "REQ-118 nothing in the template or the checks depends on the add-on" bash -c '! grep -rlE "aidd-cli|aidd\.sh" "$1/template" "$1/scripts/check-scaffold.sh"' _ "$SCAFFOLD_ROOT"
+
+  grep -v -e '^aidd-integrity' -e '^aidd-commit' "$repo/xaden/xaden.conf" >"$WORKDIR/aidd.pre152" && cat "$WORKDIR/aidd.pre152" >"$repo/xaden/xaden.conf"
+  : >"$log"
+  aidd_yes disable
+  assert "REQ-153 disable refuses a pin recorded before REQ-153" test "$aidd_rc" -ne 0 -a -e "$repo/.aidd"
+  assert "REQ-153 and names the way to record the values" bash -c 'grep -q "recorded before REQ-153" "$1" && grep -q "move the pin once" "$1"' _ "$out"
+  assert "REQ-153 the framework's CLI never ran" test ! -s "$log"
+  printf 'aidd-integrity = %s\naidd-commit = %s\n' "$integrity" "$commit" >>"$repo/xaden/xaden.conf"
 
   : >"$log"
   aidd "$x" aidd pin 5.5.0 v5.13.0
@@ -250,6 +285,7 @@ STUB
   aidd_yes pin 5.5.0 v5.13.0
   assert "REQ-118 pin makes a branch of its own and leaves the current one unpinned" bash -c 'git -C "$1" rev-parse --verify -q chore/pin-aidd-v5.13.0 >/dev/null && grep -q "^aidd-release = v5.12.0$" "$1/xaden/xaden.conf"' _ "$repo"
   assert "REQ-118 pin records the new release and links the framework's changes" bash -c 'grep -q "^aidd-release = v5.13.0$" "$1/xaden/xaden.conf" && git -C "$1" log -1 --format=%B | grep -q "compare/v5.12.0...v5.13.0"' _ "$repo-pin-aidd-v5.13.0"
+  assert "REQ-153 pin records the integrity and the commit of the new pin" bash -c 'grep -qE "^aidd-integrity = sha512-" "$1/xaden/xaden.conf" && grep -qE "^aidd-commit = [0-9a-f]{40}$" "$1/xaden/xaden.conf"' _ "$repo-pin-aidd-v5.13.0"
   git -C "$repo" worktree remove --force "$repo-pin-aidd-v5.13.0" && git -C "$repo" branch -D chore/pin-aidd-v5.13.0 >/dev/null
 
   aidd_yes disable

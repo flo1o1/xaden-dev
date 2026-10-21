@@ -22,7 +22,7 @@ Afterwards Xaden prints the files it added or changed. Review them with `git dif
 
 ## What is pinned
 
-`aidd-cli` is the exact version of the installer, and `aidd-release` is the release tag of the plugins (for example `v5.12.0`). Xaden never uses "latest". If the framework's installer cannot be held to a release, `enable` stops before it installs anything. After the install Xaden reads `.aidd/manifest.json` and checks that every plugin comes from the pinned release; if one does not, it removes the installation again.
+`aidd-cli` is the exact version of the installer, and `aidd-release` is the release tag of the plugins (for example `v5.12.0`). Xaden never uses "latest". Next to them the pin records two values Xaden checks before the installer runs (REQ-153): `aidd-integrity`, what npm must still answer as `dist.integrity` of that CLI version, and `aidd-commit`, what the release tag must still point at. Before the framework's CLI runs, whatever the command (`enable`, `disable`, `pin`), Xaden asks npm and the framework's repository; a different answer or none stops the command, and the framework's CLI does not run. If the installer cannot be held to a release, `enable` stops before it installs anything. After the install Xaden reads `.aidd/manifest.json` and checks that every plugin comes from the pinned release; if one does not, it removes the installation again.
 
 ```bash
 xaden aidd status
@@ -36,7 +36,7 @@ shows the pin next to what is installed.
 xaden aidd pin 5.5.0 v5.12.0
 ```
 
-Nothing moves the pin by itself. This command asks, then creates a branch and a worktree, runs the installer there at the new pin, commits, and prints a link to the framework's changes between the two releases. Review the diff and open the pull request your team reviews.
+Nothing moves the pin by itself. This command asks, then creates a branch and a worktree, reads the integrity of the new CLI version from npm and the commit of the new release tag from GitHub, runs the installer there at the new pin, records all four values, commits, and prints a link to the framework's changes between the two releases. Review the diff, the integrity and the commit included, and open the pull request your team reviews.
 
 ## Switch it off
 
@@ -44,11 +44,12 @@ Nothing moves the pin by itself. This command asks, then creates a branch and a 
 xaden aidd disable
 ```
 
-runs the framework's own `clean` at the pinned version, removes the rules block and the pin, and leaves every other file alone. The marketplace registered in your user settings stays, because other projects may use it; remove it with `claude plugin marketplace remove aidd-framework`.
+runs the framework's own `clean` at the pinned version, removes the rules block and the pin, and leaves every other file alone. The pin is checked first, like for `enable`; a pin recorded before REQ-153 (no `aidd-integrity` and no `aidd-commit` in `xaden/xaden.conf`) is refused until the pin has moved once (`xaden aidd pin`), which records the values. The marketplace registered in your user settings stays, because other projects may use it; remove it with `claude plugin marketplace remove aidd-framework`.
 
 ## Limits
 
-- Xaden pins the installer by version and the plugins by release tag. It does not check a signature of the framework; npm and GitHub vouch for what they serve.
+- The pin is checked, then used, and the two can drift apart: the framework's CLI resolves the release tag again itself, so the tag can move between Xaden's check and the CLI's fetch. The plugins' release is still checked after the install (the manifest must match the pin).
+- The CLI's own dependencies stay unpinned: it ships no lock file, so pinning its tarball does not pin what `npx` runs. The integrity Xaden checks comes from the same registry that serves the package, and the framework signs nothing itself.
 - Xaden's rules win on a conflict, but an assistant can still pick a framework skill over a rule. `xaden check` and the pull request review are the gates that catch it.
 - Xaden does not copy or change any file of the framework. It credits it in `THIRD-PARTY.md`.
 

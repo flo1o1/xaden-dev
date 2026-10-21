@@ -282,8 +282,8 @@ PY
     unset XADEN_ASSETS_URL XADEN_SIGNERS_FILE
   fi
 
-  assert "only fetch.sh and the installer get-xaden.sh reach the network" bash -c \
-    '! grep -rnE "^[^#]*(curl|wget)[[:space:]]|^[^#]*git (clone|fetch|pull|ls-remote)" "$1/scripts" "$1/template/scripts" --include="*.sh" | grep -v -e "scripts/fetch.sh:" -e "scripts/get-xaden.sh:" | grep .' _ "$SCAFFOLD_ROOT"
+  assert "only fetch.sh, the installer get-xaden.sh and aidd.sh reach the network" bash -c \
+    '! grep -rnE "^[^#]*(curl|wget)[[:space:]]|^[^#]*git (clone|fetch|pull|ls-remote)" "$1/scripts" "$1/template/scripts" --include="*.sh" | grep -v -e "scripts/fetch.sh:" -e "scripts/get-xaden.sh:" -e "scripts/aidd.sh:" | grep .' _ "$SCAFFOLD_ROOT"
   unset XADEN_RELEASES_URL XADEN_HOME
 }
 

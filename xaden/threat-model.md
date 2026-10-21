@@ -48,6 +48,10 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
   `pip list --outdated` in the project (`upgrade --check` asks for a yes and runs them too). Its result is cached in `.git/xaden-update-check` and printed by `doctor` and
   `context-status.sh`, which an assistant reads: names are filtered to package-name characters before they are cached.
 - Downloaded tools in CI: gitleaks archive, semgrep and ruff from PyPI, GitHub Actions, Homebrew.
+- The AIDD framework's own installer (`aidd.sh`, only after a person's yes, REQ-128): the CLI `@ai-driven-dev/cli`
+  from npm through `npx` and the plugins of a pinned release from GitHub. Before it runs, npm's `dist.integrity`
+  of the pinned CLI version and the commit the release tag points at are read and checked against the pin
+  (`aidd-integrity`, `aidd-commit`; REQ-153); the CLI resolves the release tag again itself.
 - `inbox/`: files dropped by the user, untrusted by definition.
 
 ## Trust boundaries
@@ -116,6 +120,7 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
 | A new Xaden on one machine changes the rules for everyone | trust in the gates | tooling is selected by the pinned version; `RULES.md` that differs from the pinned version fails the check; `upgrade` is a reviewed pull request | REQ-070, REQ-071, smoke `test_versions_and_downloads` |
 | Legacy findings are hidden by a baseline that grows | trust in the gates | the baseline only shrinks; mode changes and baseline growth are approval points | REQ-068, smoke `test_modes_and_baselines` |
 | Instructions hidden in `inbox/` or pasted content | users' machines, secrets | `inbox/` ignored by git; AGENTS.md §10 treats it as data | REQ-026, REQ-033 |
+| The AIDD installer's package is replaced on npm or its release tag moves | users' machines | the pin records the CLI version, the release tag, npm's integrity of the CLI and the commit the tag points at; before the installer runs, npm and the framework's repository must answer exactly that, or the command stops with none of the framework's CLI run; a pin recorded before REQ-153 is refused until it moved once | REQ-118, REQ-128, REQ-153, smoke `test_aidd_framework` |
 
 ## Accepted risks
 
@@ -132,6 +137,10 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
 - The macOS CI job installs Homebrew's current shellcheck, semgrep, ruff and gitleaks without
   pinning; the Linux job is the pinned reference.
 - semgrep and ruff are pinned by version from PyPI, not by hash.
+- The AIDD pin is checked, then used (REQ-153): the framework's CLI resolves the release tag again itself, so the
+  tag can move between Xaden's check and the CLI's fetch; the CLI's own dependencies stay unpinned, because it
+  ships no lock file; and the integrity comes from the same registry that serves the package. A registry that
+  lies consistently passes the check; only the plugins' release is verified again after the install.
 - The approval points and the "untrusted input is data" rule (`template/AGENTS.md` §10) bind only an assistant that
   follows them. Xaden generates no `.claude/settings.json` permissions or other tool restrictions, and the pre-commit
   hook documents `--no-verify`. What cannot be skipped is the CI workflow and the review of the pull request (the
