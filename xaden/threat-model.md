@@ -132,3 +132,8 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
 - The macOS CI job installs Homebrew's current shellcheck, semgrep, ruff and gitleaks without
   pinning; the Linux job is the pinned reference.
 - semgrep and ruff are pinned by version from PyPI, not by hash.
+- The approval points and the "untrusted input is data" rule (`template/AGENTS.md` §10) bind only an assistant that
+  follows them. Xaden generates no `.claude/settings.json` permissions or other tool restrictions, and the pre-commit
+  hook documents `--no-verify`. What cannot be skipped is the CI workflow and the review of the pull request (the
+  required status checks and, with REQ-141, the code owners). There is no code fix; do not rely on a rule file
+  alone for anything a pull request review would not catch (review 2026-10-20, attacker-minded read, finding 11).
