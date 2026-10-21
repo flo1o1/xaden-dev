@@ -33,6 +33,17 @@ test_security_exceptions() {
   rm -f "$file"
 }
 
+# REQ-145: the adopted workflow installs the shellcheck release the Xaden repository's own CI pins, verified by hash.
+test_adopted_ci_shellcheck_pin() {
+  local ci="$SCAFFOLD_ROOT/scripts/adopt/ci.yml" SHELLCHECK_VERSION SHELLCHECK_SHA256
+  # shellcheck source=/dev/null
+  . "$SCAFFOLD_ROOT/.github/shellcheck.version"
+  assert "REQ-145 the adopted workflow has the pinned shellcheck version" grep -qF "SHELLCHECK_VERSION: \"$SHELLCHECK_VERSION\"" "$ci"
+  assert "REQ-145 the adopted workflow has the pinned shellcheck hash" grep -qF "SHELLCHECK_SHA256: \"$SHELLCHECK_SHA256\"" "$ci"
+  assert_fails "REQ-145 the adopted workflow does not install shellcheck from apt" grep -q 'apt-get install.*shellcheck' "$ci"
+  assert "REQ-145 the adopted workflow verifies the archive hash" grep -q 'SHELLCHECK_SHA256.*sha256sum -c' "$ci"
+}
+
 # REQ-142: the threat model says which assistant controls are text only.
 test_assistant_controls_risk() {
   assert "REQ-142 the threat model names the text-only controls and --no-verify" \
@@ -41,4 +52,5 @@ test_assistant_controls_risk() {
 
 test_dependency_vetting
 test_security_exceptions
+test_adopted_ci_shellcheck_pin
 test_assistant_controls_risk

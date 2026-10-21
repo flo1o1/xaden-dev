@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 ## [Unreleased]
 
 ### Added
+- The workflow `xaden project adopt` writes installs shellcheck from its release archive at the version of `.github/shellcheck.version` and only after the SHA-256 matched, instead of whatever `apt-get` has that day; a test fails when the two pins differ. An existing workflow gets the new one as `xaden.yml-dist` on `xaden project pin` (REQ-145).
 - The offline SAST scans Rust files: `.semgrep/rust.yml` flags a shell started with Command::new, disabled TLS verification, SQL built with format!, and MD5 or SHA-1 digests (REQ-151).
 - The offline SAST scans Ruby files: `.semgrep/ruby.yml` flags eval, shell command strings with interpolation, Marshal.load and YAML.load, SQL built by interpolation, and send with a request value (REQ-150).
 - The offline SAST scans PHP files: `.semgrep/php.yml` flags eval, shell functions with a non-literal command, unserialize without allowed_classes false, and include or require of a request value (REQ-149).
