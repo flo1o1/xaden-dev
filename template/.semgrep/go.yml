@@ -1,0 +1,37 @@
+# Go rules (REQ-144): offline like rules.yml; fixtures in tests/semgrep/go.go.
+rules:
+  - id: go-shell-command
+    languages: [go]
+    severity: ERROR
+    message: "A shell runs a command string (command injection). Call the program directly with an argument list (docs/security.md: Injection)."
+    pattern-either:
+      - pattern: exec.Command("sh", "-c", ...)
+      - pattern: exec.Command("bash", "-c", ...)
+      - pattern: exec.CommandContext($CTX, "sh", "-c", ...)
+      - pattern: exec.CommandContext($CTX, "bash", "-c", ...)
+
+  - id: go-tls-verification-disabled
+    languages: [go]
+    severity: ERROR
+    message: "TLS certificate verification disabled. Remove InsecureSkipVerify: true."
+    pattern: "tls.Config{..., InsecureSkipVerify: true, ...}"
+
+  - id: go-sql-built-from-strings
+    languages: [go]
+    severity: ERROR
+    message: "SQL built from strings allows injection. Use placeholders and pass the values as arguments (docs/security.md: Injection)."
+    pattern-either:
+      - pattern: $DB.Query(fmt.Sprintf(...), ...)
+      - pattern: $DB.Exec(fmt.Sprintf(...), ...)
+      - pattern: $DB.QueryRow(fmt.Sprintf(...), ...)
+      - pattern: $DB.Query("..." + ..., ...)
+      - pattern: $DB.Exec("..." + ..., ...)
+      - pattern: $DB.QueryRow("..." + ..., ...)
+
+  - id: go-unescaped-html
+    languages: [go]
+    severity: ERROR
+    message: "template.HTML marks a value as safe HTML, so html/template stops escaping it (XSS). Pass plain text."
+    patterns:
+      - pattern: template.HTML($X)
+      - pattern-not: template.HTML("...")

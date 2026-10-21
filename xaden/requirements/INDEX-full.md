@@ -174,4 +174,5 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-140 | job | could | done | A moved Xaden home is confirmed like a moved download |
 | REQ-142 | quality | should | done | Assistant controls that are text only are a written, accepted risk |
 | REQ-143 | job | should | done | The offline SAST rules cover more classes of common mistakes in Python and JavaScript |
+| REQ-144 | job | should | done | The offline SAST scans Go files with its own rules |
 | REQ-147 | job | should | done | The tree checksum covers which files are executable |
