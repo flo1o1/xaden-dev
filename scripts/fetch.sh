@@ -49,12 +49,12 @@ project_conf() {
   printf '%s' "$root/xaden/xaden.conf"
 }
 
-# confirm_url_overrides: names every download address taken from the environment and asks before it is used.
+# confirm_url_overrides: names every download address and the Xaden home taken from the environment and asks before they are used (REQ-136, REQ-140).
 # Test mode skips the question. Without a terminal it only names them: the callers stop there anyway.
 confirm_url_overrides() {
   local name value found=0
   [ "${XADEN_TEST_MODE:-0}" != "1" ] || return 0
-  for name in XADEN_RELEASES_URL XADEN_ASSETS_URL XADEN_LATEST_URL; do
+  for name in XADEN_RELEASES_URL XADEN_ASSETS_URL XADEN_LATEST_URL XADEN_HOME; do
     value="${!name:-}"
     [ -n "$value" ] || continue
     warn "$name is set in the environment: $value" >&2
@@ -62,7 +62,7 @@ confirm_url_overrides() {
   done
   [ "$found" = 1 ] || return 0
   has_terminal || return 0
-  ask "Download from the addresses above instead of github.com?" || { echo "Nothing was downloaded." >&2; exit 1; }
+  ask "Use the settings above instead of github.com and the default Xaden folder?" || { echo "Nothing was downloaded." >&2; exit 1; }
 }
 
 # confirm_download <version> <checksum|"">: shows what would arrive and asks. Returns 0 only for yes.
@@ -112,7 +112,8 @@ signing_keys_exist() { [ -f "$SIGNERS_FILE" ] && grep -Ev '^[[:space:]]*(#|$)' "
 # version_at_least <a> <b>: true when MAJOR.MINOR.PATCH a is b or newer.
 version_at_least() { [ "$(printf '%s\n%s\n' "$1" "$2" | sort -t. -k1,1n -k2,2n -k3,3n | head -n 1)" = "$2" ]; }
 
-# signed_checksum <version>: prints the checksum of a release that the maintainer signed. Returns 0
+# signed_checksum <version>: prints the checksums of a release that the maintainer signed, one per
+# line (version 1 first, then mode1, REQ-147; pick_checksum chooses). Returns 0
 # when the signature is valid, 10 when there is nothing to verify (no key in release-signers, or a
 # release older than FIRST_SIGNED_VERSION without ssh-keygen or without a published signature) and
 # EXIT_SIGNATURE when a signature is wrong, or missing for a release that was published signed.
@@ -128,7 +129,7 @@ signed_checksum() {
     return "$missing"
   fi
   ssh-keygen -Y verify -f "$SIGNERS_FILE" -I "$SIGNER_PRINCIPAL" -n "$SIGNATURE_NAMESPACE" -s "$dir/checksum.sig" <"$dir/checksum" >/dev/null 2>&1 || status=$?
-  line="$(awk 'NR == 1 { print $1 }' "$dir/checksum")"
+  line="$(awk 'NF { print $1 }' "$dir/checksum")"
   rm -rf "${dir:?}"
   if [ "$status" -ne 0 ]; then
     return "$EXIT_SIGNATURE"
@@ -139,14 +140,13 @@ signed_checksum() {
 # install_release <version> <expected-checksum|"">: downloads, verifies and installs one version
 # into the versions folder. Prints the checksum of what was installed.
 install_release() {
-  local version=$1 expected=$2 staging actual target signed status
+  local version=$1 expected=$2 staging actual target signed picked status
   staging="$(mktemp -d)"
   download_release "$version" "$staging" || { rm -rf "${staging:?}"; die "download failed for Xaden $version"; }
   if [ ! -f "$staging/VERSION" ] || [ "$(tr -d '[:space:]' <"$staging/VERSION")" != "$version" ]; then
     rm -rf "${staging:?}"
     die "the download is not Xaden $version; nothing was installed"
   fi
-  actual="$(tree_checksum "$staging")"
   signed=""
   status=0
   signed="$(signed_checksum "$version")" || status=$?
@@ -155,12 +155,13 @@ install_release() {
     warn "The signature of Xaden $version is missing or does not verify against the keys in release-signers. Nothing was installed."
     exit "$EXIT_SIGNATURE"
   elif [ "$status" -eq 0 ]; then
-    if [ -n "$expected" ] && [ "$expected" != "$signed" ]; then
+    picked="$(pick_checksum "$signed" "$expected")"
+    if [ -n "$expected" ] && [ "$expected" != "$picked" ]; then
       rm -rf "${staging:?}"
       warn "The checksum pinned in xaden/xaden.conf is not the one the maintainer signed for Xaden $version. Nothing was installed."
       exit "$EXIT_CHECKSUM"
     fi
-    expected=$signed
+    expected=$picked
     info "signature verified: the checksum of Xaden $version comes from the maintainer" >&2
   elif [ "$SIGNATURE_REQUIRED" = 1 ]; then
     rm -rf "${staging:?}"
@@ -169,6 +170,7 @@ install_release() {
   elif [ -z "$expected" ]; then
     warn "No verifiable signature for Xaden $version: the checksum is taken from the download itself (trust on first use)." >&2
   fi
+  actual="$(tree_checksum "$staging" "$expected")"
   if [ -n "$expected" ] && [ "$actual" != "$expected" ]; then
     rm -rf "${staging:?}"
     warn "expected checksum $expected"
@@ -198,7 +200,7 @@ project_signature_policy() {
 # must match the checksum the maintainer signed. A copy without a record (installed from a zip, or
 # before the setting) is verified once against the signed checksum, after a yes, and recorded.
 ensure_authenticated() {
-  local version=$1 dir=$2 signed status=0
+  local version=$1 dir=$2 signed picked status=0
   [ "$SIGNATURE_REQUIRED" = 1 ] || return 0
   if installation_authenticated "$version" "$dir" "${3:-}"; then return 0; fi
   info "This project requires signed releases; Xaden $version in $dir has no verified signature on record." >&2
@@ -211,11 +213,12 @@ ensure_authenticated() {
     warn "Xaden $version cannot be verified against a signature by a key in release-signers. It is not used." >&2
     exit "$EXIT_SIGNATURE"
   fi
-  if [ "$(tree_checksum "$dir")" != "$signed" ]; then
+  picked="$(pick_checksum "$signed" "${3:-}")"
+  if ! checksum_matches "$dir" "$picked"; then
     warn "The files of Xaden $version in $dir are not what the maintainer signed. It is not used." >&2
     exit "$EXIT_SIGNATURE"
   fi
-  if [ -n "${3:-}" ] && [ "$3" != "$signed" ]; then
+  if [ -n "${3:-}" ] && [ "$3" != "$picked" ]; then
     warn "The checksum pinned in xaden/xaden.conf is not the one the maintainer signed for Xaden $version." >&2
     exit "$EXIT_CHECKSUM"
   fi
@@ -330,7 +333,7 @@ pin_main() {
   require_version "$target"
   [ "$target" != "$pinned" ] || { ok "project pins Xaden $pinned already"; return 0; }
   tools="$(tools_for "$target")"
-  checksum="$(tree_checksum "$tools")"
+  checksum="$(tree_checksum "$tools" "$(signed_like "$target")")"
   base="$(git -C "$root" symbolic-ref -q --short HEAD)" || die "check out a branch first"
   branch="chore/upgrade-xaden-$target"
   worktree="$(dirname "$root")/$(basename "$root")-upgrade-xaden-$target"

@@ -84,7 +84,8 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-132 | job | should | done | I run check and req as project commands and keep the short spellings |
 | REQ-133 | job | should | done | Xaden knows one project layout |
 | REQ-134 | job | should | done | The Xaden repository is an adopted project |
-| REQ-135 | job | could | approved | I complete Xaden commands with the Tab key |
+| REQ-135 | job | could | done | I complete Xaden commands with the Tab key |
+| REQ-141 | job | should | done | Adoption offers an owner for the files that control the checks |
 
 ## Quality gates (`quality-gates`)
 
@@ -115,6 +116,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-114 | job | should | done | A pull request waits only for the checks its change can affect |
 | REQ-121 | job | should | done | A change to adoption waits for three short smoke areas, not one long one |
 | REQ-137 | job | should | done | A change to the checks is reviewed as code |
+| REQ-152 | quality | should | done | The release archive check does not fail by chance |
 
 ## Releases and documentation (`release-and-docs`)
 
@@ -167,5 +169,12 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-077 | job | should | done | Releases are signed so a pinned checksum comes from the maintainer |
 | REQ-106 | job | must | done | An adopted project audits its dependencies and runs Bandit like a new one |
 | REQ-136 | job | should | done | A release that should be signed is refused when its signature is missing |
+| REQ-138 | job | should | done | The installed Xaden is checked against the pin before it runs |
+| REQ-139 | job | should | done | The tree checksum refuses what it cannot see |
+| REQ-140 | job | could | done | A moved Xaden home is confirmed like a moved download |
+| REQ-142 | quality | should | done | Assistant controls that are text only are a written, accepted risk |
+| REQ-143 | job | should | done | The offline SAST rules cover more classes of common mistakes in Python and JavaScript |
 | REQ-144 | job | should | done | The offline SAST scans Go files with its own rules |
+| REQ-147 | job | should | done | The tree checksum covers which files are executable |
+| REQ-148 | job | should | done | The offline SAST scans Java files with its own rules |
 | REQ-149 | job | should | done | The offline SAST scans PHP files with its own rules |
