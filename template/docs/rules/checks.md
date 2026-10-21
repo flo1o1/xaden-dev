@@ -17,7 +17,8 @@ Moved from `AGENTS.md` (REQ-126), rule IDs and wording unchanged. `AGENTS.md` sa
 - `TIP:` lines in the full run name optional tools that fit this project (`docs/optional-tools.md`).
   Mention new ones to the user once, with what they would catch; install nothing without approval.
 - Every run ends with a summary: passed, failed, skipped. A run with skipped checks is
-  INCOMPLETE, never a success; CI and releases use `--strict`, where missing tools fail.
+  INCOMPLETE, never a success; CI and releases use `--strict`, where missing tools fail, and
+  a project makes its own runs fail closed with `missing-tools = fail` in `xaden/xaden.conf`.
 - Do not claim success unless the check passed. Report failures and skipped checks verbatim.
 
 - End every task with a completion report. A check you could not run is listed as skipped,

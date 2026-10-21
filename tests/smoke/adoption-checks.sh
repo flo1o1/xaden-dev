@@ -217,6 +217,15 @@ test_scope_of_changed_files() {
   assert "REQ-137 the label accepts the change" grep -q 'accepted by the label' "$XOUT"
   scope_run EVENT_NAME=push BEFORE_SHA="$before_violation"
   assert "REQ-137 a push run compares nothing" bash -c '! grep -q "check settings changed" "$1"' _ "$XOUT"
+  # REQ-154 a changed missing-tools line is an approval point like mode
+  printf 'missing-tools = fail\n' >>"$conf"
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -am "chore: require the tools"
+  scope_run EVENT_NAME=pull_request BASE_REF=release
+  assert "REQ-154 a changed missing-tools fails the pull request run" test "$XRC" -ne 0
+  assert "REQ-154 the run names the change" grep -q 'check settings changed' "$XOUT"
+  assert "REQ-154 the new line is shown" grep -q 'now: missing-tools = fail' "$XOUT"
+  edit_file "$conf" '/^missing-tools = fail$/d'
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -am "chore: back to the default"
   edit_file "$conf" 's/^mode = .*/mode = changed-files/'
   mkdir -p "$worktree/xaden/baselines" && printf 'a.py: new finding\n' >>"$worktree/xaden/baselines/stub.txt"
   git -C "$worktree" add -A && git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "chore: bigger baseline"

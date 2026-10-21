@@ -17,12 +17,11 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Quality gates (`quality-gates`)
 
-24 done, 1 dropped.
+25 done, 1 dropped.
 
 | ID | Type | Priority | Status | Title |
 |----|------|----------|--------|-------|
 | REQ-086 | job | should | approved | A check started from inside a check stops at once |
-| REQ-154 | job | should | approved | A project can make a missing tool fail its checks |
 
 ## Releases and documentation (`release-and-docs`)
 

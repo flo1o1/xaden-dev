@@ -4,7 +4,8 @@
 #   (default)  full run: all files, types, tests, dependency audits. Use in CI, before
 #              releases and before declaring work done.
 #   --staged   pre-commit run: staged files only, offline, a few seconds.
-#   --strict   missing tools count as failures instead of being skipped.
+#   --strict   missing tools count as failures instead of being skipped. The project can
+#              ask for the same with missing-tools = fail in xaden/xaden.conf (REQ-154).
 set -euo pipefail
 
 # SCRIPTS: where the tooling lives. ROOT: the repository it works on; PROJECT_ROOT lets
@@ -89,6 +90,19 @@ check_settings_unchanged() {
     FAILURES=$((FAILURES + 1))
     SETTINGS_BLOCKED=1
   fi
+}
+
+# missing_tools_policy <conf>: the project's answer to a check whose tool is not installed
+# (REQ-154): skip (default, the run ends INCOMPLETE) or fail (a missing tool fails the run,
+# like --strict). An unknown value stops the run instead of being read as one of the two.
+missing_tools_policy() {
+  local policy
+  policy="$(conf_get "$1" missing-tools skip)"
+  case "$policy" in
+    skip) ;;
+    fail) STRICT=1 ;;
+    *) die "xaden.conf: missing-tools must be skip or fail (got: $policy)" ;;
+  esac
 }
 
 # staged_command_confirmed <key> <command>: a mapped command that differs from the one the last commit had
@@ -197,6 +211,7 @@ if [ "$MODE" = "staged" ]; then
   layout_init "$ROOT"
 fi
 
+missing_tools_policy "$TEAM_DIR/$CONF_NAME"
 info "check mode: $MODE"
 check_rules_current
 check_project_files

@@ -51,24 +51,26 @@ A project made by `xaden project create` never prints this line for what its sta
 
 ## Make the gates blocking
 
-Three settings turn the checks from advice into a gate:
+Four settings turn the checks from advice into a gate:
 
 ```
 mode = strict
 expect = test,lint,typecheck
+missing-tools = fail
 require-signature = true
 ```
 
 - `mode = strict`: any new finding fails, in any file ([Check modes and baselines](check-modes-and-baselines.md)).
 - `expect` naming every kind of check your stack should have: a kind without a command fails instead of passing unnoticed.
+- `missing-tools = fail`: a check whose tool is missing fails the run, locally and in the pre-commit, instead of ending INCOMPLETE (CI and releases already fail on a missing tool, REQ-154).
 - `require-signature = true`: every Xaden your project runs came from a signed release ([Verify releases](../admin/verify-releases.md)).
 
-Loosening any of the three is an approval point.
+Loosening any of the four is an approval point.
 
 ## A change to the checks is reviewed as code
 
 The settings that decide how a project is checked live in the repository, so a pull request could loosen them and pass by its own rules.
-In a pull request run, CI compares `mode`, `hook-checks`, `expect`, `check.*`, `findings-status.*`, `require-signature`, `version`, `checksum`, the
+In a pull request run, CI compares `mode`, `missing-tools`, `hook-checks`, `expect`, `check.*`, `findings-status.*`, `require-signature`, `version`, `checksum`, the
 baselines and `.github/workflows/xaden.yml` with the merge base. A difference fails the run with `check settings changed` and the changed lines,
 and no mapped command runs: a `check.lint = ...` line from a pull request never executes before someone read it. A baseline that grew counts as a change.
 

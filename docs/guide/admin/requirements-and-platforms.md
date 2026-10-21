@@ -9,7 +9,7 @@ What Xaden needs on your machine, and what differs between Linux, macOS and Wind
 | Linux or macOS (Windows: WSL or Git Bash, untested) | Scripts are bash + POSIX tools |
 | git, bash, awk, sed, tar, grep, cksum | Preinstalled on Linux/macOS |
 | An AI coding tool | Claude Code recommended; Aider, Cline, Continue, Cursor, Codex, Copilot, ChatGPT or a local model (Ollama, LM Studio) also work — see [Use Xaden with other assistants and local models](../../../template/docs/local-llm.md) |
-| Recommended: shellcheck, gitleaks, semgrep | Static analysis and secret scanning. Locally a missing tool is skipped and the run reported INCOMPLETE; CI and releases use `--strict`, where it fails. Once a stack exists, its tools are required too: ruff, mypy, bandit, pip-audit, pytest (Python) or npm with `lint`/`typecheck`/`test` scripts (Node) |
+| Recommended: shellcheck, gitleaks, semgrep | Static analysis and secret scanning. Locally a missing tool is skipped and the run reported INCOMPLETE; CI and releases use `--strict`, where it fails, and `missing-tools = fail` in `xaden/xaden.conf` makes it fail locally too (REQ-154). Once a stack exists, its tools are required too: ruff, mypy, bandit, pip-audit, pytest (Python) or npm with `lint`/`typecheck`/`test` scripts (Node) |
 | Optional: Obsidian | Comfortable reading and editing of the prompt library |
 | Optional: extra checks and plugins | `xaden check` suggests the ones that fit your project (`TIP:` lines); list in `template/docs/optional-tools.md` |
 | Optional: [Ponytail](https://github.com/DietrichGebert/ponytail) | Third-party rule set (MIT) that pushes assistants towards less new code; see the add-ons note below |
