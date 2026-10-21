@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 ## [Unreleased]
 
 ### Added
+- The offline SAST scans Java files: `.semgrep/java.yml` flags command strings run through Runtime.exec or sh -c, SQL built with +, ObjectInputStream.readObject, and MD5 or SHA-1 digests (REQ-148).
 - The offline SAST scans Go files: `.semgrep/go.yml` flags `sh -c`/`bash -c` commands, `InsecureSkipVerify: true`, SQL built with `fmt.Sprintf` or `+`, and `template.HTML` of a non-literal. A language without a rules file in `.semgrep/` is still not covered (REQ-144).
 - The local semgrep rules cover more classes in Python and JavaScript/TypeScript: `os.system`/`os.popen`, JWTs accepted without a verified signature, wildcard CORS, `unserialize`/`vm.run*`, and request data reaching an outgoing URL (SSRF) or a file path (path traversal). The rules follow data within one file only, and no other language has rules yet (REQ-143).
 - `xaden project adopt --codeowner @owner` (or the owner typed at the question) proposes `.github/CODEOWNERS-dist` for `xaden/xaden.conf`, `xaden/baselines/`, `AGENTS.md` and `.github/workflows/`, in its own commit; the owner is asked for, never guessed, and your `CODEOWNERS` is never overwritten. The developer guide lists the branch settings that make the entry bite (REQ-141).

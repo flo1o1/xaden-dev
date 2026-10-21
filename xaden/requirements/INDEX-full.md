@@ -176,3 +176,4 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-143 | job | should | done | The offline SAST rules cover more classes of common mistakes in Python and JavaScript |
 | REQ-144 | job | should | done | The offline SAST scans Go files with its own rules |
 | REQ-147 | job | should | done | The tree checksum covers which files are executable |
+| REQ-148 | job | should | done | The offline SAST scans Java files with its own rules |
