@@ -1,7 +1,10 @@
-// REQ-014, REQ-040: fixtures for template/.semgrep/rules.yml (semgrep --test in check-scaffold.sh).
+// REQ-014, REQ-040, REQ-143: fixtures for template/.semgrep/rules.yml (semgrep --test in check-scaffold.sh).
 const cp = require("child_process");
 const crypto = require("crypto");
 const libxmljs = require("libxmljs");
+const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const path = require("path");
 
 function fixtures(element, userInput) {
   // ruleid: js-eval
@@ -78,7 +81,51 @@ function xmlFixtures(document) {
   return libxmljs.parseXml(document);
 }
 
+function classFixtures(req, res, token, key, serialize, vm) {
+  // ruleid: js-jwt-none
+  jwt.verify(token, key, { algorithms: ["none"] });
+  // ok: js-jwt-none
+  jwt.verify(token, key, { algorithms: ["HS256"] });
+  // ruleid: js-cors-wildcard
+  cors({ origin: "*" });
+  // ruleid: js-cors-wildcard
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  // ok: js-cors-wildcard
+  cors({ origin: "https://example.invalid" });
+  // ruleid: js-unsafe-deserialization
+  serialize.unserialize(req.body.data);
+  // ruleid: js-unsafe-deserialization
+  vm.runInNewContext(req.body.code);
+  // ok: js-unsafe-deserialization
+  JSON.parse(req.body.data);
+}
+
+function ssrfFixtures(req) {
+  const target = req.query.url;
+  // ruleid: js-ssrf-from-request
+  fetch(target);
+  // ruleid: js-ssrf-from-request
+  axios.get(req.body.url);
+  // ok: js-ssrf-from-request
+  return fetch("https://api.example.invalid/items");
+}
+
+function pathFixtures(req, res) {
+  const name = req.query.file;
+  // ruleid: js-path-from-request
+  fs.readFileSync(name);
+  // ruleid: js-path-from-request
+  res.sendFile(req.params.path);
+  // ok: js-path-from-request
+  fs.readFileSync(path.basename(name));
+  // ok: js-path-from-request
+  return fs.readFileSync("/srv/static/index.html");
+}
+
 module.exports = {
+  classFixtures,
+  ssrfFixtures,
+  pathFixtures,
   fixtures,
   redirectFixtures,
   regexFixtures,
