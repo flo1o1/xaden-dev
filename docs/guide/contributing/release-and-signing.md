@@ -49,7 +49,7 @@ XADEN_SIGNING_KEY=~/.ssh/xaden-release scripts/sign-release.sh <version>
 gh release upload v<version> dist/xaden-<version>.checksum dist/xaden-<version>.checksum.sig dist/xaden-<version>.zip dist/xaden-<version>.zip.sig
 ```
 
-- `sign-release.sh <version>`: needs the tag `v<version>`. It writes the tree checksum and its signature, builds the release zip without the maintainer files that `.gitattributes` leaves out, and signs the zip. It never uploads: it prints the upload command.
+- `sign-release.sh <version>`: needs the tag `v<version>`. It writes the tree checksum (two lines, the bare one first and the `mode1:` one second, REQ-147) and its signature, builds the release zip without the maintainer files that `.gitattributes` leaves out, and signs the zip. It never uploads: it prints the upload command.
 - `gh release upload ...`: attaches the four files to the GitHub release.
 
 The one-command installer downloads this zip and verifies its signature with the key embedded in the installer script. When you change the key in `release-signers`, change it in `scripts/get-xaden.sh` as well; a smoke test fails when they differ.

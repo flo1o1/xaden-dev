@@ -1,16 +1,21 @@
-# REQ-014, REQ-040: fixtures for template/.semgrep/rules.yml (semgrep --test in check-scaffold.sh).
+# REQ-014, REQ-040, REQ-143: fixtures for template/.semgrep/rules.yml (semgrep --test in check-scaffold.sh).
 import hashlib
+import os
 import pickle
 import random
 import re
 import secrets
 import subprocess
+import urllib.request
 import xml.etree.ElementTree as ET
 
 import defusedxml.ElementTree
+import jwt
 import requests
 import yaml
-from flask import redirect, request
+from flask import redirect, request, send_file
+from flask_cors import CORS
+from werkzeug.utils import secure_filename
 from lxml import etree
 
 
@@ -104,3 +109,46 @@ def xml_fixtures(document):
     etree.XMLParser(resolve_entities=True)
     # ok: python-unsafe-xml-parser
     return defusedxml.ElementTree.fromstring(document)
+
+
+def class_fixtures(user_input, token, key, app, response):
+    # ruleid: python-os-command
+    os.system("ls " + user_input)
+    # ruleid: python-os-command
+    os.popen(user_input)
+    # ok: python-os-command
+    subprocess.run(["ls", user_input], check=True)
+    # ruleid: python-jwt-unverified
+    jwt.decode(token, options={"verify_signature": False})
+    # ruleid: python-jwt-unverified
+    jwt.decode(token, key, algorithms=["none"])
+    # ok: python-jwt-unverified
+    jwt.decode(token, key, algorithms=["HS256"])
+    # ruleid: python-cors-wildcard
+    CORS(app, origins="*")
+    # ruleid: python-cors-wildcard
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    # ok: python-cors-wildcard
+    CORS(app, origins=["https://example.invalid"])
+
+
+def ssrf_fixtures():
+    target = request.args.get("url")
+    # ruleid: python-ssrf-from-request
+    requests.get(target)
+    # ruleid: python-ssrf-from-request
+    urllib.request.urlopen(request.form["url"])
+    # ok: python-ssrf-from-request
+    return requests.get("https://api.example.invalid/items", params={"q": target})
+
+
+def path_fixtures():
+    name = request.args.get("file")
+    # ruleid: python-path-from-request
+    open(name)
+    # ruleid: python-path-from-request
+    send_file(request.values["path"])
+    # ok: python-path-from-request
+    open(secure_filename(name))
+    # ok: python-path-from-request
+    return open("/srv/static/index.html")

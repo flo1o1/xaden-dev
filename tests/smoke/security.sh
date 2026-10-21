@@ -33,5 +33,12 @@ test_security_exceptions() {
   rm -f "$file"
 }
 
+# REQ-142: the threat model says which assistant controls are text only.
+test_assistant_controls_risk() {
+  assert "REQ-142 the threat model names the text-only controls and --no-verify" \
+    bash -c "grep -q 'bind only an assistant' '$SCAFFOLD_ROOT/xaden/threat-model.md' && grep -q -- '--no-verify' '$SCAFFOLD_ROOT/xaden/threat-model.md'"
+}
+
 test_dependency_vetting
 test_security_exceptions
+test_assistant_controls_risk

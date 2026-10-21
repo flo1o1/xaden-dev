@@ -106,7 +106,7 @@ test_adopt_and_remove() {
   assert "REQ-126 RULES.md stays under the 10240 byte budget" test "$(wc -c <"$worktree/xaden/RULES.md")" -le 10240
   x_in "$worktree" doc rules-nonsense
   assert "REQ-126 an unknown rules topic is refused" test "$XRC" -ne 0
-  assert "the version and checksum are pinned" grep -Eq '^checksum = [0-9a-f]{64}$' "$worktree/xaden/xaden.conf"
+  assert "the version and checksum are pinned" grep -Eq '^checksum = (mode1:)?[0-9a-f]{64}$' "$worktree/xaden/xaden.conf"
   assert "the build's commands are mapped" grep -q '^check.test = npm test$' "$worktree/xaden/xaden.conf"
   assert "git hooks of the clone are chained, not replaced" grep -q 'xaden hook pre-commit' "$repo/.git/hooks/pre-commit"
   assert "core.hooksPath is not set" test -z "$(git -C "$repo" config --get core.hooksPath || true)"
@@ -364,6 +364,22 @@ test_reuse_of_existing_tooling() {
   rm -rf "$worktree/worktrees/x"
   x_in "$worktree" project remove --yes
   assert "remove takes the folder away again" test ! -e "$worktree/worktrees"
+
+  # REQ-141 a CODEOWNERS candidate only when the owner is named; never over the project's file
+  local owned="$WORKDIR/repos/plain-owner"
+  make_repo "$owned" bare-python
+  x_in "$owned" project adopt --yes --skip-ci --codeowner "bad owner"
+  assert "REQ-141 a malformed owner stops adoption" test "$XRC" -ne 0
+  assert "REQ-141 a malformed owner changes nothing" test ! -e "$owned-adopt-xaden"
+  x_in "$owned" project adopt --yes --skip-ci --codeowner @acme/reviewers
+  worktree="$owned-adopt-xaden"
+  assert "REQ-141 the candidate names the control files" bash -c 'grep -q "^/xaden/xaden.conf @acme/reviewers$" "$1" && grep -q "^/.github/workflows/ @acme/reviewers$" "$1"' _ "$worktree/.github/CODEOWNERS-dist"
+  assert "REQ-141 the candidate is its own commit" bash -c 'git -C "$1" log --format=%s main..HEAD | grep -q "code owners"' _ "$worktree"
+  assert "REQ-141 the footprint lists the candidate" grep -qx 'file .github/CODEOWNERS-dist' "$worktree/xaden/footprint.txt"
+  assert "REQ-141 no CODEOWNERS file is written" test ! -e "$worktree/.github/CODEOWNERS"
+  x_in "$worktree" project remove --yes
+  assert "REQ-141 remove takes the candidate away again" test ! -e "$worktree/.github/CODEOWNERS-dist"
+  assert "REQ-141 without the option no candidate is written" test ! -e "$plain-adopt-xaden/.github/CODEOWNERS-dist"
 }
 
 # REQ-070 prompts, REQ-075 ignore list
