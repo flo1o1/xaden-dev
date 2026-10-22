@@ -4,7 +4,7 @@ The scaffold's own threat model, read by `/xaden-security` in this repository (R
 projects get their own from `template/docs/threat-model.md`. Update this file when a change
 adds an entry point, a downloaded tool or a new place the scripts write to.
 
-**Last reviewed:** 2026-10-13, security review `xaden/security-reviews/2026-10-13-pre-release-0.2.2.md`
+**Last reviewed:** 2026-10-22, security review `xaden/security-reviews/2026-10-22-pre-release-0.6.0.md`
 (previous: `2026-10-13-pre-release-0.2.1.md`, `2026-10-12-pre-release-0.2.0.md`, `2026-10-11-audit-fixes.md`, `2026-10-11-xaden-command.md`, `2026-10-11-scaffold-scripts.md`).
 
 ## System summary
@@ -35,10 +35,11 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
 - Files the scripts read: `template/` (exported to projects), requirement files, commit message
   files, `xaden/personas/*.md` (`persona.sh`), `CHANGELOG.md`, `VERSION`, `xaden/security-exceptions.md`, `SECURITY.md`
   and a project's `package.json` / `pyproject.toml` (which decide which tools run).
+- `scripts/get-xaden.sh` (`curl | bash`, the release key embedded in the script) and `template/scripts/check-settings.sh` (CI; the merge base is its trust boundary, the label `xaden-settings-accepted` its approval).
 - Files of an adopted repository: `xaden/xaden.conf` (version, checksum, mode and the commands `check.<name>`
   that `xaden check` runs), `xaden/footprint.txt` (paths `xaden project remove` deletes), `xaden/baselines/`,
   `xaden/prompts/`, the existing `AGENTS.md`, `CLAUDE.md`, hook files and workflows.
-- Environment: `XADEN_HOME`, `XADEN_RELEASES_URL`, `XADEN_LATEST_URL`, `XADEN_PLAIN`, `XADEN_UPDATE_CHECK`; `XADEN_TEST_MODE` and
+- Environment: `XADEN_HOME`, `XADEN_RELEASES_URL`, `XADEN_LATEST_URL`, `XADEN_ASSETS_URL`, `XADEN_VERSION` and `XADEN_SIGNING_KEY` (`get-xaden.sh`, `sign-release.sh`), `XADEN_ALLOW_NESTED`, `SETTINGS_ACCEPTED`, `XADEN_AIDD_RUNNER`, `XADEN_AIDD_NPM_VIEW` and `XADEN_AIDD_LS_REMOTE` (these three replace `npx`, `npm view` and `git ls-remote` with any executable and are not gated by test mode: control of the environment is control of the machine; open finding 8 of the 2026-10-22 review), `XADEN_PLAIN`, `XADEN_UPDATE_CHECK`; `XADEN_TEST_MODE` and
   `XADEN_TEST_ANSWER`, `XADEN_NOW` (tests only; ignored without `XADEN_TEST_MODE=1`); `PROJECT_ROOT`, `RULES_FILE`, `STRICT`, `ALLOW_MAIN_COMMIT`, `PATH`; the current
   branch (pre-commit branch guard); in CI `EVENT_NAME`, `BASE_REF`,
   `BEFORE_SHA`, `DEFAULT_BRANCH`, filled from GitHub event data.
@@ -47,7 +48,7 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
   the person set `update-check` in `xaden/xaden.conf` or `XADEN_UPDATE_CHECK` (off by default); it also runs `npm outdated` and
   `pip list --outdated` in the project (`upgrade --check` asks for a yes and runs them too). Its result is cached in `.git/xaden-update-check` and printed by `doctor` and
   `context-status.sh`, which an assistant reads: names are filtered to package-name characters before they are cached.
-- Downloaded tools in CI: gitleaks archive, semgrep and ruff from PyPI, GitHub Actions, Homebrew.
+- Downloaded tools in CI: gitleaks and shellcheck archives (SHA-256 verified), semgrep from a hashed lock file (`scripts/adopt/semgrep.lock`), ruff, bandit and pip-audit from PyPI by version, GitHub Actions, Homebrew.
 - The AIDD framework's own installer (`aidd.sh`, only after a person's yes, REQ-128): the CLI `@ai-driven-dev/cli`
   from npm through `npx` and the plugins of a pinned release from GitHub. Before it runs, npm's `dist.integrity`
   of the pinned CLI version and the commit the release tag points at are read and checked against the pin
@@ -81,7 +82,8 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
 
 Runs as the invoking user; no `sudo` except tool installation in CI. CI jobs use
 `permissions: contents: read`. Nothing is pushed or published by the scripts. `scripts/install.sh` writes one symbolic link
-(`~/.local/bin/xaden` by default) and nothing else outside the checkout.
+(`~/.local/bin/xaden` by default) and nothing else outside the checkout. From a release (`install.sh`, `get-xaden.sh`) it
+copies the release into `<xaden home>/versions/<version>` and writes `current`; `fetch.sh` writes `<version>.signed` records there.
 
 ## Security baseline
 
@@ -120,13 +122,18 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
 | A new Xaden on one machine changes the rules for everyone | trust in the gates | tooling is selected by the pinned version; `RULES.md` that differs from the pinned version fails the check; `upgrade` is a reviewed pull request | REQ-070, REQ-071, smoke `test_versions_and_downloads` |
 | Legacy findings are hidden by a baseline that grows | trust in the gates | the baseline only shrinks; mode changes and baseline growth are approval points | REQ-068, smoke `test_modes_and_baselines` |
 | Instructions hidden in `inbox/` or pasted content | users' machines, secrets | `inbox/` ignored by git; AGENTS.md §10 treats it as data | REQ-026, REQ-033 |
-| The AIDD installer's package is replaced on npm or its release tag moves | users' machines | the pin records the CLI version, the release tag, npm's integrity of the CLI and the commit the tag points at; before the installer runs, npm and the framework's repository must answer exactly that, or the command stops with none of the framework's CLI run; a pin recorded before REQ-153 is refused until it moved once | REQ-118, REQ-128, REQ-153, smoke `test_aidd_framework` |
+| The AIDD installer's package is replaced on npm or its release tag moves | users' machines | the pin records the CLI version, the release tag, npm's integrity of the CLI and the commit the tag points at; before the installer runs, npm and the framework's repository must answer exactly that, or the command stops with none of the framework's CLI run; the pin is read from a file a pull request can edit, so its values are validated and a change to the `aidd-*` keys needs the label (REQ-159); the answers come through the project's npm configuration (open finding 6 of the 2026-10-22 review); a pin recorded before REQ-153 is refused until it moved once | REQ-118, REQ-128, REQ-153, smoke `test_aidd_framework` |
 
 ## Accepted risks
 
 - `xaden check` and the hooks run the commands in `check.*` of `xaden/xaden.conf`, the same trust as running the
   repository's own test and lint scripts. A pull request that changes `xaden.conf` therefore needs the same
-  review as one that changes a build script. The adoption pull request and every `xaden project pin` show it.
+  review as one that changes a build script. The adoption pull request and every `xaden project pin` show it. In CI,
+  `check-settings.sh` (REQ-137) stops a pull request that changes the guarded settings until the label `xaden-settings-accepted` is added.
+  Its limits are accepted for now (review 2026-10-22, findings 2 and 3; REQ-160): the label is as strong as the right to label,
+  because it is tied to neither a person nor a commit; and the check is run by the Xaden version and the workflow of the pull request
+  itself, so a pull request that pins an older release without the check can change `check.*` in the same step. Close both with
+  code owners on `xaden/xaden.conf` and `.github/` (REQ-141) and a branch ruleset that requires a review.
 - A release without a signature (or while `release-signers` holds no key) is pinned by the checksum of the
   archive just downloaded (trust on first use); the person sees the checksum and the team reviews it in the
   pull request. A stolen signing key or a maintainer who signs something malicious is not covered.
@@ -136,7 +143,7 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
   2026-10-11-xaden-command #1).
 - The macOS CI job installs Homebrew's current shellcheck, semgrep, ruff and gitleaks without
   pinning; the Linux job is the pinned reference.
-- semgrep and ruff are pinned by version from PyPI, not by hash.
+- In the scaffold's own CI, semgrep and ruff are pinned by version from PyPI, not by hash; in an adopted project's CI semgrep is installed from a hashed lock file (REQ-146), while ruff, bandit and pip-audit are pinned by version only.
 - The AIDD pin is checked, then used (REQ-153): the framework's CLI resolves the release tag again itself, so the
   tag can move between Xaden's check and the CLI's fetch; the CLI's own dependencies stay unpinned, because it
   ships no lock file; and the integrity comes from the same registry that serves the package. A registry that
