@@ -38,5 +38,8 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Security (`security`)
 
-28 done.
+31 done.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-160 | quality | should | draft | The pull request gate does not trust its own checker or its own label |
