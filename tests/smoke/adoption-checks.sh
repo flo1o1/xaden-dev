@@ -226,6 +226,23 @@ test_scope_of_changed_files() {
   assert "REQ-154 the new line is shown" grep -q 'now: missing-tools = fail' "$XOUT"
   edit_file "$conf" '/^missing-tools = fail$/d'
   git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -am "chore: back to the default"
+  # REQ-157 a key with leading whitespace is read by the parser, so it is a setting too
+  printf '  check.sneaky = echo pwned\n\tfindings-status.sneaky = 1\n' >>"$conf"
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -am "chore: indented keys"
+  scope_run EVENT_NAME=pull_request BASE_REF=release
+  assert "REQ-157 an indented check line fails the pull request run" test "$XRC" -ne 0
+  assert "REQ-157 the run shows the command that would run" grep -q 'now: check.sneaky = echo pwned' "$XOUT"
+  assert "REQ-157 an indented findings-status line is shown too" grep -q 'now: findings-status.sneaky = 1' "$XOUT"
+  edit_file "$conf" '/sneaky/d'
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -am "chore: no indented keys"
+  # REQ-159 the AIDD pin is an approval point like version
+  printf 'aidd-cli = 9.9.9\n' >>"$conf"
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -am "chore: move the AIDD pin"
+  scope_run EVENT_NAME=pull_request BASE_REF=release
+  assert "REQ-159 a changed aidd-cli fails the pull request run" test "$XRC" -ne 0
+  assert "REQ-159 the new line is shown" grep -q 'now: aidd-cli = 9.9.9' "$XOUT"
+  edit_file "$conf" '/^aidd-cli = /d'
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -am "chore: back to no AIDD pin"
   edit_file "$conf" 's/^mode = .*/mode = changed-files/'
   mkdir -p "$worktree/xaden/baselines" && printf 'a.py: new finding\n' >>"$worktree/xaden/baselines/stub.txt"
   git -C "$worktree" add -A && git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "chore: bigger baseline"

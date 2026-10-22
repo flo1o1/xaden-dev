@@ -96,7 +96,7 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
 
 | Threat | Asset | Mitigation | Requirement / test |
 |--------|-------|------------|--------------------|
-| Project name with shell, `sed` or path characters | users' machines | `is_project_name` allows `[a-z][a-z0-9.-]{1,50}` only, with no trailing or doubled dot | REQ-001, REQ-155, smoke "reject bad project name" |
+| Project name with shell, `sed` or path characters | users' machines | `is_project_name` matches the whole value, not line by line: a letter first, then lowercase letters, digits, hyphens and dots, 2 to 51 characters in all, no trailing or doubled dot, no newline | REQ-001, REQ-155, REQ-158, smoke "reject bad project name" |
 | Secrets, dependencies or symlinks copied into a project | secrets, project integrity | only tracked template files exported; symlinks refused; failed runs cleaned up | REQ-018, smoke `test_generation_safety` |
 | Dangling symlink in `docs/personas/` makes `persona.sh` write outside the project | users' machines | a link counts as an existing persona (review 2026-10-12-pre-release-0.2.0 #2) | REQ-061, smoke `test_personas` |
 | Commit lands on `main` without passing CI | trust in the gates | pre-commit guard keeps work on branches (client-side; `--no-verify`, `ALLOW_MAIN_COMMIT=1`, detached HEAD skip it); GitHub ruleset on `main` accepts a merge only when both CI checks passed on the pull request, no bypass; nobody pushes to `main`; no review required (single maintainer) | REQ-060, REQ-088, smoke `test_branch_rule`, `test_ci_credentials` |

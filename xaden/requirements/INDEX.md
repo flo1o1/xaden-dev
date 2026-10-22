@@ -38,10 +38,5 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Security (`security`)
 
-28 done.
+31 done.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-157 | quality | must | approved | The settings gate reads a key the way the parser does |
-| REQ-158 | quality | must | approved | A project name is one line |
-| REQ-159 | quality | must | approved | The AIDD pin is validated and approved like the check settings |

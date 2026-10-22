@@ -3,7 +3,7 @@ id: REQ-159
 type: quality
 epic: security
 priority: must
-status: approved
+status: done
 updated: 2026-10-22
 ---
 
