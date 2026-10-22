@@ -76,6 +76,9 @@ aidd_tag_commit() {
 # pinned commit (REQ-153). A pin without both values cannot be checked, so the CLI does not run.
 hold_pin() {
   local where=$1 cli=$2 release=$3 integrity=$4 commit=$5 found
+  # the pin is read from a file a pull request can edit: an npm alias or a URL is not a version (REQ-159)
+  is_semver "$cli" || die "$where: aidd-cli in xaden/xaden.conf must be a version like 5.5.0 (got: ${cli:-nothing}), so the framework's CLI does not run"
+  printf '%s' "$release" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' || die "$where: aidd-release in xaden/xaden.conf must look like v5.12.0 (got: ${release:-nothing}), so the framework's CLI does not run"
   if [ -z "$integrity" ] || [ -z "$commit" ]; then
     die "$where: the pin of CLI $cli, release $release has no aidd-integrity or no aidd-commit in xaden/xaden.conf (it was recorded before REQ-153), so the framework's CLI does not run; move the pin once to record them: xaden aidd pin $cli $release"
   fi
@@ -258,7 +261,7 @@ disable_main() {
   local root=$1 conf
   conf="$root/xaden/xaden.conf"
   enabled "$root" || { ok "the AIDD framework is not enabled; nothing to remove"; return 0; }
-  ask "Remove what 'xaden aidd enable' added, using the framework's own clean? It runs the pinned CLI through npx, after Xaden checked the pin against npm and GitHub." || die "nothing was removed (it needs your yes in a terminal)"
+  ask "Remove what 'xaden aidd enable' added, using the framework's own clean? It runs CLI $(conf_get "$conf" aidd-cli), release $(conf_get "$conf" aidd-release), through npx, after Xaden checked the pin against npm and GitHub." || die "nothing was removed (it needs your yes in a terminal)"
   hold_pin "xaden aidd disable" "$(conf_get "$conf" aidd-cli)" "$(conf_get "$conf" aidd-release)" "$(conf_get "$conf" aidd-integrity)" "$(conf_get "$conf" aidd-commit)"
   (cd "$root" && aidd_run "$(conf_get "$conf" aidd-cli)" clean --force) || die "the framework's own clean failed; see its output above. The pin and the rules block are still in place"
   remove_block "$root/AGENTS.md" "$AIDD_BEGIN" "$AIDD_END"

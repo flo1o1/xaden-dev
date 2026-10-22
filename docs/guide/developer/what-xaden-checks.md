@@ -70,9 +70,9 @@ Loosening any of the four is an approval point.
 ## A change to the checks is reviewed as code
 
 The settings that decide how a project is checked live in the repository, so a pull request could loosen them and pass by its own rules.
-In a pull request run, CI compares `mode`, `missing-tools`, `hook-checks`, `expect`, `check.*`, `findings-status.*`, `require-signature`, `version`, `checksum`, the
+In a pull request run, CI compares `mode`, `missing-tools`, `hook-checks`, `expect`, `check.*`, `findings-status.*`, `require-signature`, `version`, `checksum`, the AIDD pin (`aidd-cli`, `aidd-release`, `aidd-integrity`, `aidd-commit`), the
 baselines and `.github/workflows/xaden.yml` with the merge base. A difference fails the run with `check settings changed` and the changed lines,
-and no mapped command runs: a `check.lint = ...` line from a pull request never executes before someone read it. A baseline that grew counts as a change.
+and no mapped command runs: a `check.lint = ...` line from a pull request never executes before someone read it. A baseline that grew counts as a change. A key with leading whitespace counts too, because the settings reader ignores the whitespace.
 
 A person who may merge reads the lines and adds the label `xaden-settings-accepted` to the pull request; the run then continues with the changed settings.
 The workflow `xaden project adopt` writes passes the label as `SETTINGS_ACCEPTED`; an older workflow needs the new one (`xaden project pin` writes it beside yours as `xaden.yml-dist`).

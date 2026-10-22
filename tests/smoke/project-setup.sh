@@ -106,6 +106,10 @@ test_xaden_command() {
   assert_fails_with "a trailing dot is a bad project name (REQ-155)" "invalid project name" \
     bash -c "cd '$elsewhere' && '$xaden' project create trailing. '$WORKDIR/trailing-dot'"
   assert "a refused dotted name creates nothing (REQ-155)" test ! -e "$WORKDIR/trailing-dot"
+  # REQ-158 a name is one line: grep matched per line, so a second line used to pass
+  assert_fails_with "a name with a newline is a bad project name (REQ-158)" "invalid project name" \
+    bash -c "cd '$elsewhere' && '$xaden' project create \"\$(printf 'ab\\n/../../escaped')\" '$WORKDIR/newline-name'"
+  assert "a refused multi-line name creates nothing (REQ-158)" test ! -e "$WORKDIR/newline-name"
   assert_fails_with "an empty dot part is a bad project name (REQ-155)" "invalid project name" \
     bash -c "cd '$elsewhere' && '$xaden' project create 'my..website' '$WORKDIR/empty-dot-part'"
   assert "a refused double-dot name creates nothing (REQ-155)" test ! -e "$WORKDIR/empty-dot-part"
@@ -282,6 +286,19 @@ STUB
   assert "REQ-153 and names the way to record the values" bash -c 'grep -q "recorded before REQ-153" "$1" && grep -q "move the pin once" "$1"' _ "$out"
   assert "REQ-153 the framework's CLI never ran" test ! -s "$log"
   printf 'aidd-integrity = %s\naidd-commit = %s\n' "$integrity" "$commit" >>"$repo/xaden/xaden.conf"
+
+  # REQ-159 a pin that is not a version is refused before the CLI runs, even with a matching integrity
+  cp "$repo/xaden/xaden.conf" "$WORKDIR/aidd.conf.keep"
+  grep -v '^aidd-cli' "$WORKDIR/aidd.conf.keep" >"$repo/xaden/xaden.conf" && printf 'aidd-cli = npm:evil-pkg@1.0.0\n' >>"$repo/xaden/xaden.conf"
+  : >"$log"
+  aidd_yes disable
+  assert "REQ-159 disable refuses an aidd-cli that is not a version" test "$aidd_rc" -ne 0 -a -e "$repo/.aidd"
+  assert "REQ-159 and names the value" grep -q 'aidd-cli in xaden/xaden.conf must be a version like 5.5.0 (got: npm:evil-pkg@1.0.0)' "$out"
+  assert "REQ-159 the framework's CLI never ran" test ! -s "$log"
+  grep -v '^aidd-release' "$WORKDIR/aidd.conf.keep" >"$repo/xaden/xaden.conf" && printf 'aidd-release = main\n' >>"$repo/xaden/xaden.conf"
+  aidd_yes disable
+  assert "REQ-159 disable refuses an aidd-release that is not a tag" bash -c 'test "$1" -ne 0 && grep -q "aidd-release in xaden/xaden.conf must look like v5.12.0 (got: main)" "$2"' _ "$aidd_rc" "$out"
+  cp "$WORKDIR/aidd.conf.keep" "$repo/xaden/xaden.conf"
 
   : >"$log"
   aidd "$x" aidd pin 5.5.0 v5.13.0

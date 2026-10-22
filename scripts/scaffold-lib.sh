@@ -10,10 +10,10 @@ NOT_ADOPTED_MESSAGE="this repository has not adopted Xaden; run: xaden project a
 
 # is_project_name <name>: true for a safe directory/package name (lowercase letters, digits,
 # hyphens and dots; starts with a letter; no trailing dot and no empty part between dots;
-# 2-51 characters).
+# 2-51 characters). Matches the whole value with spelled-out classes: no line-by-line match (REQ-158), no locale ranges.
 is_project_name() {
-  case "$1" in *. | *..*) return 1 ;; esac
-  printf '%s' "$1" | grep -Eq '^[a-z][a-z0-9.-]{1,50}$'
+  case "$1" in *. | *..* | *[!abcdefghijklmnopqrstuvwxyz0123456789.-]* | [!abcdefghijklmnopqrstuvwxyz]*) return 1 ;; esac
+  [ "${#1}" -ge 2 ] && [ "${#1}" -le 51 ]
 }
 
 # --- versions and checksums (REQ-071, REQ-072) ------------------------------------------

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fails when a pull request changes how the project is checked, unless the team accepted it (REQ-137).
-# The settings of the merge base are the reference: mode, missing-tools, hook-checks, expect, check.*, findings-status.*,
+# The settings of the merge base are the reference: mode, missing-tools, the pin of the optional AIDD add-on (aidd-*), hook-checks, expect, check.*, findings-status.*,
 # require-signature, version, checksum, the baselines and the Xaden workflow. A pull request must not judge itself.
 # SETTINGS_ACCEPTED=true (the workflow sets it from the label xaden-settings-accepted) accepts the changes.
 # Outside a pull request, or in a repository that was not adopted at the merge base, nothing is compared.
@@ -15,11 +15,12 @@ ROOT="${PROJECT_ROOT:-$(cd "$SCRIPTS/.." && pwd)}"
 source "$SCRIPTS/lib.sh"
 layout_init "$ROOT"
 
-CONTROLLED_KEYS='^(mode|missing-tools|hook-checks|expect|check\.[a-z0-9-]+|findings-status\.[a-z0-9-]+|require-signature|version|checksum)[[:space:]]*='
+CONTROLLED_KEYS='^(mode|missing-tools|hook-checks|expect|check\.[a-z0-9-]+|findings-status\.[a-z0-9-]+|require-signature|version|checksum|aidd-[a-z]+)[[:space:]]*='
 WORKFLOW_PATH=".github/workflows/xaden.yml"
 
 # controlled_lines: the settings that decide how the project is checked, from a conf on stdin.
-controlled_lines() { grep -E "$CONTROLLED_KEYS" || true; }
+# Leading whitespace goes first: the conf parser (conf_get, conf_keys) ignores it, so an indented key counts (REQ-157).
+controlled_lines() { sed -E 's/^[[:space:]]+//' | grep -E "$CONTROLLED_KEYS" || true; }
 
 # at_base <path>: the file as the merge base had it; fails when it did not exist.
 at_base() { git -C "$ROOT" show "$BASE:$1" 2>/dev/null; }
