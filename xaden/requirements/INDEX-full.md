@@ -87,6 +87,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-135 | job | could | done | I complete Xaden commands with the Tab key |
 | REQ-141 | job | should | done | Adoption offers an owner for the files that control the checks |
 | REQ-155 | job | should | done | A project name may contain dots |
+| REQ-161 | job | should | approved | `xaden project create` offers to connect a remote |
 
 ## Quality gates (`quality-gates`)
 
