@@ -186,3 +186,6 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-150 | job | should | done | The offline SAST scans Ruby files with its own rules |
 | REQ-151 | job | should | done | The offline SAST scans Rust files with its own rules |
 | REQ-153 | job | should | done | The AIDD installer runs only after npm and GitHub answered the pin |
+| REQ-157 | quality | must | approved | The settings gate reads a key the way the parser does |
+| REQ-158 | quality | must | approved | A project name is one line |
+| REQ-159 | quality | must | approved | The AIDD pin is validated and approved like the check settings |
