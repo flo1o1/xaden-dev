@@ -14,7 +14,8 @@ message_of() { bash -c 'source "$1"; shift; "$@"' _ "$SCAFFOLD_ROOT/template/scr
 # AGENTS.md that contradicts the rules), bare-python (no tests or linters), unittest-python, husky, empty.
 make_repo() {
   local dir=$1 kind=$2
-  rm -rf "$dir" && mkdir -p "$dir"
+  # the worktree an earlier adoption of the same name left (REQ-156)
+  rm -rf "$dir" "$dir-adopt-xaden" && mkdir -p "$dir"
   git -C "$dir" init -q -b main
   case "$kind" in
     empty) return 0 ;;

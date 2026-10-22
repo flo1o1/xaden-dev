@@ -3,7 +3,7 @@ id: REQ-156
 type: quality
 epic: quality-gates
 priority: should
-status: approved
+status: done
 updated: 2026-10-22
 ---
 

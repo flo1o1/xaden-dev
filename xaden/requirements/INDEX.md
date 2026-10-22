@@ -17,12 +17,11 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Quality gates (`quality-gates`)
 
-25 done, 1 dropped.
+26 done, 1 dropped.
 
 | ID | Type | Priority | Status | Title |
 |----|------|----------|--------|-------|
 | REQ-086 | job | should | approved | A check started from inside a check stops at once |
-| REQ-156 | quality | should | approved | Two smoke areas run in one command pass together |
 
 ## Releases and documentation (`release-and-docs`)
 
