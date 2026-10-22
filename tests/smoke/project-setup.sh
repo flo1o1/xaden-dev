@@ -113,6 +113,25 @@ test_xaden_command() {
   assert_fails_with "an empty dot part is a bad project name (REQ-155)" "invalid project name" \
     bash -c "cd '$elsewhere' && '$xaden' project create 'my..website' '$WORKDIR/empty-dot-part'"
   assert "a refused double-dot name creates nothing (REQ-155)" test ! -e "$WORKDIR/empty-dot-part"
+  # REQ-161 a remote connects the project to a repository; Xaden only adds it, it never contacts it
+  assert "create without a flag and a terminal adds no remote (REQ-161)" test -z "$(git -C "$elsewhere/xaden-app" remote)"
+  assert "create --remote adds origin (REQ-161)" bash -c "cd '$elsewhere' && '$xaden' project create --remote https://github.com/acme/with-remote.git with-remote && test \"\$(git -C with-remote remote get-url origin)\" = https://github.com/acme/with-remote.git"
+  assert "an scp-style remote is accepted (REQ-161)" bash -c "cd '$elsewhere' && '$xaden' project create --remote git@github.com:acme/scp-remote.git scp-remote && test \"\$(git -C scp-remote remote get-url origin)\" = git@github.com:acme/scp-remote.git"
+  local bad_remote
+  for bad_remote in 'ext::sh -c id' 'file:///tmp/repo' '-oProxyCommand=id' 'https://user:secret@host/x.git' 'https://host/a b' 'ssh://-oProxyCommand=id/x' "$(printf 'https://host/x\n--upload-pack=id')" 'git@:path' 'http://host/x.git'; do
+    assert_fails_with "a bad remote is refused before anything is created: ${bad_remote%%$'\n'*} (REQ-161)" "invalid remote" \
+      bash -c "cd '$elsewhere' && \"\$0\" project create --remote \"\$1\" bad-remote-app" "$xaden" "$bad_remote"
+    assert "a refused remote creates nothing (REQ-161)" test ! -e "$elsewhere/bad-remote-app"
+  done
+  x_answers 'git@github.com:acme/asked.git' "$elsewhere" project create asked-remote
+  assert "the typed remote becomes origin (REQ-161)" test "$(git -C "$elsewhere/asked-remote" remote get-url origin)" = git@github.com:acme/asked.git
+  x_answers skip "$elsewhere" project create skipped-remote
+  assert "skip still creates the project (REQ-161)" test -d "$elsewhere/skipped-remote/.git"
+  assert "skip adds no remote (REQ-161)" test -z "$(git -C "$elsewhere/skipped-remote" remote)"
+  x_answers 'ext::sh -c id' "$elsewhere" project create badtyped-remote
+  assert "an invalid typed remote still creates the project (REQ-161)" test -d "$elsewhere/badtyped-remote/.git"
+  assert "and adds no remote (REQ-161)" test -z "$(git -C "$elsewhere/badtyped-remote" remote)"
+  assert "and says why (REQ-161)" grep -q 'invalid remote' "$XOUT"
   assert "xaden new is an unknown command and creates nothing (REQ-130)" \
     bash -c "cd '$elsewhere' && ! '$xaden' new old-name-app >/dev/null 2>&1 && test ! -e old-name-app"
   assert "project command runs from a subdirectory" \

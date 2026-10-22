@@ -33,6 +33,7 @@ AUTOPILOT=0
 ADOPT_PRESET=""
 NAME=""
 TARGET=""
+REMOTE=""
 
 # cleanup_on_failure: removes the folder this run created when the run did not finish.
 cleanup_on_failure() {
@@ -54,12 +55,16 @@ parse_arguments() {
         shift
         printf '%s' "${1:-}" | grep -Eq '^[a-z0-9]+(,[a-z0-9]+)*$' || die "--assistants takes a comma separated list such as claude,codex"
         ADOPT_ASSISTANTS=$1 ;;
+      --remote)
+        shift
+        is_remote_url "${1:-}" || die "invalid remote '${1:-}' (use https://host/path, ssh://host/path or user@host:path, without a password in it)"
+        REMOTE=$1 ;;
       -*) die "unknown option: $1" ;;
       *) if [ -z "$NAME" ]; then NAME=$1; elif [ -z "$TARGET" ]; then TARGET=$1; else die "too many arguments"; fi ;;
     esac
     shift
   done
-  [ -n "$NAME" ] || die "usage: xaden project create [--autopilot [--stack python|node]] <name> [dir]"
+  [ -n "$NAME" ] || die "usage: xaden project create [--autopilot [--stack python|node]] [--remote <url>] <name> [dir]"
   [ "$AUTOPILOT" = 1 ] || [ -z "$STACK" ] || die "--stack belongs to --autopilot"
   is_project_name "$NAME" || die "invalid project name '$NAME' (use lowercase letters, digits, hyphens and dots)"
   TARGET="${TARGET:-$PWD/$NAME}"
@@ -127,6 +132,19 @@ choose_assistants() {
   if ask "Does your team use Claude Code? Xaden then adds CLAUDE.md with the line @AGENTS.md and the slash commands (/xaden-feature, /xaden-bugfix, ...)." y; then ADOPT_ASSISTANTS=claude; fi
 }
 
+# choose_remote: the remote Git URL, from --remote, else one question in a terminal (REQ-161). An invalid answer
+# warns and leaves the project without a remote: the project is still made.
+choose_remote() {
+  [ -z "$REMOTE" ] || return 0
+  ask_text "Remote Git URL, so the project is connected to a repository (https://host/path, ssh://host/path or user@host:path; skip for none)" skip || return 0
+  case "$ASK_TEXT_ANSWER" in skip) return 0 ;; esac
+  if is_remote_url "$ASK_TEXT_ANSWER"; then
+    REMOTE=$ASK_TEXT_ANSWER
+  else
+    warn "invalid remote '$ASK_TEXT_ANSWER' (use https://host/path, ssh://host/path or user@host:path, without a password in it); no remote was added"
+  fi
+}
+
 # apply_new: creates the project, in the adopted layout; with a stack, the stack's preset too.
 apply_new() {
   # A failed run leaves nothing behind: the folder is removed when this run created it.
@@ -150,6 +168,7 @@ apply_new() {
     commit_step "$TARGET" "chore: add Xaden's $STACK preset"
   fi
   install_local_hooks "$TARGET"
+  if [ -n "$REMOTE" ]; then git -C "$TARGET" remote add origin "$REMOTE"; fi # only adds it: nothing contacts the URL
   COMPLETED=1
 }
 
@@ -158,6 +177,11 @@ summary() {
   local result
   info "created in $TARGET"
   git -C "$TARGET" ls-files | sed 's/^/  /'
+  if [ -n "$REMOTE" ]; then
+    info "remote origin is $REMOTE; nothing was pushed. When you are ready, run: git -C $TARGET push -u origin main"
+  else
+    info "no remote yet. Connect one with: git -C $TARGET remote add origin <url>"
+  fi
   if [ -z "$STACK" ]; then
     ok "$NAME is ready. Next: open $TARGET in your assistant and run: xaden prompt kickoff"
     return 0
@@ -189,6 +213,7 @@ main() {
   fi
   choose_assistants
   choose_update_check
+  choose_remote
   apply_new
   summary
 }

@@ -28,7 +28,7 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
 
 ## Entry points
 
-- CLI arguments: project name and target directory (`create.sh`), bump part (`release*.sh`),
+- CLI arguments: project name, target directory and `--remote` URL (`create.sh`), a remote URL typed at its question, bump part (`release*.sh`),
   requirement IDs, epics and titles (`req.sh`), persona names (`persona.sh`); command and arguments of `xaden`, target
   directory of `install.sh`; `adopt`, `remove`, `upgrade`, `fetch`, `hook`, `prompt`, `doc` and `new --autopilot`
   with their options (`--check <kind>=<command>`, `--assistants`, `--mode`, `--stack`, version numbers).
@@ -99,6 +99,7 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
 | Threat | Asset | Mitigation | Requirement / test |
 |--------|-------|------------|--------------------|
 | Project name with shell, `sed` or path characters | users' machines | `is_project_name` matches the whole value, not line by line: a letter first, then lowercase letters, digits, hyphens and dots, 2 to 51 characters in all, no trailing or doubled dot, no newline | REQ-001, REQ-155, REQ-158, smoke "reject bad project name" |
+| A remote URL that runs a command or leaks a password (`ext::`, an option, a password in the address) | users' machines | `is_remote_url` takes `https://`, `ssh://` and `user@host:path` only, from a short list of characters, with no leading `-` in the host and no `user:password@`; matched as a whole value; `create` only runs `git remote add` and never contacts the URL | REQ-161, smoke "a bad remote is refused" |
 | Secrets, dependencies or symlinks copied into a project | secrets, project integrity | only tracked template files exported; symlinks refused; failed runs cleaned up | REQ-018, smoke `test_generation_safety` |
 | Dangling symlink in `docs/personas/` makes `persona.sh` write outside the project | users' machines | a link counts as an existing persona (review 2026-10-12-pre-release-0.2.0 #2) | REQ-061, smoke `test_personas` |
 | Commit lands on `main` without passing CI | trust in the gates | pre-commit guard keeps work on branches (client-side; `--no-verify`, `ALLOW_MAIN_COMMIT=1`, detached HEAD skip it); GitHub ruleset on `main` accepts a merge only when both CI checks passed on the pull request, no bypass; nobody pushes to `main`; no review required (single maintainer) | REQ-060, REQ-088, smoke `test_branch_rule`, `test_ci_credentials` |

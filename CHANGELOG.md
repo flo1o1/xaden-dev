@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ## [Unreleased]
 
+### Added
+- `xaden project create` asks for the remote Git URL in a terminal, so the project is connected to a repository from the start; `--remote <url>` answers it in advance and `skip` adds none (REQ-161). Xaden only runs `git remote add origin <url>`: it never contacts the URL or pushes. Only `https://`, `ssh://` and `user@host:path` addresses are accepted, never one with a password in it.
+
 ## [0.6.0] - 2026-10-22
 
 ### Added
