@@ -22,6 +22,7 @@ lists them, and `INDEX-full.md` holds the full table.
 | ID | Type | Priority | Status | Title |
 |----|------|----------|--------|-------|
 | REQ-086 | job | should | approved | A check started from inside a check stops at once |
+| REQ-156 | quality | should | approved | Two smoke areas run in one command pass together |
 
 ## Releases and documentation (`release-and-docs`)
 

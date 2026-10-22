@@ -118,6 +118,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-137 | job | should | done | A change to the checks is reviewed as code |
 | REQ-152 | quality | should | done | The release archive check does not fail by chance |
 | REQ-154 | job | should | done | A project can make a missing tool fail its checks |
+| REQ-156 | quality | should | approved | Two smoke areas run in one command pass together |
 
 ## Releases and documentation (`release-and-docs`)
 
