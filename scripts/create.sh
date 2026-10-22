@@ -61,7 +61,7 @@ parse_arguments() {
   done
   [ -n "$NAME" ] || die "usage: xaden project create [--autopilot [--stack python|node]] <name> [dir]"
   [ "$AUTOPILOT" = 1 ] || [ -z "$STACK" ] || die "--stack belongs to --autopilot"
-  is_project_name "$NAME" || die "invalid project name '$NAME' (use lowercase letters, digits, hyphens)"
+  is_project_name "$NAME" || die "invalid project name '$NAME' (use lowercase letters, digits, hyphens and dots)"
   TARGET="${TARGET:-$PWD/$NAME}"
 }
 

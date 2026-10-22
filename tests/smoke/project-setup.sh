@@ -101,6 +101,14 @@ test_xaden_command() {
   assert "xaden project create --classic creates nothing (REQ-001)" test ! -e "$elsewhere/xaden-app"
   assert "xaden project create makes the project in the current directory" bash -c "cd '$elsewhere' && '$xaden' project create xaden-app"
   assert "new project has its first commit" git -C "$elsewhere/xaden-app" log -1 --format=%s
+  assert "xaden project create accepts a dotted name (REQ-155)" bash -c "cd '$elsewhere' && '$xaden' project create mywebsite.com"
+  assert "a dotted name keeps its dot in the project files (REQ-155)" grep -q '^# mywebsite.com' "$elsewhere/mywebsite.com/README.md"
+  assert_fails_with "a trailing dot is a bad project name (REQ-155)" "invalid project name" \
+    bash -c "cd '$elsewhere' && '$xaden' project create trailing. '$WORKDIR/trailing-dot'"
+  assert "a refused dotted name creates nothing (REQ-155)" test ! -e "$WORKDIR/trailing-dot"
+  assert_fails_with "an empty dot part is a bad project name (REQ-155)" "invalid project name" \
+    bash -c "cd '$elsewhere' && '$xaden' project create 'my..website' '$WORKDIR/empty-dot-part'"
+  assert "a refused double-dot name creates nothing (REQ-155)" test ! -e "$WORKDIR/empty-dot-part"
   assert "xaden new is an unknown command and creates nothing (REQ-130)" \
     bash -c "cd '$elsewhere' && ! '$xaden' new old-name-app >/dev/null 2>&1 && test ! -e old-name-app"
   assert "project command runs from a subdirectory" \
