@@ -16,6 +16,23 @@ is_project_name() {
   [ "${#1}" -ge 2 ] && [ "${#1}" -le 51 ]
 }
 
+# is_remote_url <url>: true for a Git remote Xaden may add (REQ-161): https://host/path, ssh://host/path or
+# user@host:path, with a short list of characters, a host that does not start with "-" and no password in the
+# address. Matches the whole value (a case pattern, not grep); ext::, file:, options and control characters fail.
+is_remote_url() {
+  local url=$1 authority
+  case "$url" in
+    *[!A-Za-z0-9._~:/@%+=?#,-]* | "") return 1 ;;
+    https://?* | ssh://?*)
+      authority=${url#*://}
+      authority=${authority%%/*}
+      case "$authority" in "" | -* | *@-* | *:*@*) return 1 ;; esac ;;
+    -* | *://* | *::*) return 1 ;;
+    ?*@?*:?*) case "${url#*@}" in -* | :*) return 1 ;; esac ;;
+    *) return 1 ;;
+  esac
+}
+
 # --- versions and checksums (REQ-071, REQ-072) ------------------------------------------
 
 # sha256_stdin: filter; the SHA-256 (hex) of stdin.

@@ -28,6 +28,8 @@ xaden check
 
 To create the project somewhere else, add the folder: `xaden project create my-app ~/code/x`.
 
+In a terminal, `create` asks for the remote Git URL, so the project is connected to a repository from the start: `https://host/path`, `ssh://host/path` or `git@host:path`, or `skip`. `--remote <url>` answers it in advance. Xaden only runs `git remote add origin <url>`: it never contacts the URL and never pushes; the last lines tell you the push command. A URL with a password in it, an option, `ext::` or `file:` is refused.
+
 ## What you got
 
 | What | Where |
