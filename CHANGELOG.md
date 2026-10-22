@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-22
+
 ### Added
 - A project can require the tools its checks need: `missing-tools = fail` in `xaden/xaden.conf` makes a check's missing tool fail the run, locally and in the pre-commit, as `--strict` and the generated CI already do, instead of ending INCOMPLETE with exit 0; the default `skip` keeps that, an unknown value stops the run, and the key is an approval point like `mode` in a pull request (REQ-154).
 - `xaden aidd enable`, `disable` and `pin` check the AIDD pin before the framework's installer runs (REQ-153): npm must still answer the pinned `dist.integrity` of the CLI version and the release tag must still point at the pinned commit, both recorded next to `aidd-cli` and `aidd-release` (`aidd-integrity`, `aidd-commit`), and anything else or no answer stops the command before the CLI runs; `enable` and `pin` record the values, `status` shows them, and a pin recorded before REQ-153 is refused until it moved once. Limits: the CLI resolves the tag again itself, its dependencies stay unpinned (no lock file), and the integrity comes from the same registry that serves the package.
