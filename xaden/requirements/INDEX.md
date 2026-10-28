@@ -9,6 +9,9 @@ lists them, and `INDEX-full.md` holds the full table.
 
 32 done, 3 dropped.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-162 | job | should | approved | A prompt printed in a terminal says what to do with it and offers to start my assistant |
 
 ## Project setup (`project-setup`)
 
