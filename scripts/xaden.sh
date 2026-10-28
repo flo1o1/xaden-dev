@@ -285,10 +285,11 @@ ignore_list_main() {
 STARTABLE_ASSISTANTS="claude codex"
 PROMPT_ASSISTANT=""
 
-# prompt_text <root> <name>: the text of the prompt, the team's own first.
+# prompt_text <root> <name>: the text of the prompt, the team's own first. Called inside $(...), where set -e is off: the
+# `|| exit 1` makes an unknown prompt an error (REQ-162).
 prompt_text() {
   # shellcheck disable=SC1091 # layout.sh is part of the tooling
-  (PROJECT_ROOT="$1"; layout_init "$1"; file="$(resolve_prompt "$2")"; cat "$file"; case "$file" in "$TEAM_DIR"/*) ;; *) rm -f "$file" ;; esac)
+  (PROJECT_ROOT="$1"; layout_init "$1"; file="$(resolve_prompt "$2")" || exit 1; cat "$file"; case "$file" in "$TEAM_DIR"/*) ;; *) rm -f "$file" ;; esac)
 }
 
 # prompt_candidates <root>: the startable assistants the project names in xaden.conf, else all of them, that are on the PATH.
