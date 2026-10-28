@@ -382,6 +382,36 @@ test_small_context() {
     env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/verify-refs.sh" "$message"
 }
 
+# REQ-162 a prompt printed in a terminal says what to do with it and offers to start the assistant
+test_prompt_run() {
+  local xaden="$SCAFFOLD_ROOT/scripts/xaden.sh" one="$WORKDIR/assistants-one" two="$WORKDIR/assistants-two" none="$WORKDIR/bin:/usr/bin:/bin" name
+  mkdir -p "$one" "$two"
+  for name in claude codex; do
+    printf '#!/bin/sh\nprintf "RAN:%s\\n"\nprintf "ARG:%%s\\n" "$@"\n' "$name" >"$two/$name"
+    chmod +x "$two/$name"
+  done
+  cp "$two/claude" "$one/claude"
+  assert "REQ-162 piped output is the prompt text and nothing else" bash -c "cd '$DEMO' && env -u XADEN_TEST_ANSWER '$xaden' prompt kickoff >'$WORKDIR/prompt.out' 2>'$WORKDIR/prompt.err' \
+    && grep -q '^# Project kickoff' '$WORKDIR/prompt.out' && test ! -s '$WORKDIR/prompt.err'"
+  PATH="$none" x_answers n "$DEMO" prompt kickoff
+  assert "REQ-162 a terminal gets the note with both ways to use the text" bash -c "grep -q 'instruction for an AI assistant, not for you' '$XOUT' && grep -q 'xaden prompt kickoff --run' '$XOUT'"
+  assert_fails "REQ-162 no assistant on the PATH asks nothing" grep -q 'Run it in' "$XOUT"
+  PATH="$one:$none" x_answers y "$DEMO" prompt kickoff
+  assert "REQ-162 one assistant is offered and started with the text after --" bash -c "grep -q 'Run it in claude now' '$XOUT' && grep -q '^RAN:claude' '$XOUT' && grep -qx 'ARG:--' '$XOUT' && grep -q '^ARG:---\$' '$XOUT'"
+  PATH="$one:$none" x_answers n "$DEMO" prompt kickoff
+  assert_fails "REQ-162 no to the question starts nothing" grep -q '^RAN:' "$XOUT"
+  PATH="$two:$none" x_answers codex "$DEMO" prompt kickoff
+  assert "REQ-162 with two assistants the person chooses" bash -c "grep -q '^RAN:codex' '$XOUT' && ! grep -q '^RAN:claude' '$XOUT'"
+  PATH="$two:$none" x_answers y "$DEMO" prompt kickoff --run claude
+  assert "REQ-162 --run names the assistant and asks nothing" bash -c "grep -q '^RAN:claude' '$XOUT' && ! grep -q 'Run it in' '$XOUT'"
+  assert_fails_with "REQ-162 --run without a terminal starts nothing" 'needs a terminal' \
+    bash -c "cd '$DEMO' && PATH='$two:$none' env -u XADEN_TEST_ANSWER '$xaden' prompt kickoff --run"
+  assert_fails_with "REQ-162 an assistant that cannot take a prompt is never started" 'cannot start' \
+    bash -c "cd '$DEMO' && PATH='$two:$none' '$xaden' prompt kickoff --run copilot"
+  assert "REQ-162 kickoff asks for the idea while it is the placeholder" bash -c "tr -s '[:space:]' ' ' <'$TPL/prompts/kickoff.md' | grep -q 'still the placeholder'"
+  assert "REQ-162 create and the README say what to do after the kickoff prompt" bash -c "grep -q 'prompt kickoff --run' '$SCAFFOLD_ROOT/scripts/create.sh'"
+}
+
 test_template_contents
 test_clean_code_guidance
 test_assistant_trust_rules
@@ -403,3 +433,4 @@ test_scaffold_commands
 test_xaden_in_scaffold
 test_no_context_pack
 test_small_context
+test_prompt_run

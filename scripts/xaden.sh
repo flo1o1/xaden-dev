@@ -51,7 +51,8 @@ Short spellings and daily commands (anywhere inside a project):
   context            rule IDs, requirement counts and the CONTEXT CHECK fingerprint
   verify-commits --ci
                      check the commit messages a CI run introduces (adopted projects; advises only while commit-convention is other)
-  prompt <name>      print a task prompt (kickoff, feature, bugfix, ...)
+  prompt <name> [--run [assistant]]
+                     print a task prompt (kickoff, feature, bugfix, ...); --run starts claude or codex with it
   doc <name>         print a guide (clean-code, security, optional-tools, local-llm)
   help               show this list
 EOF
@@ -280,6 +281,78 @@ ignore_list_main() {
   if [ -f "$root/CLAUDE.md" ]; then printf 'CLAUDE.md\n'; fi
 }
 
+# The assistants Xaden starts with a prompt as their first message (REQ-162). Copilot, Vibe and chat windows are not started.
+STARTABLE_ASSISTANTS="claude codex"
+PROMPT_ASSISTANT=""
+
+# prompt_text <root> <name>: the text of the prompt, the team's own first.
+prompt_text() {
+  # shellcheck disable=SC1091 # layout.sh is part of the tooling
+  (PROJECT_ROOT="$1"; layout_init "$1"; file="$(resolve_prompt "$2")"; cat "$file"; case "$file" in "$TEAM_DIR"/*) ;; *) rm -f "$file" ;; esac)
+}
+
+# prompt_candidates <root>: the startable assistants the project names in xaden.conf, else all of them, that are on the PATH.
+prompt_candidates() {
+  local listed name pool=""
+  listed="$(conf_get "$1/xaden/xaden.conf" assistants | tr ',' ' ')"
+  for name in $STARTABLE_ASSISTANTS; do
+    case " $listed " in *" $name "*) pool="$pool $name" ;; esac
+  done
+  for name in ${pool:-$STARTABLE_ASSISTANTS}; do
+    if has_command "$name"; then printf '%s\n' "$name"; fi
+  done
+}
+
+# choose_prompt_assistant <root> <asked>: sets PROMPT_ASSISTANT; returns 1 when none is to be started. Asked (--run)
+# means the person already said yes, so one candidate is taken without a question.
+choose_prompt_assistant() {
+  local candidates count
+  candidates="$(prompt_candidates "$1")"
+  count="$(printf '%s' "$candidates" | grep -c .)"
+  PROMPT_ASSISTANT=""
+  if [ "$count" -eq 0 ]; then
+    [ -z "$2" ] || die "none of $STARTABLE_ASSISTANTS is installed; copy the text of the prompt into your assistant instead"
+    return 1
+  fi
+  if [ "$count" -eq 1 ]; then
+    PROMPT_ASSISTANT=$candidates
+    [ -n "$2" ] || ask "Run it in $candidates now?" y || return 1
+    return 0
+  fi
+  ask_text "Run it in which assistant ($(printf '%s' "$candidates" | tr '\n' ' ')or skip)?" "$(printf '%s' "$candidates" | head -n 1)" || return 1
+  [ "$ASK_TEXT_ANSWER" != skip ] || return 1
+  printf '%s\n' "$candidates" | grep -qx -- "$ASK_TEXT_ANSWER" || die "'$ASK_TEXT_ANSWER' is not one of: $(printf '%s' "$candidates" | tr '\n' ' ')"
+  PROMPT_ASSISTANT=$ASK_TEXT_ANSWER
+}
+
+# prompt_main <root> <name> [--run [assistant]]: prints the prompt. In a terminal it also says what the text is for and offers to
+# start an assistant with it (REQ-162); output that is not a terminal gets the text and nothing else.
+prompt_main() {
+  local root=$1 name=$2 run="" assistant="" text
+  shift 2
+  if [ "${1:-}" = "--run" ]; then run=1; shift; if [ $# -gt 0 ]; then assistant=$1; shift; fi; fi
+  [ $# -eq 0 ] || die "usage: xaden prompt <name> [--run [assistant]]"
+  text="$(prompt_text "$root" "$name")"
+  if [ -n "$assistant" ]; then
+    case " $STARTABLE_ASSISTANTS " in *" $assistant "*) ;; *) die "cannot start '$assistant' with a prompt (can start: $STARTABLE_ASSISTANTS); copy the text of 'xaden prompt $name' into it instead" ;; esac
+    has_command "$assistant" || die "$assistant is not installed (not on the PATH)"
+  fi
+  if [ -z "$run" ]; then
+    printf '%s\n' "$text"
+    has_terminal || return 0
+    printf '\n==> This text is an instruction for an AI assistant, not for you. Either start the assistant with it:\n      xaden prompt %s --run\n    or copy it into your assistant (Claude Code, Codex, ChatGPT, ...).\n' "$name" >&2
+  elif ! has_terminal; then
+    die "--run needs a terminal; nothing was started. Copy the text of 'xaden prompt $name' into your assistant instead"
+  fi
+  if [ -z "$assistant" ]; then
+    choose_prompt_assistant "$root" "$run" || return 0
+    assistant=$PROMPT_ASSISTANT
+  fi
+  info "Starting $assistant with the $name prompt"
+  # The text starts with "---", so it follows "--" and is never read as an option.
+  (cd "$root" && exec "$assistant" -- "$text")
+}
+
 # adopted_project_command <command> <root> <args...>
 adopted_project_command() {
   local command=$1 root=$2 name file
@@ -296,9 +369,8 @@ adopted_project_command() {
     verify-commits) verify_commits_main "$root" "$@" ;;
     prompt)
       name="${1:-}"
-      [ -n "$name" ] || die "usage: xaden prompt <name>"
-      # shellcheck disable=SC1091 # layout.sh is part of the tooling
-      (PROJECT_ROOT="$root"; layout_init "$root"; file="$(resolve_prompt "$name")"; cat "$file"; case "$file" in "$TEAM_DIR"/*) ;; *) rm -f "$file" ;; esac) ;;
+      [ -n "$name" ] || die "usage: xaden prompt <name> [--run [assistant]]"
+      prompt_main "$root" "$name" "${@:2}" ;;
     doc)
       name="${1:-}"
       case "$name" in

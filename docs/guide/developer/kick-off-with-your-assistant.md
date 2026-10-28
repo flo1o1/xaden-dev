@@ -16,7 +16,10 @@ Open your assistant in the project folder. In Claude Code, type:
 /xaden-kickoff <what you want to build>
 ```
 
-In any other assistant, tell it:
+In a terminal, `xaden prompt kickoff --run` starts Claude Code or Codex CLI with the kickoff prompt; with both installed it asks which one,
+and the assistant asks for your idea first. Without `--run`, `xaden prompt kickoff` prints the prompt and a note that the text is an
+instruction for an assistant, not for you; piped into a file or another program, it prints the prompt alone. Other assistants cannot be
+started this way. In any of them, tell it:
 
 ```text
 Run `xaden prompt kickoff` and follow it. My idea: <what you want to build>
