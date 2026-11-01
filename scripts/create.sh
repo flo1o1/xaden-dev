@@ -116,7 +116,7 @@ PLAN
 # write_project_files: the few files every project needs and that are the project's own, not Xaden's.
 write_project_files() {
   local dir=$1
-  printf '# %s\n\nBuilt with [Xaden](https://xaden.dev). Start with `xaden prompt kickoff`; run the checks with `xaden check`.\n' "$NAME" >"$dir/README.md"
+  printf '# %s\n\nBuilt with [Xaden](https://xaden.dev). Start with `xaden prompt kickoff --run`: it starts your AI assistant with the kickoff questions. Run the checks with `xaden check`.\n' "$NAME" >"$dir/README.md"
   printf '.env\n.env.*\n!.env.example\nnode_modules/\n.venv/\n__pycache__/\n.DS_Store\n' >"$dir/.gitignore"
   # The security policy and the threat model start from Xaden's templates, with TODO markers that block a release.
   sed "s/{{PROJECT_NAME}}/$NAME/g" "$SCAFFOLD_ROOT/template/SECURITY.md" >"$dir/SECURITY.md"
@@ -183,7 +183,7 @@ summary() {
     info "no remote yet. Connect one with: git -C $TARGET remote add origin <url>"
   fi
   if [ -z "$STACK" ]; then
-    ok "$NAME is ready. Next: open $TARGET in your assistant and run: xaden prompt kickoff"
+    ok "$NAME is ready. Next: in $TARGET run: xaden prompt kickoff --run (starts your AI assistant with the kickoff prompt)"
     return 0
   fi
   info "install the development tools (run this yourself):"

@@ -14,6 +14,7 @@ Turn my idea into tracked requirements, a stack decision, and a first runnable s
 
 ## Inputs
 - Idea: {{describe what you want to build, who uses it, what "done" looks like}}
+  If that is still the placeholder in braces, ask me for the idea first (what, for whom, what "done" looks like) and wait.
 
 ## Steps
 1. Read `AGENTS.md`. Do not write code yet.
