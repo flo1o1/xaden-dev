@@ -479,7 +479,7 @@ test_signed_only_in_generated_ci() {
   version="$(conf_get "$worktree/xaden/xaden.conf" version)"
   checksum="$(conf_get "$worktree/xaden/xaden.conf" checksum)"
   rm -rf "$ci" && mkdir -p "$ci/temp" "$ci/home"
-  git -C "$SCAFFOLD_ROOT" archive --prefix="xaden-$version/" HEAD | gzip >"$ci/release.tar.gz"
+  git -C "$SCAFFOLD_ROOT" archive --prefix="xaden-dev-$version/" HEAD | gzip >"$ci/release.tar.gz"
   # the install step of the generated workflow, with the download replaced by the local archive
   awk '/- name: Install Xaden/ { on = 1; next } on && /run: \|/ { run = 1; next } run && /- name:/ { exit } run { sub(/^          /, ""); print }' \
     "$worktree/.github/workflows/xaden.yml" |
@@ -490,12 +490,12 @@ test_signed_only_in_generated_ci() {
     XADEN_VERSION="$version" XADEN_CHECKSUM="$checksum" bash "$ci/install.sh") >"$XOUT" 2>&1 || XRC=$?
   assert "CI installs the pinned tree" test "$XRC" -eq 0
   XRC=0
-  (cd "$worktree" && env -u CI -u XADEN_HOME -u XDG_DATA_HOME HOME="$ci/home" "$ci/temp/xaden-$version/scripts/xaden.sh" check) >"$XOUT" 2>&1 || XRC=$?
+  (cd "$worktree" && env -u CI -u XADEN_HOME -u XDG_DATA_HOME HOME="$ci/home" "$ci/temp/xaden-dev-$version/scripts/xaden.sh" check) >"$XOUT" 2>&1 || XRC=$?
   assert "CI: the signed-only check accepts exactly the pinned tree" bash -c '! grep -q "requires signed releases" "$1"' _ "$XOUT"
   assert "CI: the checks run" grep -q 'check mode: full' "$XOUT"
-  printf 'changed\n' >>"$ci/temp/xaden-$version/README.md"
+  printf 'changed\n' >>"$ci/temp/xaden-dev-$version/README.md"
   XRC=0
-  (cd "$worktree" && env -u CI -u XADEN_HOME -u XDG_DATA_HOME HOME="$ci/home" "$ci/temp/xaden-$version/scripts/xaden.sh" check) >"$XOUT" 2>&1 || XRC=$?
+  (cd "$worktree" && env -u CI -u XADEN_HOME -u XDG_DATA_HOME HOME="$ci/home" "$ci/temp/xaden-dev-$version/scripts/xaden.sh" check) >"$XOUT" 2>&1 || XRC=$?
   assert "CI: a changed tree is refused" grep -q 'does not match the checksum pinned' "$XOUT"
 }
 
