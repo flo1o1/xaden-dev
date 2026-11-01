@@ -344,6 +344,9 @@ test_ci_credentials() {
     assert "$(basename "$workflow"): checkout does not persist credentials" \
       test "$(grep -c 'uses: actions/checkout@' "$workflow")" = "$(grep -c 'persist-credentials: false' "$workflow")"
   done
+  # REQ-106: a tag archive unpacks into xaden-dev-<version>, the repository name, not xaden-<version>
+  assert "adopted ci.yml enters the folder the tag archive unpacks into" \
+    test "$(grep -c 'RUNNER_TEMP/xaden-[$]{' "$SCAFFOLD_ROOT/scripts/adopt/ci.yml")" = 0
   # REQ-004: the registry rules are the one unpinned input; the workflow says so where it runs
   assert "scaffold-ci.yml: unpinned semgrep registry rules are marked as intentional" \
     grep -q 'registry rules are not pinned on purpose' "$SCAFFOLD_ROOT/.github/workflows/scaffold-ci.yml"

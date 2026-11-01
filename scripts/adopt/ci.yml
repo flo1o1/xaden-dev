@@ -34,7 +34,7 @@ jobs:
         run: |
           set -euo pipefail
           curl -fsSL "https://github.com/flo1o1/xaden-dev/archive/refs/tags/v${XADEN_VERSION}.tar.gz" | tar -xz -C "$RUNNER_TEMP"
-          cd "$RUNNER_TEMP/xaden-${XADEN_VERSION}"
+          cd "$RUNNER_TEMP/xaden-dev-${XADEN_VERSION}"
           if [ -n "$(find . ! -type f ! -type d | head -n 1)" ]; then
             echo "ERROR: Xaden ${XADEN_VERSION} holds a link or special file; its checksum would not cover it" >&2
             exit 1
@@ -58,7 +58,7 @@ jobs:
           # signed checksum under that setting) and records it for this tree and no other.
           mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/xaden/versions"
           printf '%s\n' "$XADEN_CHECKSUM" >"${XDG_DATA_HOME:-$HOME/.local/share}/xaden/versions/${XADEN_VERSION}.signed"
-          echo "$RUNNER_TEMP/xaden-${XADEN_VERSION}/scripts" >>"$GITHUB_PATH"
+          echo "$RUNNER_TEMP/xaden-dev-${XADEN_VERSION}/scripts" >>"$GITHUB_PATH"
       - name: Set up Python (semgrep is installed from a hashed lock file for 3.12)
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -72,7 +72,7 @@ jobs:
           # Every wheel is checked against the hashes in the lock file of the Xaden tree verified above.
           python -m venv "$RUNNER_TEMP/semgrep-venv"
           "$RUNNER_TEMP/semgrep-venv/bin/python" -m pip install --require-hashes --only-binary=:all: \
-            -r "$RUNNER_TEMP/xaden-${XADEN_VERSION}/scripts/adopt/semgrep.lock"
+            -r "$RUNNER_TEMP/xaden-dev-${XADEN_VERSION}/scripts/adopt/semgrep.lock"
           echo "$RUNNER_TEMP/semgrep-venv/bin" >>"$GITHUB_PATH"
           archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
