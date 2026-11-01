@@ -8,6 +8,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 - `xaden prompt <name>` in a terminal ends with a note that the text is an instruction for an AI assistant and how to use it, and `xaden prompt <name> --run [assistant]` starts Claude Code or Codex CLI with the prompt as its first message, asking which one when both are installed; output that is not a terminal is unchanged, and the kickoff prompt asks for the idea while it is still the placeholder. `xaden project create` and the new README name `xaden prompt kickoff --run` as the next step (REQ-162).
 - `xaden project create` asks for the remote Git URL in a terminal, so the project is connected to a repository from the start; `--remote <url>` answers it in advance and `skip` adds none (REQ-161). Xaden only runs `git remote add origin <url>`: it never contacts the URL or pushes. Only `https://`, `ssh://` and `user@host:path` addresses are accepted, never one with a password in it.
 
+### Fixed
+- The workflow `xaden project adopt` writes enters `xaden-dev-<version>`, the folder the release tag archive unpacks into, instead of `xaden-<version>`, so its install step no longer stops with "No such file or directory". A workflow written by 0.6.0 needs `xaden project pin` to get the fixed one as `xaden.yml-dist` (REQ-106).
+
 ## [0.6.0] - 2026-10-22
 
 ### Added
