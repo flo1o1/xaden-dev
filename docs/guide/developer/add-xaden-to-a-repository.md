@@ -6,7 +6,7 @@ The result is one pull request that your team reviews.
 ## Before you start
 
 - Xaden is installed ([Install Xaden](../admin/install-xaden.md)).
-- You work in a clone of the repository, and it has at least one commit or is empty.
+- You work in a clone of the repository, and it has at least one commit or is empty. A folder that is no Git repository yet is fine too (see below).
 
 ## Adopt the repository
 
@@ -23,6 +23,10 @@ both.
 
 Check that it worked: in the new folder, `xaden check` ends with `OK: all checks passed`, or with a warning that names every skipped
 check.
+
+## A folder without a Git repository
+
+In a folder that is no repository, `xaden project adopt` asks `Set up a Git repository in <folder> now?`. A yes runs `git init -b main` in the folder you are in and goes on as in an empty repository: the files that are there stay untracked, and the adoption lands on `chore/adopt-xaden`. `xaden project adopt --init` does the same without the question, also in a script. Xaden runs `git init` only: no commit, no remote. The closing hint names `git remote add origin <url>`. Xaden never sets up a repository in your home folder or in `/`, and `--scan` and `--plan` stay previews: they ask nothing and set up nothing.
 
 ## Look first, change nothing
 

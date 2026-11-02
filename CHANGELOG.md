@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ## [Unreleased]
 
+### Added
+- `xaden project adopt` in a folder without a Git repository asks `Set up a Git repository in <folder> now?`; yes runs `git init -b main` and the adoption goes on, and `--init` does it without the question, also without a terminal. Xaden runs `git init` only (no commit, no remote), never in the home folder or `/`, and `--scan` and `--plan` set up nothing (REQ-163).
+
 ## [0.7.0] - 2026-11-01
 
 ### Added
