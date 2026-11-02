@@ -17,6 +17,9 @@ lists them, and `INDEX-full.md` holds the full table.
 
 36 done, 5 dropped.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-163 | job | should | approved | xaden project adopt offers to set up a Git repository when there is none |
 
 ## Quality gates (`quality-gates`)
 
