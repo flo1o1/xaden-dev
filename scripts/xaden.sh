@@ -83,8 +83,9 @@ Start and keep (any directory):
                      create a project in ./<name>, or in <dir>, with the xaden/ layout
   create --autopilot --stack python|node <name>
                      create it with the recommended setup after one confirmation
-  adopt [--scan|--plan]
+  adopt [--scan|--plan] [--init]
                      add Xaden to the repository you are in, on a branch (scan and plan change nothing)
+                     --init sets up a Git repository first when there is none
   remove             take Xaden out of the repository you are in
 
 Inside a project that adopted Xaden:

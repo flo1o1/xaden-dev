@@ -2,7 +2,7 @@
 # Adds Xaden to an existing repository, or takes it out again (REQ-066, REQ-067, REQ-069, REQ-070, REQ-073).
 # Usage: xaden project adopt [--scan | --plan] [--yes] [--assistants <list>] [--mode <mode>]
 #                    [--check <kind>=<command>]... [--preset | --no-preset] [--worktrees | --no-worktrees] [--codeowner <@owner>] [--skip-hooks] [--skip-ci]
-#                    [--commit-convention <conventional|other>]
+#                    [--commit-convention <conventional|other>] [--init]
 #        xaden project remove [--yes]
 #   --scan        read the repository and report what it has; changes nothing
 #   --plan        print the exact diff and the files a run would create or change; changes nothing
@@ -12,6 +12,7 @@
 #   --mode        advisory | changed-files | strict   default: changed-files
 #   --check       name a command the scan could not find, for example --check test="make verify"
 #   --commit-convention  conventional | other   default: what the scan finds in the history
+#   --init        no Git repository here: set one up with git init without asking (without it, a terminal gets the question)
 # The repository's own build, tests, docs and workflows are never changed: Xaden adds the folder
 # xaden/, a marked block in AGENTS.md, and for Claude Code users the line @AGENTS.md in CLAUDE.md
 # and one slash command file in .claude/commands/ for each prompt (existing files stay).
@@ -37,12 +38,14 @@ TOOLS_DIR="$SCAFFOLD_ROOT/template"
 ADOPT_REPO=""
 STOP_AFTER=""          # scan or plan
 ASSUME_YES=0
+ADOPT_INIT=0           # --init: set up a repository here when there is none (REQ-163)
+ADOPT_INITIALISED=0    # this run set one up: the closing hint names the remote
 PRESET_CHOICE=ask      # ask, yes, no
 WORKTREES_CHOICE=ask   # ask, yes, no
 EXIT_UNSUPPORTED=4     # an unsupported hook manager or CI system (a manual step is printed)
 
 usage() {
-  sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 # is_codeowner <text>: true for @user or @org/team, the forms a CODEOWNERS file accepts here.
@@ -55,6 +58,7 @@ parse_arguments() {
       --scan) STOP_AFTER=scan ;;
       --plan | --dry-run) STOP_AFTER=plan ;;
       --yes) ASSUME_YES=1 ;;
+      --init) ADOPT_INIT=1 ;;
       --preset) PRESET_CHOICE=yes ;;
       --no-preset) PRESET_CHOICE=no ;;
       --worktrees) WORKTREES_CHOICE=yes ;;
@@ -299,6 +303,7 @@ apply_plan() {
   if [ "$SCAN_HOOKS" != husky ] && [ "$ADOPT_HOOKS" = 1 ]; then install_local_hooks "$ADOPT_REPO"; fi
   ok "Xaden $(running_version) is on branch $ADOPT_BRANCH in $worktree"
   echo "Next: review the commits, then push the branch and open a pull request your team reviews:"
+  if [ "$ADOPT_INITIALISED" = 1 ]; then echo "  git -C \"$worktree\" remote add origin <url>   (this repository has no remote yet)"; fi
   echo "  git -C \"$worktree\" push -u origin $ADOPT_BRANCH"
   offer_pull_request "$worktree"
 }
@@ -312,11 +317,27 @@ offer_pull_request() {
   fi
 }
 
+# offer_repository: no repository around the current folder: with --init or a yes, git init here (REQ-163).
+# Only a real adoption does it (--scan and --plan stay previews), never in the home folder or / (a repository
+# there would cover everything below it), and it runs git init only: no commit, no remote.
+offer_repository() {
+  local folder home
+  [ -z "$STOP_AFTER" ] || return 0
+  folder="$(pwd -P)"
+  home="$(cd "${HOME:-/}" 2>/dev/null && pwd -P)" || home=/
+  [ "$folder" != / ] && [ "$folder" != "$home" ] || return 0
+  if [ "$ADOPT_INIT" != 1 ]; then ask "Set up a Git repository in $folder now?" || return 0; fi
+  git init -q -b main || die "git init failed in $folder"
+  ADOPT_INITIALISED=1
+  ok "Git repository set up in $folder (no commit, no remote)"
+}
+
 # adopt_main <args...>
 adopt_main() {
   parse_arguments "$@"
   has_command git || die "git is required"
-  ADOPT_REPO="$(git rev-parse --show-toplevel 2>/dev/null)" || die "this is not a git repository; run 'git init' first"
+  git rev-parse --show-toplevel >/dev/null 2>&1 || offer_repository
+  ADOPT_REPO="$(git rev-parse --show-toplevel 2>/dev/null)" || die "this is not a git repository; run 'git init' first, or let Xaden do it with --init"
   [ ! -f "$ADOPT_REPO/xaden/xaden.conf" ] || die "Xaden is adopted here already (xaden/xaden.conf). Move it with: xaden project pin"
   ADOPT_DEFAULT_BRANCH="$(default_branch)"
   scan_repository "$ADOPT_REPO"
