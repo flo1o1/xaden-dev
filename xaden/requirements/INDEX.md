@@ -36,11 +36,8 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Requirements (`requirements`)
 
-6 done, 1 dropped.
+7 done, 1 dropped.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-164 | job | should | approved | A mistyped req call shows the call I type and accepts a short ID |
 
 ## Security (`security`)
 

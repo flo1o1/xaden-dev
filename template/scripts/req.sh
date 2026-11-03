@@ -10,6 +10,8 @@ set -euo pipefail
 
 # SCRIPTS: where the tooling lives. ROOT: the repository it works on; PROJECT_ROOT lets
 # another repository (e.g. the scaffold itself) reuse these scripts.
+# CALL: how the person typed this command; xaden sets REQ_CALL="xaden req" (REQ-164).
+CALL="${REQ_CALL:-scripts/req.sh}"
 SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${PROJECT_ROOT:-$(cd "$SCRIPTS/.." && pwd)}"
 # shellcheck source=SCRIPTDIR/lib.sh
@@ -31,7 +33,7 @@ list_requirements() {
     case "$1" in
       --epic) epic="${2:-}"; [ -n "$epic" ] || die "--epic needs an epic name"; shift 2 ;;
       --status) status="${2:-}"; [ -n "$status" ] || die "--status needs a status"; shift 2 ;;
-      *) die "usage: scripts/req.sh list [--epic <epic>] [--status <status>]" ;;
+      *) die "usage: $CALL list [--epic <epic>] [--status <status>]" ;;
     esac
   done
   [ -z "$status" ] || case " $REQUIREMENT_STATUSES " in *" $status "*) ;; *) die "status must be one of: $REQUIREMENT_STATUSES" ;; esac
@@ -62,7 +64,7 @@ path_matches() {
 # requirements_for <path>...: "ID [status, priority] title" of each requirement whose "paths:" line
 # matches one of the paths; a requirement without "paths:" never matches (REQ-127).
 requirements_for() {
-  [ $# -gt 0 ] || die "usage: scripts/req.sh for <path>..."
+  [ $# -gt 0 ] || die "usage: $CALL for <path>..."
   local id status priority title paths entry path rest
   requirement_records "$DIR" | LC_ALL=C sort | while IFS=$'\t' read -r id status priority _ _ title _ paths; do
     [ -n "$paths" ] || continue
@@ -81,7 +83,7 @@ requirements_for() {
 # find_requirements <word>...: "ID [status, priority] title" of each requirement whose file holds every
 # word, ignoring case; it never prints a whole file (REQ-127).
 find_requirements() {
-  [ $# -gt 0 ] || die "usage: scripts/req.sh find <word>..."
+  [ $# -gt 0 ] || die "usage: $CALL find <word>..."
   local id status priority title path word hit
   requirement_records "$DIR" | LC_ALL=C sort | while IFS=$'\t' read -r id status priority _ _ title path _; do
     hit=1
@@ -93,9 +95,11 @@ find_requirements() {
 # show_requirement <REQ-nnn> [--brief]: prints the path and the content of one requirement; with
 # --brief only status, title, the job or quality goal and the acceptance criteria (REQ-126).
 show_requirement() {
-  local path brief=""
-  path="$(requirement_path "$DIR" "$1")"
-  case "${2:-}" in "") ;; --brief) brief=1 ;; *) die "usage: scripts/req.sh show REQ-nnn [--brief]" ;; esac
+  local path brief="" id="$1"
+  # 15, REQ-15 and req-015 all mean REQ-015 (REQ-164)
+  case "${id#[Rr][Ee][Qq]-}" in *[!0-9]* | "") ;; *) id="$(printf 'REQ-%03d' "$((10#${id#[Rr][Ee][Qq]-}))")" ;; esac
+  path="$(requirement_path "$DIR" "$id")"
+  case "${2:-}" in "") ;; --brief) brief=1 ;; *) die "usage: $CALL show REQ-nnn [--brief]" ;; esac
   printf 'File: %s\n\n' "${path#"$ROOT"/}"
   if [ -z "$brief" ]; then cat "$path"; return 0; fi
   awk '
@@ -137,5 +141,5 @@ case "${1:-}" in
   find) shift; find_requirements "$@" ;;
   new) new_requirement "${2:-}" "${3:-}" "${4:-}" ;;
   index) write_index && info "wrote ${DIR#"$ROOT"/}/$INDEX_FILE" ;;
-  *) die "usage: scripts/req.sh list [--epic <epic>] [--status <status>] | show REQ-nnn [--brief] | for <path>... | find <word>... | new <epic> <job|quality> \"<title>\" | index" ;;
+  *) die "usage: $CALL list [--epic <epic>] [--status <status>] | show REQ-nnn [--brief] | for <path>... | find <word>... | new <epic> <job|quality> \"<title>\" | index" ;;
 esac

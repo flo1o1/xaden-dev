@@ -3,7 +3,7 @@ id: REQ-164
 type: job
 epic: requirements
 priority: should
-status: approved
+status: done
 updated: 2026-11-03
 paths: template/scripts/req.sh, template/scripts/requirements-lib.sh, scripts/xaden.sh
 ---
