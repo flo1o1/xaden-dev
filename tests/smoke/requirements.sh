@@ -78,6 +78,13 @@ test_requirement_files() {
   assert "req.sh new adds the epic and updates the index" bash -c "test -f '$WORKDIR/variants/stale-index/xaden/requirements/billing/EPIC.md' \
     && grep -q '| REQ-002 | job | should | draft | Export invoices |' '$WORKDIR/variants/stale-index/xaden/requirements/INDEX.md'"
   assert "req.sh show prints the requirement file" bash -c "PROJECT_ROOT='$DEMO' '$SCAFFOLD_ROOT/template/scripts/req.sh' show REQ-001 | grep -q '^## Acceptance criteria'"
+  # REQ-164 a mistyped call shows the call that was typed and accepts a short ID
+  assert_fails_with "REQ-164 req.sh run directly names itself in the usage" 'usage: scripts/req.sh list' demo_req
+  x_in "$DEMO" req
+  assert "REQ-164 xaden req names itself in the usage" grep -q 'usage: xaden req list' "$XOUT"
+  assert "REQ-164 show accepts 1, REQ-1 and req-001" bash -c "for id in 1 REQ-1 req-001; do \
+    PROJECT_ROOT='$DEMO' '$SCAFFOLD_ROOT/template/scripts/req.sh' show \$id | grep -q '^id: REQ-001' || exit 1; done"
+  assert_fails_with "REQ-164 an unknown ID names the last one" 'does not exist.*last: REQ-001, see: list' demo_req show 999
   # REQ-003: the CC summary is loaded every session; the details are read when code is written or reviewed
   local prompt
   for prompt in feature bugfix refactor code-review; do

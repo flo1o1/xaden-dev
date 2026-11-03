@@ -171,7 +171,7 @@ run_tool_script() {
   local root=$1 script=$2
   shift 2
   cd "$root"
-  PROJECT_ROOT="$root" exec "$TOOLS/$script" "$@"
+  REQ_CALL="xaden req" PROJECT_ROOT="$root" exec "$TOOLS/$script" "$@"
 }
 
 # report_leftover_dist <root>: names the <file>-dist files a pin left to merge (REQ-100).
@@ -416,7 +416,7 @@ scaffold_command() {
   cd "$root"
   case "$command" in
     check) exec "$root/scripts/check-scaffold.sh" "$@" ;;
-    req) PROJECT_ROOT=. exec "$root/template/scripts/req.sh" "$@" ;;
+    req) REQ_CALL="xaden req" PROJECT_ROOT=. exec "$root/template/scripts/req.sh" "$@" ;;
     context) PROJECT_ROOT=. RULES_FILE=template/AGENTS.md exec "$root/template/scripts/context-status.sh" "$@" ;;
   esac
 }

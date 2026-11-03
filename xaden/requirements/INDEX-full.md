@@ -155,6 +155,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-047 | job | should | done | One file per requirement, grouped in epic folders |
 | REQ-048 | job | should | dropped | Projects with a requirements table can migrate to the per-file format |
 | REQ-049 | job | should | done | The scaffold documents its own requirements in the per-file JTBD format |
+| REQ-164 | job | should | done | A mistyped req call shows the call I type and accepts a short ID |
 
 ## Security (`security`)
 
