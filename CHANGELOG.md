@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 ## [Unreleased]
 
 ### Fixed
+- `xaden project setup --help` prints a usage and changes nothing, and any other argument fails with exit code 2 before a hook is written; before, every argument was ignored and the setup ran (REQ-165, issue 115).
 - `xaden req` names itself in its usage line instead of `scripts/req.sh`, `show` accepts `15`, `REQ-15` and `req-015` for REQ-015, and an unknown ID names the last existing one and `list` (REQ-164).
 
 ## [0.7.0] - 2026-11-01
