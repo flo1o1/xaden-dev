@@ -144,6 +144,8 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-113 | job | should | approved | Xaden credits the tools it runs and says under which license |
 | REQ-116 | job | should | done | I see how Xaden maps to the AIDD Manifesto, including what it does not meet |
 | REQ-117 | job | should | done | Xaden calls itself AI-Driven Development, not vibe coding |
+| REQ-166 | job | should | approved | I can release a pre-release version |
+| REQ-167 | job | should | approved | `xaden check --release` is the release gate the release prompt names |
 
 ## Requirements (`requirements`)
 

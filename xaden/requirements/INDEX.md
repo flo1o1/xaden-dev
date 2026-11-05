@@ -33,6 +33,8 @@ lists them, and `INDEX-full.md` holds the full table.
 | ID | Type | Priority | Status | Title |
 |----|------|----------|--------|-------|
 | REQ-113 | job | should | approved | Xaden credits the tools it runs and says under which license |
+| REQ-166 | job | should | approved | I can release a pre-release version |
+| REQ-167 | job | should | approved | `xaden check --release` is the release gate the release prompt names |
 
 ## Requirements (`requirements`)
 
