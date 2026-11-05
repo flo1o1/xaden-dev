@@ -58,6 +58,7 @@ test_release() {
   git -C "$DEMO" commit -q --no-verify -am "docs: fill threat model"
   printf 'Rotate TODO list API keys yearly.\n' >>"$DEMO/SECURITY.md"
   assert "the word TODO in prose does not block a release" env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/check-docs.sh" --release
+  assert "REQ-167 check --release passes once the documents are filled" env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/check.sh" --release
   git -C "$DEMO" checkout -q -- SECURITY.md
   test_release_failures
   assert "release patch (release commit on main allowed)" bash -c "cd '$DEMO' && ALLOW_MAIN_COMMIT=0 xaden project release patch"
