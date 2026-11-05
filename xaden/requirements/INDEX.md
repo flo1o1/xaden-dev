@@ -17,6 +17,9 @@ lists them, and `INDEX-full.md` holds the full table.
 
 36 done, 5 dropped.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-165 | job | should | approved | `xaden project setup --help` shows help and changes nothing |
 
 ## Quality gates (`quality-gates`)
 

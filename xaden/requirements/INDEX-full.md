@@ -89,6 +89,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-141 | job | should | done | Adoption offers an owner for the files that control the checks |
 | REQ-155 | job | should | done | A project name may contain dots |
 | REQ-161 | job | should | done | `xaden project create` offers to connect a remote |
+| REQ-165 | job | should | approved | `xaden project setup --help` shows help and changes nothing |
 
 ## Quality gates (`quality-gates`)
 
