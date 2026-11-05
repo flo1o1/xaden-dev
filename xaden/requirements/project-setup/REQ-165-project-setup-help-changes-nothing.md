@@ -3,7 +3,7 @@ id: REQ-165
 type: job
 epic: project-setup
 priority: should
-status: approved
+status: done
 updated: 2026-11-05
 paths: scripts/xaden.sh
 ---

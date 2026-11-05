@@ -256,6 +256,16 @@ verify_commits_main() {
   if [ "$status" -ne 0 ]; then warn "commit references: advisory only while commit-convention is '$convention'"; fi
 }
 
+# setup_args <args...>: `xaden project setup` takes no arguments. -h/--help prints the usage; anything else is an error
+# before setup_main writes a hook (REQ-165).
+setup_args() {
+  case "${1:-}" in
+    "") return 0 ;;
+    -h | --help) printf 'usage: xaden project setup\n  Activates the git hooks of this clone and reports missing tools. Takes no arguments.\n'; exit 0 ;;
+    *) printf 'usage: xaden project setup\n' >&2; exit 2 ;;
+  esac
+}
+
 # setup_main <root>: hooks and tools for one clone of an adopted project.
 setup_main() {
   local root=$1 manager
@@ -360,7 +370,7 @@ adopted_project_command() {
   shift 2
   select_pinned_version "$root" "$command" "$@"
   case "$command" in
-    setup) setup_main "$root" ;;
+    setup) setup_args "$@"; setup_main "$root" ;;
     check) run_tool_script "$root" check.sh "$@" ;;
     req) run_tool_script "$root" req.sh "$@" ;;
     context) run_tool_script "$root" context-status.sh "$@" ;;
