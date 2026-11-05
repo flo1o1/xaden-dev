@@ -6,6 +6,12 @@ Moved from `AGENTS.md` (REQ-126), rule IDs and wording unchanged. `AGENTS.md` sa
 
 - Semantic Versioning in `VERSION` (`MAJOR.MINOR.PATCH`). Do not edit it by hand;
   `scripts/release.sh <major|minor|patch>` does it — only run when the user asks.
+- Pre-releases (REQ-166): `scripts/release.sh minor --pre alpha` makes `0.1.0-alpha` from `0.0.x`; `scripts/release.sh pre` makes the next
+  (`alpha`, `alpha.2`, `alpha.3`), `pre --pre beta` changes the id (`alpha.2`, `beta`, `rc`) and `final` drops the suffix. A result that
+  does not sort higher under SemVer 2.0 is refused. Each pre-release stamps its own `CHANGELOG.md` section from `Unreleased`; the final stamps what is
+  left, so read the pre-release sections above it for the whole story. Checks, commit and tag are the same as for a stable release.
+- The release gate (REQ-167): `scripts/check.sh --release` is the full run plus the TODO markers in `SECURITY.md` and `docs/threat-model.md` and the
+  requirement placeholders; run it before you ask for the release.
 - Conventional Commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`; `!` or
   `BREAKING CHANGE:` for breaking changes. Enforced by the commit-msg hook.
 - `Refs:` must be a git trailer: in the last paragraph of the message, next to other trailers.

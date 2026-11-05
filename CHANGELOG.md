@@ -4,6 +4,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ## [Unreleased]
 
+### Added
+- `xaden project release <major|minor|patch> --pre <id>` makes a pre-release (`minor --pre alpha` from 0.0.x gives 0.1.0-alpha), `pre` makes the next one (`alpha`, `alpha.2`, `beta`, `rc`) and `final` drops the suffix; a result that does not sort higher under SemVer 2.0 is refused. Checks, changelog stamp, `VERSION`, commit and tag are the same as for a stable release, and every pre-release gets its own changelog section (REQ-166).
+- `xaden check --release` is the release gate the release prompt names: the full check, and unfilled TODO markers in `SECURITY.md` and the threat model or placeholders in the requirements fail it (REQ-167).
+
 ### Fixed
 - `xaden project setup --help` prints a usage and changes nothing, and any other argument fails with exit code 2 before a hook is written; before, every argument was ignored and the setup ran (REQ-165, issue 115).
 - `xaden req` names itself in its usage line instead of `scripts/req.sh`, `show` accepts `15`, `REQ-15` and `req-015` for REQ-015, and an unknown ID names the last existing one and `list` (REQ-164).

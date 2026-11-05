@@ -94,9 +94,10 @@ Inside a project that adopted Xaden:
   add-preset <python|node>
                      add Xaden's preset for a stack and map its checks
   setup              activate git hooks, report missing tools
-  release <part>     cut a release: major, minor or patch
+  release <part> [--pre <id>]
+                     cut a release: major, minor, patch, pre or final; --pre <id> makes a pre-release
   persona new <name> create a user persona
-  check [...]        static analysis (--staged, --strict)
+  check [...]        static analysis (--staged, --strict, --release)
   req [...]          requirements: list, show, new, index
   help               list these commands
 EOF
