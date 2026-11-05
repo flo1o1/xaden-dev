@@ -362,17 +362,79 @@ tag_release_or_report() {
   fi
 }
 
-# bump_version <current> <major|minor|patch>: prints the next SemVer.
+# semver_compare <a> <b>: prints -1, 0 or 1 by SemVer 2.0 precedence (section 11): the core
+# numerically, a version without a pre-release above the same core with one, pre-release
+# identifiers left to right (numbers below words, words in ASCII order, fewer fields lower).
+semver_compare() {
+  LC_ALL=C awk -v a="$1" -v b="$2" '
+    function isnum(s) { return s ~ /^[0-9]+$/ }
+    function cmp(x, y) { return x < y ? -1 : (x > y ? 1 : 0) }
+    function core(v, i) { i = index(v, "-"); return i ? substr(v, 1, i - 1) : v }
+    function pre(v, i) { i = index(v, "-"); return i ? substr(v, i + 1) : "" }
+    BEGIN {
+      split(core(a), x, "."); split(core(b), y, ".")
+      for (i = 1; i <= 3; i++) { c = cmp(x[i] + 0, y[i] + 0); if (c) { print c; exit } }
+      if (pre(a) == "" && pre(b) == "") { print 0; exit }
+      if (pre(a) == "") { print 1; exit }
+      if (pre(b) == "") { print -1; exit }
+      na = split(pre(a), p, "."); nb = split(pre(b), q, ".")
+      for (i = 1; i <= na && i <= nb; i++) {
+        if (isnum(p[i]) && isnum(q[i])) c = cmp(p[i] + 0, q[i] + 0)
+        else if (isnum(p[i])) c = -1
+        else if (isnum(q[i])) c = 1
+        else c = cmp(p[i], q[i])
+        if (c) { print c; exit }
+      }
+      print cmp(na, nb)
+    }'
+}
+
+# is_prerelease_semver <string>: true for the pre-releases Xaden makes: X.Y.Z-<id> or X.Y.Z-<id>.<n>, n from 1 (REQ-166).
+is_prerelease_semver() {
+  printf '%s' "$1" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-[A-Za-z][0-9A-Za-z-]*(\.[1-9][0-9]*)?$'
+}
+
+# bump_version <current> <major|minor|patch|pre|final> [<pre-release id>]: prints the next SemVer (REQ-166).
+#   major|minor|patch  bump a stable version; with an id the result is a pre-release (0.0.0 minor alpha: 0.1.0-alpha)
+#   pre                next pre-release: same id counts up (alpha, alpha.2), another id starts it (beta)
+#   final              drops the pre-release suffix
+# Dies unless the result sorts after <current> (semver_compare).
 bump_version() {
-  local current=$1 part=$2 major minor patch
-  is_semver "$current" || die "not a valid SemVer: $current"
-  IFS=. read -r major minor patch <<EOF
-$current
-EOF
+  local current=$1 part=$2 id=${3:-} base suffix current_id="" number=1 major minor patch next
+  if is_prerelease_semver "$current"; then
+    base=${current%%-*} suffix=${current#*-} current_id=${suffix%%.*}
+    case "$suffix" in *.*) number=${suffix#*.} ;; esac
+  else
+    is_semver "$current" || die "not a valid SemVer: $current (Xaden bumps X.Y.Z, X.Y.Z-<id> and X.Y.Z-<id>.<n>)"
+    base=$current
+  fi
+  [ -z "$id" ] || printf '%s' "$id" | grep -Eq '^[A-Za-z][0-9A-Za-z-]*$' ||
+    die "pre-release id must start with a letter and hold only letters, digits and - (got: $id)"
   case "$part" in
-    major) printf '%d.0.0\n' $((major + 1)) ;;
-    minor) printf '%d.%d.0\n' "$major" $((minor + 1)) ;;
-    patch) printf '%d.%d.%d\n' "$major" "$minor" $((patch + 1)) ;;
-    *) die "bump part must be major, minor or patch (got: $part)" ;;
+    major | minor | patch)
+      [ -z "$current_id" ] || die "$current is a pre-release: 'pre' makes the next one, 'final' releases $base"
+      IFS=. read -r major minor patch <<EOF
+$base
+EOF
+      case "$part" in
+        major) next="$((major + 1)).0.0" ;;
+        minor) next="$major.$((minor + 1)).0" ;;
+        patch) next="$major.$minor.$((patch + 1))" ;;
+      esac
+      [ -z "$id" ] || next="$next-$id"
+      ;;
+    pre)
+      [ -n "$current_id" ] || die "$current is not a pre-release: start one with major, minor or patch and --pre <id>"
+      id=${id:-$current_id}
+      if [ "$id" = "$current_id" ]; then next="$base-$id.$((number + 1))"; else next="$base-$id"; fi
+      ;;
+    final)
+      [ -n "$current_id" ] || die "$current is not a pre-release; nothing to finalize"
+      [ -z "$id" ] || die "--pre does not go with final"
+      next=$base
+      ;;
+    *) die "release part must be major, minor, patch, pre or final (got: $part)" ;;
   esac
+  [ "$(semver_compare "$next" "$current")" = 1 ] || die "$next does not sort after $current (SemVer 2.0 precedence); nothing was changed"
+  printf '%s\n' "$next"
 }
