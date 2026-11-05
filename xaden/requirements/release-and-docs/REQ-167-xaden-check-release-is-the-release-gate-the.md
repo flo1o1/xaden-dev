@@ -11,7 +11,7 @@ updated: 2026-11-05
 
 ## Job
 
-When the release prompt tells my assistant to run `xaden check --release`, I want that command to exist, so the assistant does not stop on "unknown option" and the gate runs before I approve a release.
+When the release prompt tells my assistant to run `xaden check --release`, I want that command to exist, so I can run the gate before I approve a release and my assistant does not stop on "unknown option".
 
 ## Acceptance criteria
 

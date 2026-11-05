@@ -11,7 +11,7 @@ updated: 2026-11-05
 
 ## Job
 
-When I want to ship `0.1.0-alpha` or `0.2.0-rc.1`, I want `xaden project release` to make it, so the checks, the changelog stamp, `VERSION`, the release commit and the tag are not skipped by tagging by hand.
+When I want to ship `0.1.0-alpha` or `0.2.0-rc.1`, I want `xaden project release` to make it, so I can keep the checks, the changelog stamp, `VERSION`, the release commit and the tag instead of tagging by hand.
 
 ## Acceptance criteria
 
