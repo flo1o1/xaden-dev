@@ -3,8 +3,8 @@ id: REQ-162
 type: job
 epic: assistant-guidance
 priority: should
-status: approved
-updated: 2026-10-28
+status: done
+updated: 2026-11-05
 ---
 
 # A prompt printed in a terminal says what to do with it and offers to start my assistant

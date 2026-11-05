@@ -7,11 +7,8 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Assistant guidance (`assistant-guidance`)
 
-32 done, 3 dropped.
+33 done, 3 dropped.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-162 | job | should | approved | A prompt printed in a terminal says what to do with it and offers to start my assistant |
 
 ## Project setup (`project-setup`)
 
@@ -20,21 +17,13 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Quality gates (`quality-gates`)
 
-26 done, 1 dropped.
+27 done, 1 dropped.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-086 | job | should | approved | A check started from inside a check stops at once |
 
 ## Releases and documentation (`release-and-docs`)
 
-15 done.
+18 done.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-113 | job | should | approved | Xaden credits the tools it runs and says under which license |
-| REQ-166 | job | should | approved | I can release a pre-release version |
-| REQ-167 | job | should | approved | `xaden check --release` is the release gate the release prompt names |
 
 ## Requirements (`requirements`)
 
