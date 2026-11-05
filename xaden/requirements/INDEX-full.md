@@ -42,7 +42,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-125 | job | must | done | A review finding that is not fixed in this change is recorded, not lost in the chat |
 | REQ-126 | quality | must | done | The always-loaded context stays small however many requirements a project has |
 | REQ-127 | job | must | done | Assistants load only the requirements and conventions that touch the code they change |
-| REQ-162 | job | should | approved | A prompt printed in a terminal says what to do with it and offers to start my assistant |
+| REQ-162 | job | should | done | A prompt printed in a terminal says what to do with it and offers to start my assistant |
 
 ## Project setup (`project-setup`)
 
@@ -108,7 +108,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-068 | job | must | done | Legacy code never blocks a team that adopts Xaden |
 | REQ-078 | job | could | done | Branches name the requirement they relate to |
 | REQ-083 | job | should | done | The maintainer's local checks catch what CI catches |
-| REQ-086 | job | should | approved | A check started from inside a check stops at once |
+| REQ-086 | job | should | done | A check started from inside a check stops at once |
 | REQ-088 | job | should | done | CI runs once for each commit |
 | REQ-092 | job | could | done | A maintainer re-checks only the smoke area a change touched |
 | REQ-093 | job | should | done | A maintainer waits for CI once, not for the same suite twice |
@@ -141,11 +141,11 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-094 | job | should | done | Xaden installs from a signed release zip that holds no maintainer files |
 | REQ-103 | job | should | done | A team can require that every Xaden it runs came from a signed release |
 | REQ-104 | job | should | done | Contributors find working on Xaden in a Contributing section, apart from using it |
-| REQ-113 | job | should | approved | Xaden credits the tools it runs and says under which license |
+| REQ-113 | job | should | done | Xaden credits the tools it runs and says under which license |
 | REQ-116 | job | should | done | I see how Xaden maps to the AIDD Manifesto, including what it does not meet |
 | REQ-117 | job | should | done | Xaden calls itself AI-Driven Development, not vibe coding |
-| REQ-166 | job | should | approved | I can release a pre-release version |
-| REQ-167 | job | should | approved | `xaden check --release` is the release gate the release prompt names |
+| REQ-166 | job | should | done | I can release a pre-release version |
+| REQ-167 | job | should | done | `xaden check --release` is the release gate the release prompt names |
 
 ## Requirements (`requirements`)
 

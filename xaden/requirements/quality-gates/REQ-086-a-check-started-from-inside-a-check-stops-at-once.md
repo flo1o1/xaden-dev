@@ -3,8 +3,8 @@ id: REQ-086
 type: job
 epic: quality-gates
 priority: should
-status: approved
-updated: 2026-10-16
+status: done
+updated: 2026-11-05
 ---
 
 # A check started from inside a check stops at once
