@@ -131,10 +131,14 @@ Verification standard: OWASP ASVS (what to build), OWASP WSTG (how to test it).
   repository's own test and lint scripts. A pull request that changes `xaden.conf` therefore needs the same
   review as one that changes a build script. The adoption pull request and every `xaden project pin` show it. In CI,
   `check-settings.sh` (REQ-137) stops a pull request that changes the guarded settings until the label `xaden-settings-accepted` is added.
-  Its limits are accepted for now (review 2026-10-22, findings 2 and 3; REQ-160): the label is as strong as the right to label,
-  because it is tied to neither a person nor a commit; and the check is run by the Xaden version and the workflow of the pull request
-  itself, so a pull request that pins an older release without the check can change `check.*` in the same step. Close both with
-  code owners on `xaden/xaden.conf` and `.github/` (REQ-141) and a branch ruleset that requires a review.
+  Its limits (review 2026-10-22, findings 2 and 3; REQ-160): the label is as strong as the right to label,
+  because it is tied to neither a person nor a commit (open, second change of REQ-160). The checker no longer comes from the pull
+  request: `.github/workflows/xaden-settings.yml` runs on `pull_request_target`, so the base branch supplies the workflow file and the pinned Xaden,
+  and the pull request is only read with `git show`. This holds only while that job is a required status check; a repository that
+  has not added it, or that adopted before the workflow existed, is as before. The trigger is the sensitive part: a later change that checks
+  out, builds or runs anything from the pull request in that workflow, or gives its token write rights, would turn it into a
+  privilege escalation, so the static checks of `tests/smoke/adoption-checks.sh` fail on `pull_request.head`, on `ref:` and on `write`.
+  Also keep code owners on `xaden/xaden.conf` and `.github/` (REQ-141) and a branch ruleset that requires a review.
 - A release without a signature (or while `release-signers` holds no key) is pinned by the checksum of the
   archive just downloaded (trust on first use); the person sees the checksum and the team reviews it in the
   pull request. A stolen signing key or a maintainer who signs something malicious is not covered.

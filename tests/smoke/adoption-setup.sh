@@ -80,7 +80,7 @@ test_adopt_and_remove() {
   assert "adopt works on its own branch and worktree" test "$(git -C "$worktree" branch --show-current)" = "chore/adopt-xaden"
   assert "the default branch is untouched" test "$(git -C "$repo" rev-parse main)" = "$(git -C "$repo" rev-parse HEAD)"
   assert "the first commit message names Xaden" git -C "$worktree" log -1 --format=%s main..HEAD
-  changed="$(git -C "$worktree" diff --name-only main HEAD | grep -Ev '^(xaden/|AGENTS\.md$|CLAUDE\.md$|\.claude/commands/[a-z-]+\.md$|\.github/prompts/[a-z-]+\.prompt\.md$|\.agents/skills/[a-z-]+/SKILL\.md$|\.github/workflows/xaden\.yml$)' || true)"
+  changed="$(git -C "$worktree" diff --name-only main HEAD | grep -Ev '^(xaden/|AGENTS\.md$|CLAUDE\.md$|\.claude/commands/[a-z-]+\.md$|\.github/prompts/[a-z-]+\.prompt\.md$|\.agents/skills/[a-z-]+/SKILL\.md$|\.github/workflows/xaden(-settings)?\.yml$)' || true)"
   assert "only xaden/, AGENTS.md, CLAUDE.md, the command files and the documented workflow change (REQ-073)" test -z "$changed"
   assert "README, docs, scripts and CHANGELOG are untouched (REQ-066)" test -z "$(git -C "$worktree" diff --name-only main HEAD -- README.md docs scripts CHANGELOG.md package.json Makefile .github/workflows/ci.yml)"
   assert "the existing workflow is untouched" cmp -s "$repo/.github/workflows/ci.yml" "$worktree/.github/workflows/ci.yml"
@@ -119,9 +119,10 @@ test_adopt_and_remove() {
   assert "remove succeeds" test "$XRC" -eq 0
   assert "remove deletes the xaden folder" test ! -e "$worktree/xaden"
   assert "remove deletes the workflow and CLAUDE.md" test ! -e "$worktree/.github/workflows/xaden.yml" -a ! -e "$worktree/CLAUDE.md"
+  assert "REQ-160 remove deletes the settings workflow too" test ! -e "$worktree/.github/workflows/xaden-settings.yml"
   assert "remove keeps the team's text in AGENTS.md" grep -q 'text added by the team' "$worktree/AGENTS.md"
   assert "remove takes the block out" bash -c '! grep -q xaden "$1"' _ "$worktree/AGENTS.md"
-  assert "remove leaves nothing but the adoption's own paths in git status" test -z "$(git -C "$worktree" status --porcelain | grep -Ev ' (xaden/|AGENTS\.md|CLAUDE\.md|\.claude/commands/[a-z-]+\.md|\.github/workflows/xaden\.yml)' || true)"
+  assert "remove leaves nothing but the adoption's own paths in git status" test -z "$(git -C "$worktree" status --porcelain | grep -Ev ' (xaden/|AGENTS\.md|CLAUDE\.md|\.claude/commands/[a-z-]+\.md|\.github/workflows/xaden(-settings)?\.yml)' || true)"
   assert "remove unchains the git hooks" bash -c '! test -e "$1/.git/hooks/pre-commit"' _ "$repo"
 
   local no_ci="$WORKDIR/repos/no-ci" plain
@@ -188,7 +189,7 @@ test_claude_commands() {
   x_in "$wt" project remove --yes
   assert "remove deletes the files Xaden created" test ! -e "$wt/.claude/commands/xaden-bugfix.md" -a ! -e "$wt/.claude/commands/xaden-release.md"
   assert "remove keeps the team's own command" test "$(cat "$wt/.claude/commands/xaden-feature.md")" = "my own feature command"
-  assert "remove leaves no stray file" test -z "$(git -C "$wt" status --porcelain | grep -Ev ' (xaden/|AGENTS\.md|CLAUDE\.md|\.claude/commands/[a-z-]+\.md|\.github/workflows/xaden\.yml)' || true)"
+  assert "remove leaves no stray file" test -z "$(git -C "$wt" status --porcelain | grep -Ev ' (xaden/|AGENTS\.md|CLAUDE\.md|\.claude/commands/[a-z-]+\.md|\.github/workflows/xaden(-settings)?\.yml)' || true)"
 
   local plain="$WORKDIR/repos/commands-plain"
   make_repo "$plain" shop
@@ -233,7 +234,7 @@ test_other_assistant_commands() {
   x_in "$wt" project remove --yes
   assert "remove deletes the Copilot prompts and skills Xaden created" test ! -e "$wt/.github/prompts/xaden-bugfix.prompt.md" -a ! -e "$wt/.agents"
   assert "remove keeps the team's own prompt" test "$(cat "$wt/.github/prompts/xaden-feature.prompt.md")" = "my own feature prompt"
-  assert "remove leaves no stray file" test -z "$(git -C "$wt" status --porcelain | grep -Ev ' (xaden/|AGENTS\.md|\.github/prompts/[a-z-]+\.prompt\.md|\.agents/skills/[a-z-]+/SKILL\.md|\.github/workflows/xaden\.yml)' || true)"
+  assert "remove leaves no stray file" test -z "$(git -C "$wt" status --porcelain | grep -Ev ' (xaden/|AGENTS\.md|\.github/prompts/[a-z-]+\.prompt\.md|\.agents/skills/[a-z-]+/SKILL\.md|\.github/workflows/xaden(-settings)?\.yml)' || true)"
 
   # a file or folder of the assistant's own is what makes adopt offer it; .agents/ names neither Vibe nor Codex
   local vibe="$WORKDIR/repos/detect-vibe" copilot="$WORKDIR/repos/detect-copilot" codex="$WORKDIR/repos/detect-codex"

@@ -272,6 +272,9 @@ apply_ci() {
     -e "s/@DEFAULT_BRANCH@/$ADOPT_DEFAULT_BRANCH/g" "$SCAFFOLD_ROOT/scripts/adopt/ci.yml" >"$dir/$file"
   cat "$SCAFFOLD_ROOT/scripts/adopt/ci-commit-step.yml" >>"$dir/$file" # REQ-107: the step `xaden project pin` adds to older workflows
   note_footprint "$dir" file "$file"
+  # REQ-160: the check of the settings runs from the base branch, so a pull request cannot edit or skip it
+  cp "$SCAFFOLD_ROOT/scripts/adopt/settings-gate.yml" "$dir/.github/workflows/xaden-settings.yml"
+  note_footprint "$dir" file ".github/workflows/xaden-settings.yml"
 }
 
 # apply_codeowners <dir> (REQ-141): a candidate CODEOWNERS file, never over the project's own; the team merges it.

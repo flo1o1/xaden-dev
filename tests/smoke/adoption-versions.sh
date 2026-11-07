@@ -510,6 +510,7 @@ test_pin_offers_ci_candidate() {
     awk '/- name: Install the dependency audit and Bandit/ { skip = 1; next } skip && /- name:/ { skip = 0 } !skip { print }' >"$WORKDIR/old-ci.yml"
   cp "$WORKDIR/old-ci.yml" "$worktree/.github/workflows/xaden.yml"
   assert "the older workflow lacks the signed-record step" bash -c '! grep -q "\.signed" "$1"' _ "$worktree/.github/workflows/xaden.yml"
+  git -C "$worktree" rm -q -f .github/workflows/xaden-settings.yml # a project adopted before REQ-160 has no such workflow
   git -C "$worktree" add -A && git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "test: older workflow, signed only"
   fake_release "$releases" 9.9.8
   XADEN_RELEASES_URL="file://$releases" XADEN_HOME="$home" x_answers y "$worktree" project pin 9.9.8
@@ -519,7 +520,11 @@ test_pin_offers_ci_candidate() {
   assert "REQ-129 the project's workflow is not replaced" bash -c '! grep -q "\.signed" "$1"' _ "$upgraded/.github/workflows/xaden.yml"
   assert "REQ-129 pin names the diff command" grep -q 'diff .github/workflows/xaden.yml .github/workflows/xaden.yml-dist' "$XOUT"
   assert "REQ-129 the candidate is on the footprint list" grep -q 'xaden.yml-dist' "$upgraded/xaden/footprint.txt"
-  rm "$upgraded/.github/workflows/xaden.yml-dist"
+  assert "REQ-160 pin offers the settings workflow to a project that has none" cmp -s "$upgraded/.github/workflows/xaden-settings.yml-dist" "$SCAFFOLD_ROOT/scripts/adopt/settings-gate.yml"
+  assert "REQ-160 the settings candidate is on the footprint list" grep -q 'xaden-settings.yml-dist' "$upgraded/xaden/footprint.txt"
+  assert "REQ-160 pin names the required status check" grep -q 'required status check' "$XOUT"
+  assert "REQ-160 the project gets no settings workflow of its own from a pin" test ! -e "$upgraded/.github/workflows/xaden-settings.yml"
+  rm "$upgraded/.github/workflows/xaden.yml-dist" "$upgraded/.github/workflows/xaden-settings.yml-dist"
   printf 'require-signature = true\n' >>"$upgraded/xaden/xaden.conf"
   sed -e '/^command_name=/,$d' -e 's|^SCAFFOLD_ROOT=.*|SCAFFOLD_ROOT=${SCAFFOLD_ROOT:?}|' "$SCAFFOLD_ROOT/scripts/fetch.sh" >"$WORKDIR/fetch-functions.sh"
   XRC=0

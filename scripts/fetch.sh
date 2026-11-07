@@ -303,6 +303,20 @@ ci_candidate() {
   fi
 }
 
+# settings_candidate <worktree> <tools> (REQ-160): the workflow that judges the check settings from the base branch, beside
+# the project's own as xaden-settings.yml-dist when the project has none or another one. Like the main workflow it is never replaced.
+settings_candidate() {
+  local worktree=$1 tools=$2 version=$3 workflow candidate
+  [ -f "$tools/scripts/adopt/settings-gate.yml" ] || return 0
+  workflow="$worktree/.github/workflows/xaden-settings.yml"
+  candidate="$workflow-dist"
+  if cmp -s "$workflow" "$tools/scripts/adopt/settings-gate.yml"; then rm -f "$candidate"; return 0; fi
+  mkdir -p "$worktree/.github/workflows"
+  cp "$tools/scripts/adopt/settings-gate.yml" "$candidate"
+  note_footprint "$worktree" file ".github/workflows/xaden-settings.yml-dist"
+  warn "Xaden $version judges changed check settings from the base branch with .github/workflows/xaden-settings.yml; the new one is .github/workflows/xaden-settings.yml-dist (rename it, then make the job settings a required status check)"
+}
+
 # pin_main [--check] [version]
 pin_main() {
   local check_only=0 target="" conf root pinned tools checksum branch worktree base
@@ -357,6 +371,7 @@ pin_main() {
       cat "$tools/scripts/adopt/ci-commit-step.yml" >>"$worktree/.github/workflows/xaden.yml"
     fi
     ci_candidate "$worktree" "$tools" "$target" "$checksum"
+    settings_candidate "$worktree" "$tools" "$target"
   fi
   git -C "$worktree" add -A
   git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "chore: upgrade Xaden from $pinned to $target" \

@@ -217,6 +217,59 @@ test_scope_of_changed_files() {
   assert "REQ-137 the label accepts the change" grep -q 'accepted by the label' "$XOUT"
   scope_run EVENT_NAME=push BEFORE_SHA="$before_violation"
   assert "REQ-137 a push run compares nothing" bash -c '! grep -q "check settings changed" "$1"' _ "$XOUT"
+  # REQ-160 the trusted run: the checkout is the base, the pull request is a ref read as data, an unknown scope fails
+  local base_tip pr_ref=refs/xaden/pr-head own_branch
+  base_tip="$(git -C "$worktree" rev-parse HEAD)"
+  own_branch="$(git -C "$worktree" symbolic-ref --short HEAD)"
+  git -C "$worktree" update-ref refs/remotes/origin/release "$base_tip"
+  # trusted_run <variable=value>...: check-settings.sh the way .github/workflows/xaden-settings.yml runs it
+  trusted_run() {
+    XRC=0
+    (cd "$worktree" && env -u CI -u SETTINGS_ACCEPTED PROJECT_ROOT="$worktree" EVENT_NAME=pull_request BASE_REF=release HEAD_REF="$pr_ref" "$@" \
+      "$SCAFFOLD_ROOT/template/scripts/check-settings.sh") >"$XOUT" 2>&1 || XRC=$?
+  }
+  # pull_request <message> <command>: a pull request commit on top of the base, left as $pr_ref; the checkout stays on the base
+  pull_request() {
+    git -C "$worktree" checkout -q -b pr-under-test "$base_tip"
+    (cd "$worktree" && eval "$2")
+    git -C "$worktree" add -A && git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -m "$1"
+    git -C "$worktree" update-ref "$pr_ref" HEAD
+    git -C "$worktree" checkout -q "$own_branch" && git -C "$worktree" branch -q -D pr-under-test
+  }
+  pull_request "docs: unrelated" "printf 'x\\n' >>docs/guide.md"
+  trusted_run
+  assert "REQ-160 a pull request that changes no setting passes the trusted run" test "$XRC" -eq 0
+  pull_request "chore: run my command" "printf 'check.lint = echo pwned\\n' >>xaden/xaden.conf"
+  trusted_run
+  assert "REQ-160 a changed setting fails the trusted run" test "$XRC" -ne 0
+  assert "REQ-160 the trusted run names the line" grep -q 'now: check.lint = echo pwned' "$XOUT"
+  trusted_run SETTINGS_ACCEPTED=true
+  assert "REQ-160 the label accepts it in the trusted run" test "$XRC" -eq 0
+  pull_request "chore: old release" "sed -i.bak 's/^version = .*/version = 0.0.1/' xaden/xaden.conf && rm -f xaden/xaden.conf.bak"
+  trusted_run
+  assert "REQ-160 a pull request that pins an older Xaden is judged by the base" grep -q 'now: version = 0.0.1' "$XOUT"
+  pull_request "ci: skip the check" "mkdir -p .github/workflows && printf 'name: x\\n' >.github/workflows/xaden-settings.yml"
+  trusted_run
+  assert "REQ-160 a pull request that edits the settings workflow is reported" grep -q 'xaden-settings.yml differs from the merge base' "$XOUT"
+  pull_request "chore: drop the settings" "git rm -q xaden/xaden.conf"
+  trusted_run
+  assert "REQ-160 a pull request that removes xaden.conf fails" test "$XRC" -ne 0
+  pull_request "chore: odd baseline" "mkdir -p xaden/baselines && printf 'a\\nb\\n' >'xaden/baselines/evil::error::x.txt'"
+  trusted_run
+  assert "REQ-160 a baseline name outside the pattern never reaches the log" bash -c '! grep -q "evil" "$1"' _ "$XOUT"
+  trusted_run HEAD_REF=refs/xaden/missing
+  assert "REQ-160 an unknown pull request ref fails instead of passing" test "$XRC" -ne 0
+  trusted_run BASE_REF=missing-branch
+  assert "REQ-160 an unknown base branch fails instead of passing" test "$XRC" -ne 0
+  trusted_run HEAD_REF='x y'
+  assert "REQ-160 a ref with a space is refused" test "$XRC" -ne 0
+  git -C "$worktree" update-ref -d "$pr_ref"
+  # the workflow that runs it: base branch only, no code of the pull request
+  local gate="$SCAFFOLD_ROOT/scripts/adopt/settings-gate.yml"
+  assert "REQ-160 the settings workflow runs on pull_request_target" grep -q '^  pull_request_target:' "$gate"
+  assert "REQ-160 the settings workflow never names the head of the pull request" bash -c '! grep -q "pull_request.head" "$1" && ! grep -Eq "^[[:space:]]+ref:" "$1"' _ "$gate"
+  assert "REQ-160 the settings workflow can only read" bash -c 'grep -q "^  contents: read" "$1" && ! grep -Eq "write" "$1"' _ "$gate"
+  assert "REQ-160 the settings workflow verifies the pinned tree like the main one" bash -c 'for f in "$1/scripts/adopt/ci.yml" "$1/scripts/adopt/settings-gate.yml"; do grep -q "does not match the checksum in xaden/xaden.conf" "$f" && grep -q "find . ! -type f ! -type d" "$f" || exit 1; done' _ "$SCAFFOLD_ROOT"
   # REQ-154 a changed missing-tools line is an approval point like mode
   printf 'missing-tools = fail\n' >>"$conf"
   git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -am "chore: require the tools"
