@@ -24,6 +24,9 @@ lists them, and `INDEX-full.md` holds the full table.
 
 18 done.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-171 | job | should | approved | Parallel changes keep separate changelog fragments until release |
 
 ## Requirements (`requirements`)
 
