@@ -179,8 +179,35 @@ test_scoped_lookup() {
   assert "REQ-127 the session start asks for req for and a folder's own AGENTS.md" bash -c "grep -q 'xaden req for <files you plan to change>' '$(demo_rules_text)' && grep -q 'In a folder with its own .AGENTS.md., read that too' '$(demo_rules_text)'"
 }
 
+# REQ-169 req.sh new numbers across every branch of origin, and works without the remote
+test_req_new_across_branches() {
+  local req="$SCAFFOLD_ROOT/template/scripts/req.sh" remote="$WORKDIR/req169-remote.git" first second out
+  demo_variant number-first 's/x/x/' >/dev/null
+  first="$WORKDIR/variants/number-first"
+  second="$WORKDIR/variants/number-second"
+  export GIT_AUTHOR_NAME=smoke GIT_AUTHOR_EMAIL=smoke@example.invalid GIT_COMMITTER_NAME=smoke GIT_COMMITTER_EMAIL=smoke@example.invalid
+  git init -q --bare "$remote"
+  git -C "$first" init -q
+  git -C "$first" add -A && git -C "$first" commit -q -m base
+  git -C "$first" remote add origin "$remote"
+  git -C "$first" push -q origin HEAD:refs/heads/main
+  git clone -q -b main "$remote" "$second"
+  git -C "$second" checkout -q -b feat/other-branch
+  PROJECT_ROOT="$second" "$req" new billing job 'Export invoices' >/dev/null
+  git -C "$second" add -A && git -C "$second" commit -q -m draft
+  git -C "$second" push -q origin feat/other-branch
+  out="$(PROJECT_ROOT="$first" "$req" new billing job 'Refund a payment' 2>&1)"
+  assert "REQ-169 req.sh new skips a number another branch of origin uses" bash -c "printf '%s' '$out' | grep -q 'REQ-003-refund-a-payment.md'"
+  assert "REQ-169 req.sh new names the branch that holds the higher number" bash -c "printf '%s' '$out' | grep -q 'origin/feat/other-branch'"
+  git -C "$first" remote set-url origin "$WORKDIR/req169-missing.git"
+  out="$(PROJECT_ROOT="$first" "$req" new billing job 'Void a payment' 2>&1)"
+  assert "REQ-169 req.sh new still works when the remote is unreachable and says so" bash -c "printf '%s' '$out' | grep -q 'could not check the remote' && printf '%s' '$out' | grep -q 'REQ-00[0-9]-void-a-payment.md'"
+  unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
+}
+
 test_job_stories
 test_requirement_files
 test_traceability
 test_context_budget_index
 test_scoped_lookup
+test_req_new_across_branches

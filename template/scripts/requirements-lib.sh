@@ -117,11 +117,33 @@ slugify() {
   printf '%s' "$slug"
 }
 
-# next_requirement_id <requirements-dir>: the next free REQ-nnn (global across epics).
-next_requirement_id() {
+# highest_requirement_number <requirements-dir>: the highest REQ number in the folder, 0 when there is none.
+highest_requirement_number() {
   local highest
   highest="$(requirement_records "$1" | cut -f1 | sed -n 's/^REQ-0*\([0-9][0-9]*\)$/\1/p' | sort -n | tail -n 1)"
-  printf 'REQ-%03d' "$(( ${highest:-0} + 1 ))"
+  printf '%s' "${highest:-0}"
+}
+
+# remote_requirement_numbers <root> <requirements-path>: after a fetch, "<number> <branch>" for every origin branch that holds
+# requirements, with the highest REQ number of that branch (REQ-169). Fails when there is no origin or it is not reachable.
+remote_requirement_numbers() {
+  local root=$1 requirements_path=$2 ref
+  git -C "$root" remote get-url origin >/dev/null 2>&1 || return 1
+  GIT_TERMINAL_PROMPT=0 git -C "$root" fetch --quiet origin >/dev/null 2>&1 || return 1
+  git -C "$root" for-each-ref --format='%(refname:short)' refs/remotes/origin | while read -r ref; do
+    case "$ref" in origin | origin/HEAD) continue ;; esac
+    git -C "$root" ls-tree -r --name-only "$ref" -- "$requirements_path" \
+      | sed -n 's|.*/REQ-0*\([0-9][0-9]*\)-.*|\1|p' | sort -n | tail -n 1 | sed "s|\$| $ref|"
+  done
+}
+
+# next_requirement_id <requirements-dir> [highest-elsewhere]: the next free REQ-nnn (global across epics), above the folder
+# and above the highest number other branches use.
+next_requirement_id() {
+  local highest
+  highest="$(highest_requirement_number "$1")"
+  [ "${2:-0}" -le "$highest" ] || highest="$2"
+  printf 'REQ-%03d' "$(( highest + 1 ))"
 }
 
 # write_requirement <path> <id> <type> <epic> <priority> <status> <date> <title> <statement>
