@@ -7,11 +7,8 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Assistant guidance (`assistant-guidance`)
 
-33 done, 3 dropped.
+34 done, 3 dropped.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-170 | job | should | approved | Rules for parallel branches and resources that exist once per machine |
 
 ## Project setup (`project-setup`)
 
@@ -30,11 +27,8 @@ lists them, and `INDEX-full.md` holds the full table.
 
 ## Requirements (`requirements`)
 
-7 done, 1 dropped.
+8 done, 1 dropped.
 
-| ID | Type | Priority | Status | Title |
-|----|------|----------|--------|-------|
-| REQ-169 | job | should | approved | xaden req new hands out a number that is free across the repository |
 
 ## Security (`security`)
 

@@ -43,7 +43,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-126 | quality | must | done | The always-loaded context stays small however many requirements a project has |
 | REQ-127 | job | must | done | Assistants load only the requirements and conventions that touch the code they change |
 | REQ-162 | job | should | done | A prompt printed in a terminal says what to do with it and offers to start my assistant |
-| REQ-170 | job | should | approved | Rules for parallel branches and resources that exist once per machine |
+| REQ-170 | job | should | done | Rules for parallel branches and resources that exist once per machine |
 
 ## Project setup (`project-setup`)
 
@@ -162,7 +162,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-048 | job | should | dropped | Projects with a requirements table can migrate to the per-file format |
 | REQ-049 | job | should | done | The scaffold documents its own requirements in the per-file JTBD format |
 | REQ-164 | job | should | done | A mistyped req call shows the call I type and accepts a short ID |
-| REQ-169 | job | should | approved | xaden req new hands out a number that is free across the repository |
+| REQ-169 | job | should | done | xaden req new hands out a number that is free across the repository |
 
 ## Security (`security`)
 

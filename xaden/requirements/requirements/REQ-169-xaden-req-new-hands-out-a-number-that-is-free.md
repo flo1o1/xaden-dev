@@ -3,7 +3,7 @@ id: REQ-169
 type: job
 epic: requirements
 priority: should
-status: approved
+status: done
 updated: 2026-11-09
 paths: template/scripts/req.sh, template/scripts/requirements-lib.sh
 ---
