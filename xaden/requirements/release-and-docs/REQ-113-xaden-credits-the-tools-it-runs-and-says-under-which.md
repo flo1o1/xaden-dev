@@ -3,8 +3,8 @@ id: REQ-113
 type: job
 epic: release-and-docs
 priority: should
-status: approved
-updated: 2026-10-19
+status: done
+updated: 2026-11-05
 ---
 
 # Xaden credits the tools it runs and says under which license

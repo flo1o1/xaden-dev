@@ -8,6 +8,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 - `xaden project adopt` in a folder without a Git repository asks `Set up a Git repository in <folder> now?`; yes runs `git init -b main` and the adoption goes on, and `--init` does it without the question, also without a terminal. Xaden runs `git init` only (no commit, no remote), never in the home folder or `/`, and `--scan` and `--plan` set up nothing (REQ-163).
 
 ### Fixed
+- The staged check ignored `.github/actionlint.yaml`, because the snapshot has no `.git` and `actionlint` only finds its config inside a repository; custom runner labels were reported as unknown. The config file is now passed with `-config-file` (REQ-020, #123).
+- `xaden project pin` and `xaden aidd pin` create their worktree in the project's `worktrees/` folder when it exists (`worktrees/upgrade-xaden-<version>`, `worktrees/pin-aidd-<release>`); without the folder the path beside the project stays (REQ-168, issue 124).
+
+## [0.8.0] - 2026-11-05
+
+### Added
+- `xaden project release <major|minor|patch> --pre <id>` makes a pre-release (`minor --pre alpha` from 0.0.x gives 0.1.0-alpha), `pre` makes the next one (`alpha`, `alpha.2`, `beta`, `rc`) and `final` drops the suffix; a result that does not sort higher under SemVer 2.0 is refused. Checks, changelog stamp, `VERSION`, commit and tag are the same as for a stable release, and every pre-release gets its own changelog section (REQ-166).
+- `xaden check --release` is the release gate the release prompt names: the full check, and unfilled TODO markers in `SECURITY.md` and the threat model or placeholders in the requirements fail it (REQ-167).
+
+### Fixed
+- `xaden project setup --help` prints a usage and changes nothing, and any other argument fails with exit code 2 before a hook is written; before, every argument was ignored and the setup ran (REQ-165, issue 115).
 - `xaden req` names itself in its usage line instead of `scripts/req.sh`, `show` accepts `15`, `REQ-15` and `req-015` for REQ-015, and an unknown ID names the last existing one and `list` (REQ-164).
 
 ## [0.7.0] - 2026-11-01

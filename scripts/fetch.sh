@@ -336,7 +336,7 @@ pin_main() {
   checksum="$(tree_checksum "$tools" "$(signed_like "$target")")"
   base="$(git -C "$root" symbolic-ref -q --short HEAD)" || die "check out a branch first"
   branch="chore/upgrade-xaden-$target"
-  worktree="$(dirname "$root")/$(basename "$root")-upgrade-xaden-$target"
+  worktree="$(change_worktree_path "$root" "upgrade-xaden-$target")"
   [ ! -e "$worktree" ] || die "$worktree exists already; remove it first (git worktree remove)"
   git -C "$root" worktree add -q -b "$branch" "$worktree" "$base"
   conf_set "$worktree/xaden/xaden.conf" version "$target"

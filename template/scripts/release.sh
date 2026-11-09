@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Cuts a release: bumps VERSION (SemVer), stamps CHANGELOG and docs, commits, tags. Never pushes.
 # Refuses to release while the guides, SECURITY.md or the threat model contain TODO markers.
-# Usage: scripts/release.sh <major|minor|patch>
+# Usage: scripts/release.sh <major|minor|patch|pre|final> [--pre <id>]
 #   major = breaking change, minor = backwards-compatible feature, patch = bug fix
+#   --pre <id> makes a pre-release (0.0.0 minor --pre alpha: 0.1.0-alpha); pre = the next one
+#   (alpha, alpha.2, or --pre beta); final = drops the suffix (REQ-166). Each pre-release gets its own changelog section.
 set -euo pipefail
 
 # SCRIPTS: where the tooling lives. ROOT: the repository it works on; PROJECT_ROOT lets
@@ -20,17 +22,21 @@ stamp_release() {
 }
 
 main() {
-  local part=${1:-} current next
+  local part=${1:-} pre_id="" usage current next
   local release_files=(VERSION CHANGELOG.md)
   if [ ! -f VERSION ] || [ ! -f CHANGELOG.md ]; then
     die "xaden project release stamps VERSION and CHANGELOG.md; this repository has no such pair. Create them (VERSION: 0.0.0, CHANGELOG.md with a '## [Unreleased]' section) or release with your own process"
   fi
-  [ -n "$part" ] || die "usage: scripts/release.sh <major|minor|patch>"
+  usage="scripts/release.sh <major|minor|patch|pre|final> [--pre <id>]"
+  [ -n "$part" ] || die "usage: $usage"
+  shift
+  if [ "${1:-}" = "--pre" ]; then pre_id=${2:-}; [ -n "$pre_id" ] || die "usage: $usage"; shift 2; fi
+  [ "$#" -eq 0 ] || die "usage: $usage"
   git rev-parse --git-dir >/dev/null 2>&1 || die "not a git repository"
   [ -z "$(git status --porcelain)" ] || die "working tree not clean; commit or stash first"
 
   current="$(tr -d '[:space:]' <VERSION)"
-  next="$(bump_version "$current" "$part")"
+  next="$(bump_version "$current" "$part" "$pre_id")"
   ensure_tag_absent "v$next" # all validation happens before the first change (REQ-024)
 
   "$SCRIPTS/check.sh" --strict # every required tool must run (REQ-019)

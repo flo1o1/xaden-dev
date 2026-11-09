@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Static analysis for this project.
-# Usage: scripts/check.sh [--staged] [--strict]
+# Usage: scripts/check.sh [--staged] [--strict] [--release]
 #   (default)  full run: all files, types, tests, dependency audits. Use in CI, before
 #              releases and before declaring work done.
 #   --staged   pre-commit run: staged files only, offline, a few seconds.
 #   --strict   missing tools count as failures instead of being skipped. The project can
 #              ask for the same with missing-tools = fail in xaden/xaden.conf (REQ-154).
+#   --release  the release gate (REQ-167): the full run, and TODO markers in SECURITY.md and the
+#              threat model or placeholders in the requirements fail it. Not with --staged.
 set -euo pipefail
 
 # SCRIPTS: where the tooling lives. ROOT: the repository it works on; PROJECT_ROOT lets
@@ -16,14 +18,17 @@ ROOT="${PROJECT_ROOT:-$(cd "$SCRIPTS/.." && pwd)}"
 source "$SCRIPTS/lib.sh"
 
 MODE=full
+RELEASE_GATE=0
 for arg in "$@"; do
   case "$arg" in
     --staged) MODE=staged ;;
     --strict) STRICT=1 ;;
+    --release) RELEASE_GATE=1 ;;
     --record-baseline) GATE_RECORD=1 ;; # adoption: record the current violations as the baseline (REQ-068)
-    *) die "unknown option: $arg (usage: scripts/check.sh [--staged] [--strict])" ;;
+    *) die "unknown option: $arg (usage: scripts/check.sh [--staged] [--strict] [--release])" ;;
   esac
 done
+[ "$MODE$RELEASE_GATE" != "staged1" ] || die "--release needs the full run; it cannot be combined with --staged"
 if [ "$MODE" = "full" ]; then refuse_nested_run check.sh; fi
 cd "$ROOT"
 layout_init "$ROOT"
@@ -31,8 +36,10 @@ JUDGE_BY_MODE=1 # the findings of the tools are judged by the mode and the basel
 
 # check_project_files: requirements, docs structure, traceability (cheap, always run).
 check_project_files() {
-  run_tool "requirements format" "$SCRIPTS/check-requirements.sh"
-  run_tool "documentation structure" "$SCRIPTS/check-docs.sh"
+  local release_args=()
+  [ "$RELEASE_GATE" = "0" ] || release_args=(--release)
+  run_tool "requirements format" "$SCRIPTS/check-requirements.sh" ${release_args[@]+"${release_args[@]}"}
+  run_tool "documentation structure" "$SCRIPTS/check-docs.sh" ${release_args[@]+"${release_args[@]}"}
   run_tool "requirement traceability" "$SCRIPTS/check-traceability.sh"
   run_tool "deferred work rows complete" "$SCRIPTS/check-deferred-work.sh"
   # Date-dependent: full run only, so a commit's hook result does not change with the day.

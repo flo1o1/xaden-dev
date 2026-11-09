@@ -327,6 +327,14 @@ test_reuse_of_existing_tooling() {
     assert "$manager: no tracked file changes for the hook" test -z "$(git -C "$WORKDIR/repos/$manager-adopt-xaden" diff --name-only main HEAD | grep -E 'lefthook|pre-commit-config|husky' || true)"
     x_in "$WORKDIR/repos/$manager-adopt-xaden" project setup
     assert "$manager: xaden project setup is idempotent" test "$(grep -c 'xaden hook pre-commit' "$WORKDIR/repos/$manager/.git/hooks/pre-commit")" = "1"
+    # REQ-165 setup --help prints the usage and changes no hook; any other argument fails before anything is written
+    local hook_sum
+    hook_sum="$(cksum <"$WORKDIR/repos/$manager/.git/hooks/pre-commit")"
+    x_in "$WORKDIR/repos/$manager-adopt-xaden" project setup --help
+    assert "$manager: setup --help prints the usage and exits 0" test "$XRC" -eq 0 -a "$(head -n 1 "$XOUT")" = "usage: xaden project setup"
+    x_in "$WORKDIR/repos/$manager-adopt-xaden" project setup --nonsense
+    assert "$manager: setup with another argument exits 2" test "$XRC" -eq 2
+    assert "$manager: setup --help and --nonsense change no hook" test "$(cksum <"$WORKDIR/repos/$manager/.git/hooks/pre-commit")" = "$hook_sum"
   done
 
   make_repo "$WORKDIR/repos/overcommit" shop

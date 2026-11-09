@@ -49,16 +49,70 @@ test_release() {
   git -C "$DEMO" commit -q --no-verify -am "docs: fill SECURITY.md"
   assert_fails_with "release blocked by markers in the threat model" "threat-model.md" \
     env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/check-docs.sh" --release
+  # REQ-167: xaden check --release is the gate the release prompt names
+  assert_fails_with "check --release flags the threat model" "threat-model.md" \
+    env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/check.sh" --release
+  assert_fails_with "check --release is not a staged run" "cannot be combined" \
+    env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/check.sh" --staged --release
   edit_file "$DEMO/xaden/threat-model.md" '/<!-- TODO/d'
   git -C "$DEMO" commit -q --no-verify -am "docs: fill threat model"
   printf 'Rotate TODO list API keys yearly.\n' >>"$DEMO/SECURITY.md"
   assert "the word TODO in prose does not block a release" env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/check-docs.sh" --release
+  assert "REQ-167 check --release passes once the documents are filled" env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/check.sh" --release
   git -C "$DEMO" checkout -q -- SECURITY.md
   test_release_failures
   assert "release patch (release commit on main allowed)" bash -c "cd '$DEMO' && ALLOW_MAIN_COMMIT=0 xaden project release patch"
   assert "VERSION bumped" test "$(tr -d '[:space:]' <"$DEMO/VERSION")" = "0.0.1"
   assert "changelog stamped with the version" grep -q '^## \[0.0.1\]' "$DEMO/CHANGELOG.md"
   assert "tag created" git -C "$DEMO" rev-parse v0.0.1
+}
+
+# REQ-166 pre-release versions: bumps and SemVer 2.0 precedence, without a project
+test_prerelease_versions() {
+  local lib="$SCAFFOLD_ROOT/template/scripts/lib.sh" step current part id expected
+  for step in "0.0.0 minor alpha 0.1.0-alpha" "0.1.0-alpha pre - 0.1.0-alpha.2" "0.1.0-alpha.2 pre beta 0.1.0-beta" \
+    "0.1.0-beta pre rc 0.1.0-rc" "0.2.0-rc.1 pre - 0.2.0-rc.2" "0.2.0-rc.2 final - 0.2.0" "1.2.3 patch - 1.2.4" "1.2.3 major rc 2.0.0-rc"; do
+    read -r current part id expected <<EOF
+$step
+EOF
+    [ "$id" != "-" ] || id=""
+    assert "REQ-166 $current $part $id gives $expected" test "$(bash -c "source '$lib'; bump_version '$current' '$part' '$id'")" = "$expected"
+  done
+  for step in "0.1.0-beta pre alpha" "0.1.0 pre -" "0.1.0 final -" "0.1.0-rc minor -" "0.1.0-rc.1 final rc" "1.2.3 patch 1x" "1.2.3 patch a.b" "1.2.3 nonsense -"; do
+    read -r current part id <<EOF
+$step
+EOF
+    [ "$id" != "-" ] || id=""
+    assert_fails "REQ-166 refused: $current $part $id" bash -c "source '$lib'; bump_version '$current' '$part' '$id'"
+  done
+  # precedence of SemVer 2.0 section 11: each version sorts below the next one
+  local order=(0.1.0-alpha 0.1.0-alpha.2 0.1.0-beta 0.1.0-rc.1 0.1.0 0.2.0-rc.1 0.2.0) i
+  for i in 0 1 2 3 4 5; do
+    assert "REQ-166 ${order[$i]} sorts below ${order[$((i + 1))]}" \
+      test "$(bash -c "source '$lib'; semver_compare '${order[$i]}' '${order[$((i + 1))]}'; semver_compare '${order[$((i + 1))]}' '${order[$i]}'")" = "$(printf -- '-1\n1')"
+  done
+  assert "REQ-166 equal versions compare as 0" test "$(bash -c "source '$lib'; semver_compare 1.0.0-rc.1 1.0.0-rc.1")" = 0
+  assert "REQ-166 numeric identifiers sort numerically" test "$(bash -c "source '$lib'; semver_compare 1.0.0-rc.2 1.0.0-rc.10")" = -1
+  assert_fails "REQ-166 a pre-release is no plain SemVer for pins and installs" bash -c "source '$lib'; is_semver 0.1.0-alpha"
+}
+
+# REQ-166: a pre-release gets checks, stamping, commit and tag like a stable release (runs after test_release: VERSION 0.0.1)
+test_prerelease_release() {
+  local release="cd '$DEMO' && xaden project release" version
+  version() { tr -d '[:space:]' <"$DEMO/VERSION"; }
+  assert_fails_with "REQ-166 pre needs a pre-release" "not a pre-release" bash -c "$release pre"
+  assert_fails_with "REQ-166 a bad id changes nothing" "pre-release id" bash -c "$release minor --pre 1x"
+  assert "REQ-166 refused releases left VERSION unchanged" test "$(version)" = "0.0.1"
+  assert "REQ-166 minor --pre alpha" bash -c "$release minor --pre alpha"
+  assert "REQ-166 VERSION is the pre-release" test "$(version)" = "0.1.0-alpha"
+  assert "REQ-166 the pre-release has its own changelog section" grep -q '^## \[0.1.0-alpha\]' "$DEMO/CHANGELOG.md"
+  assert "REQ-166 the pre-release is tagged" git -C "$DEMO" rev-parse v0.1.0-alpha
+  assert_fails_with "REQ-166 patch on a pre-release names final" "final" bash -c "$release patch"
+  assert "REQ-166 pre counts up" bash -c "$release pre"
+  assert "REQ-166 alpha.2" test "$(version)" = "0.1.0-alpha.2"
+  assert "REQ-166 final drops the suffix" bash -c "$release final"
+  assert "REQ-166 final version" test "$(version)" = "0.1.0"
+  assert "REQ-166 final is tagged" git -C "$DEMO" rev-parse v0.1.0
 }
 
 # REQ-024 releases never leave a partial state
@@ -376,7 +430,9 @@ test_aidd_decision_record
 test_scaffold_release_failures
 test_scaffold_release_check_option
 test_sign_release
+test_prerelease_versions
 test_release
+test_prerelease_release
 test_install_ways
 test_get_xaden
 test_release_archive
