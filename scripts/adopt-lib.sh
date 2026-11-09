@@ -63,8 +63,9 @@ set_block() {
   local file=$1 begin=$2 end=$3 block=$4 tmp
   tmp="$(mktemp)"
   if [ -f "$file" ] && grep -qxF "$begin" "$file"; then
-    awk -v begin="$begin" -v end="$end" -v block="$block" '
-      $0 == begin { print block; skipping = 1; next }
+    # ENVIRON, not -v: the awk of macOS refuses a newline in a -v value
+    BLOCK="$block" awk -v begin="$begin" -v end="$end" '
+      $0 == begin { print ENVIRON["BLOCK"]; skipping = 1; next }
       skipping { if ($0 == end) skipping = 0; next }
       { print }' "$file" >"$tmp"
   else
