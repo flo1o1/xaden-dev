@@ -286,7 +286,7 @@ pin_main() {
   need_prerequisites
   base="$(git -C "$root" symbolic-ref -q --short HEAD)" || die "check out a branch first"
   branch="chore/pin-aidd-$release"
-  worktree="$(dirname "$root")/$(basename "$root")-pin-aidd-$release"
+  worktree="$(change_worktree_path "$root" "pin-aidd-$release")"
   [ ! -e "$worktree" ] || die "$worktree exists already; remove it first (git worktree remove)"
   ask "Run the framework's installer, CLI $cli at release $release, on a new branch? Xaden first reads the integrity of that CLI from npm and the commit of that release from GitHub, then npx downloads the CLI (setup --help) and installs from $AIDD_SOURCE" || die "nothing was changed"
   # the new pin records what npm and GitHub answered when it moved; a reviewer reads both in the

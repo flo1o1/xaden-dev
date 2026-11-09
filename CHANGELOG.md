@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ## [Unreleased]
 
+### Fixed
+- `xaden project pin` and `xaden aidd pin` create their worktree in the project's `worktrees/` folder when it exists (`worktrees/upgrade-xaden-<version>`, `worktrees/pin-aidd-<release>`); without the folder the path beside the project stays (REQ-168, issue 124).
+
 ## [0.8.0] - 2026-11-05
 
 ### Added

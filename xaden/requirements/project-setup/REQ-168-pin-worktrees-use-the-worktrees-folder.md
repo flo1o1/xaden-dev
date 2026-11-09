@@ -3,7 +3,7 @@ id: REQ-168
 type: job
 epic: project-setup
 priority: should
-status: approved
+status: done
 updated: 2026-11-09
 paths: scripts/fetch.sh, scripts/aidd.sh
 ---
@@ -12,7 +12,7 @@ paths: scripts/fetch.sh, scripts/aidd.sh
 
 ## Job
 
-When I run `xaden project pin` or `xaden aidd pin` in a project that has a `worktrees/` folder, I want the new worktree in `worktrees/`, so the change lives where my other change worktrees and my tool permissions already are.
+When I run `xaden project pin` or `xaden aidd pin` in a project that has a `worktrees/` folder, I want the new worktree in `worktrees/`, so I can find it, clean it up and keep it under my tool permissions with my other change worktrees.
 
 ## Acceptance criteria
 
