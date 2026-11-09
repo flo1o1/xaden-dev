@@ -29,6 +29,9 @@ lists them, and `INDEX-full.md` holds the full table.
 
 8 done, 1 dropped.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-172 | job | should | approved | Parallel requirement changes merge without index decisions |
 
 ## Security (`security`)
 
