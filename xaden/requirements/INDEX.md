@@ -9,6 +9,9 @@ lists them, and `INDEX-full.md` holds the full table.
 
 33 done, 3 dropped.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-170 | job | should | approved | Rules for parallel branches and resources that exist once per machine |
 
 ## Project setup (`project-setup`)
 
