@@ -113,13 +113,24 @@ show_requirement() {
 # new_requirement <epic> <type> <title>: creates the next requirement as a draft and
 # refreshes the index. Prints the new file's path.
 new_requirement() {
-  local epic=$1 type=$2 title=$3 id path statement="$TODO_JOB"
+  local epic=$1 type=$2 title=$3 id path statement="$TODO_JOB" branches elsewhere=0 local_highest number branch
   is_epic_name "$epic" || die "epic must be lowercase words with dashes: $epic"
   case " $REQUIREMENT_TYPES " in *" $type "*) ;; *) die "type must be one of: $REQUIREMENT_TYPES" ;; esac
   [ -n "$title" ] || die "title is empty"
   [ "$type" = "quality" ] && statement="$TODO_QUALITY"
   write_epic "$DIR/$epic" "$epic" "TODO: The big job this epic serves (When …, I want to …, so I can …)."
-  id="$(next_requirement_id "$DIR")"
+  local_highest="$(highest_requirement_number "$DIR")"
+  # REQ-169: a number another branch of origin already uses is not free
+  if branches="$(remote_requirement_numbers "$ROOT" "${DIR#"$ROOT"/}")"; then
+    while read -r number branch; do
+      [ -n "$branch" ] || continue
+      [ "$number" -le "$elsewhere" ] || elsewhere=$number
+      if [ "$number" -gt "$local_highest" ]; then printf '%s already holds REQ-%03d\n' "$branch" "$number" >&2; fi
+    done <<<"$branches"
+  else
+    warn "could not check the remote for requirement numbers on other branches; numbering from this working tree only"
+  fi
+  id="$(next_requirement_id "$DIR" "$elsewhere")"
   path="$DIR/$epic/$id-$(slugify "$title").md"
   write_requirement "$path" "$id" "$type" "$epic" "should" "draft" "$(date +%Y-%m-%d)" \
     "$title" "$statement" "$TODO_CRITERION"

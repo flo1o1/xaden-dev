@@ -17,6 +17,8 @@ Moved from `AGENTS.md` (REQ-126), rule IDs and wording unchanged. `AGENTS.md` sa
   A new requirement is drafted in the chat first and becomes a file only after the user approves it (§7).
 - IDs are global and stable. Never delete, reuse or renumber; set status `dropped` instead.
   Moving a requirement to another epic keeps its ID (move the file, change `epic:`).
+  `req new` fetches `origin` and numbers above every remote branch (REQ-169). When it says it could not check the remote, look at the open
+  branches and pull requests for the highest `REQ-nnn` before you commit.
 - History: `git log -- docs/requirements`. Say in the commit message what changed and why.
 - Run `scripts/check-requirements.sh` after editing; it validates front matter, job stories,
   acceptance criteria and the index. TODO text is a warning and blocks releases.

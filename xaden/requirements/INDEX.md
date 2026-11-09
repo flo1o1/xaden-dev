@@ -29,6 +29,9 @@ lists them, and `INDEX-full.md` holds the full table.
 
 7 done, 1 dropped.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-169 | job | should | approved | xaden req new hands out a number that is free across the repository |
 
 ## Security (`security`)
 
