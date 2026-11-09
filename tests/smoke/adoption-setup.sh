@@ -327,6 +327,14 @@ test_reuse_of_existing_tooling() {
     assert "$manager: no tracked file changes for the hook" test -z "$(git -C "$WORKDIR/repos/$manager-adopt-xaden" diff --name-only main HEAD | grep -E 'lefthook|pre-commit-config|husky' || true)"
     x_in "$WORKDIR/repos/$manager-adopt-xaden" project setup
     assert "$manager: xaden project setup is idempotent" test "$(grep -c 'xaden hook pre-commit' "$WORKDIR/repos/$manager/.git/hooks/pre-commit")" = "1"
+    assert "$manager: setup on a hook that holds the block exits 0 (multi-line block, macOS awk)" test "$XRC" -eq 0
+    # REQ-069 an older block is replaced and the lines around it stay
+    { sed '/^# >>> xaden >>>$/,$d' "$WORKDIR/repos/$manager/.git/hooks/pre-commit"
+      printf '# >>> xaden >>>\nstale block\n# <<< xaden <<<\necho after the block\n'; } >"$WORKDIR/hook.stale"
+    cat "$WORKDIR/hook.stale" >"$WORKDIR/repos/$manager/.git/hooks/pre-commit"
+    x_in "$WORKDIR/repos/$manager-adopt-xaden" project setup
+    assert "$manager: setup replaces an older block and keeps the lines around it" bash -c \
+      'h=$1; test "$2" -eq 0 && grep -q "xaden hook pre-commit" "$h" && ! grep -q "stale block" "$h" && grep -q "after the block" "$h" && grep -q "$3 ran" "$h"' _ "$WORKDIR/repos/$manager/.git/hooks/pre-commit" "$XRC" "$manager"
     # REQ-165 setup --help prints the usage and changes no hook; any other argument fails before anything is written
     local hook_sum
     hook_sum="$(cksum <"$WORKDIR/repos/$manager/.git/hooks/pre-commit")"
