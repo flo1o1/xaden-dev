@@ -331,6 +331,9 @@ STUB
   assert "REQ-118 pin records the new release and links the framework's changes" bash -c 'grep -q "^aidd-release = v5.13.0$" "$1/xaden/xaden.conf" && git -C "$1" log -1 --format=%B | grep -q "compare/v5.12.0...v5.13.0"' _ "$repo-pin-aidd-v5.13.0"
   assert "REQ-153 pin records the integrity and the commit of the new pin" bash -c 'grep -qE "^aidd-integrity = sha512-" "$1/xaden/xaden.conf" && grep -qE "^aidd-commit = [0-9a-f]{40}$" "$1/xaden/xaden.conf"' _ "$repo-pin-aidd-v5.13.0"
   git -C "$repo" worktree remove --force "$repo-pin-aidd-v5.13.0" && git -C "$repo" branch -D chore/pin-aidd-v5.13.0 >/dev/null
+  mkdir "$repo/worktrees" && aidd_yes pin 5.5.0 v5.14.0
+  assert "REQ-168 aidd pin with worktrees/ puts its worktree in it" test "$aidd_rc" -eq 0 -a -f "$repo/worktrees/pin-aidd-v5.14.0/xaden/xaden.conf" -a ! -e "$repo-pin-aidd-v5.14.0"
+  git -C "$repo" worktree remove --force "$repo/worktrees/pin-aidd-v5.14.0" && git -C "$repo" branch -D chore/pin-aidd-v5.14.0 >/dev/null && rmdir "$repo/worktrees"
 
   aidd_yes disable
   assert "REQ-118 disable removes what enable added" test "$aidd_rc" -eq 0 -a ! -e "$repo/.aidd" -a ! -e "$repo/.claude"

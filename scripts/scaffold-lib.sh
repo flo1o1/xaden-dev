@@ -8,6 +8,12 @@ NO_REPOSITORY_MESSAGE="run this inside a project (no git repository here); start
 # shellcheck disable=SC2034 # read by xaden.sh, fetch.sh and aidd.sh
 NOT_ADOPTED_MESSAGE="this repository has not adopted Xaden; run: xaden project adopt"
 
+# change_worktree_path <project root> <slug> (REQ-168): where a command that opens a change worktree puts it:
+# in the project's worktrees/ folder (REQ-090) when there is one, else beside the project as <repo>-<slug>.
+change_worktree_path() {
+  if [ -d "$1/worktrees" ]; then printf '%s/worktrees/%s\n' "$1" "$2"; else printf '%s/%s-%s\n' "$(dirname "$1")" "$(basename "$1")" "$2"; fi
+}
+
 # is_project_name <name>: true for a safe directory/package name (lowercase letters, digits,
 # hyphens and dots; starts with a letter; no trailing dot and no empty part between dots;
 # 2-51 characters). Matches the whole value with spelled-out classes: no line-by-line match (REQ-158), no locale ranges.
