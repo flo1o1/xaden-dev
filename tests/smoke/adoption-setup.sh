@@ -30,6 +30,44 @@ test_messages() {
     '! grep -rnE "(^|[^_a-z])read( -[a-z]+)* -p|ask\(\)" "$1/scripts" "$1/template/scripts" | grep -v "template/scripts/lib.sh:" | grep .' _ "$SCAFFOLD_ROOT"
 }
 
+# REQ-163 a folder without a repository: the question, --init, and the cases that set nothing up
+test_adopt_without_repository() {
+  local dir="$WORKDIR/repos/no-repo-shop"
+  fresh_folder() { rm -rf "$dir" "$dir-adopt-xaden" && mkdir -p "$dir" && printf '# Shop\n' >"$dir/README.md"; }
+
+  fresh_folder
+  x_in "$dir" project adopt --yes
+  assert "REQ-163 no terminal and no --init: the earlier error, no repository" bash -c 'test "$1" -ne 0 && grep -q "not a git repository" "$2" && test ! -e "$3/.git"' _ "$XRC" "$XOUT" "$dir"
+
+  x_answers n "$dir" project adopt
+  assert "REQ-163 a no sets nothing up and keeps the earlier error" bash -c 'test "$1" -ne 0 && grep -q "not a git repository" "$2" && test ! -e "$3/.git"' _ "$XRC" "$XOUT" "$dir"
+  assert "REQ-163 the question names the folder" grep -q "Set up a Git repository in .*no-repo-shop now?" "$XOUT"
+
+  x_answers y "$dir" project adopt --scan
+  assert "REQ-163 --scan asks nothing and sets nothing up" bash -c 'test "$1" -ne 0 && ! grep -q "Set up a Git repository" "$2" && test ! -e "$3/.git"' _ "$XRC" "$XOUT" "$dir"
+  x_answers y "$dir" project adopt --plan
+  assert "REQ-163 --plan asks nothing and sets nothing up" bash -c 'test "$1" -ne 0 && ! grep -q "Set up a Git repository" "$2" && test ! -e "$3/.git"' _ "$XRC" "$XOUT" "$dir"
+
+  x_answers y "$dir" project adopt --yes
+  assert "REQ-163 a yes sets up the repository and the adoption goes on" bash -c 'test "$1" -eq 0 && test -f "$2/xaden/xaden.conf" && test "$(git -C "$2" branch --show-current)" = chore/adopt-xaden' _ "$XRC" "$dir"
+  assert "REQ-163 the repository has no remote and the files stay untracked on main" bash -c 'test -z "$(git -C "$1" remote)" && test -z "$(git -C "$1" ls-tree --name-only main -- README.md 2>/dev/null)"' _ "$dir"
+  assert "REQ-163 the closing hint names git remote add" grep -q "remote add origin <url>" "$XOUT"
+
+  fresh_folder
+  x_in "$dir" project adopt --init --yes
+  assert "REQ-163 --init sets up the repository without a question or a terminal" bash -c 'test "$1" -eq 0 && test -d "$2/.git" && ! grep -q "Set up a Git repository" "$3"' _ "$XRC" "$dir" "$XOUT"
+
+  fresh_folder
+  HOME="$dir" x_answers y "$dir" project adopt --init --yes
+  assert "REQ-163 the home folder gets no repository" bash -c 'test "$1" -ne 0 && test ! -e "$2/.git"' _ "$XRC" "$dir"
+
+  local repo="$WORKDIR/repos/no-repo-inside"
+  make_repo "$repo" shop
+  mkdir -p "$repo/sub"
+  x_answers y "$repo/sub" project adopt --plan
+  assert "REQ-163 inside a repository nothing is asked" bash -c '! grep -q "Set up a Git repository" "$1" && test ! -e "$2/sub/.git"' _ "$XOUT" "$repo"
+}
+
 # REQ-067 the scan reports and changes nothing; the plan shows the exact diff and writes nothing
 test_scan_and_plan() {
   local repo="$WORKDIR/repos/scan-shop" before
@@ -527,6 +565,7 @@ test_command_prefix_migration() {
 
 test_messages
 test_scan_and_plan
+test_adopt_without_repository
 test_adopt_and_remove
 test_claude_commands
 test_command_prefix_migration
