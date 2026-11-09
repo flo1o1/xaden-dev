@@ -47,6 +47,13 @@ test_versions_and_downloads() {
   git -C "$worktree" -c core.hooksPath=/dev/null commit -q -am "test: older workflow"
   x_answers y "$worktree" project pin 9.9.9
   upgraded="$worktree-upgrade-xaden-9.9.9"
+  assert "REQ-168 without worktrees/ the pin worktree stays beside the project" test -d "$upgraded/.git" -o -f "$upgraded/.git"
+  local inside
+  inside="$(adopted_copy inside)"
+  mkdir "$inside/worktrees"
+  x_answers y "$inside" project pin 9.9.9
+  assert "REQ-168 with worktrees/ the pin worktree is created in it" test -f "$inside/worktrees/upgrade-xaden-9.9.9/xaden/xaden.conf"
+  assert "REQ-168 and nothing is created beside the project" test ! -e "$inside-upgrade-xaden-9.9.9"
   assert "REQ-107 upgrade adds the commit check to an older workflow, once" test "$(grep -c 'xaden.sh verify-commits --ci' "$upgraded/.github/workflows/xaden.yml")" -eq 1
   assert "REQ-107 the branch the person is on keeps its workflow" bash -c '! grep -q verify-commits "$1"' _ "$worktree/.github/workflows/xaden.yml"
   assert "REQ-129 a workflow that equals the generated one gets no -dist file" test ! -e "$upgraded/.github/workflows/xaden.yml-dist"
