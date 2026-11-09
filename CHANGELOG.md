@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ## [Unreleased]
 
+### Fixed
+- The staged check ignored `.github/actionlint.yaml`, because the snapshot has no `.git` and `actionlint` only finds its config inside a repository; custom runner labels were reported as unknown. The config file is now passed with `-config-file` (REQ-020, #123).
+
 ## [0.8.0] - 2026-11-05
 
 ### Added
