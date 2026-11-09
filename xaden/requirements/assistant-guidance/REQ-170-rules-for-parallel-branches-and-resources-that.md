@@ -3,7 +3,7 @@ id: REQ-170
 type: job
 epic: assistant-guidance
 priority: should
-status: approved
+status: done
 updated: 2026-11-09
 paths: template/docs/rules/git.md
 ---
