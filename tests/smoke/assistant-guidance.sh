@@ -361,6 +361,14 @@ test_xaden_in_scaffold() {
 }
 
 # REQ-126 the rules loaded in every session stay small; the rest is read when a task needs it
+# REQ-170 the git rules cover parallel branches and resources that exist once per machine
+test_parallel_work_rules() {
+  local git_rules="$SCAFFOLD_ROOT/template/docs/rules/git.md"
+  assert "REQ-170 the git rules say to open a draft pull request from the first testable commit" grep -q 'draft pull request from the first testable commit' "$git_rules"
+  assert "REQ-170 the git rules put a resource that exists once per machine behind a lock that names its owner" bash -c "grep -q 'exists once per machine' '$git_rules' \
+    && grep -q 'lock that names its owner' '$git_rules' && grep -q 'owner before' '$git_rules'"
+}
+
 test_small_context() {
   local rules="$TPL/AGENTS.md" file topic message
   assert "REQ-126 AGENTS.md stays under 10240 bytes" test "$(wc -c <"$rules")" -le 10240
@@ -434,3 +442,4 @@ test_xaden_in_scaffold
 test_no_context_pack
 test_small_context
 test_prompt_run
+test_parallel_work_rules

@@ -37,3 +37,9 @@ Moved from `AGENTS.md` (REQ-126), rule IDs and wording unchanged. `AGENTS.md` sa
   (both send code out: **Approval point**). CI runs on the pull request; the user merges.
   After the merge: `git worktree remove worktrees/<slug>` and `git branch -d <type>/<slug>`.
 - Commit each coherent step. Never force-push, never rewrite published history.
+- Parallel work (REQ-170): once the first commit is testable, push the branch (**Approval point**) and open a
+  draft pull request from the first testable commit, so CI and any test environment start early; mark it ready when
+  the full `scripts/check.sh` passes. A resource that exists once per machine (a local container stack, a fixed port,
+  a shared database file) is changed only through a lock that names its owner (branch or session), for example a lock
+  file in a folder every worktree shares. Read the owner before you start, stop or recreate the resource; when
+  another owner holds it, ask the user.
