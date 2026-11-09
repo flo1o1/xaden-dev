@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 ## [Unreleased]
 
 ### Fixed
+- The staged check ignored `.github/actionlint.yaml`, because the snapshot has no `.git` and `actionlint` only finds its config inside a repository; custom runner labels were reported as unknown. The config file is now passed with `-config-file` (REQ-020, #123).
 - `xaden project pin` and `xaden aidd pin` create their worktree in the project's `worktrees/` folder when it exists (`worktrees/upgrade-xaden-<version>`, `worktrees/pin-aidd-<release>`); without the folder the path beside the project stays (REQ-168, issue 124).
 
 ## [0.8.0] - 2026-11-05

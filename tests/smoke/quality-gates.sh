@@ -330,6 +330,13 @@ test_optional_tools() {
   assert_fails "adopted tools are no longer suggested" grep -qE '^TIP: (duplication|workflows)' "$log"
   assert "staged check lints staged workflows" bash -c "cd '$DEMO' && printf '# staged edit\\n' >>.github/workflows/xaden.yml && git add .github/workflows/xaden.yml && PATH='$fakes:$PATH' '$DEMO_TOOLS/check.sh' --staged 2>&1 | grep -q 'workflows: zizmor failed'"
   git -C "$DEMO" reset -q --hard && git -C "$DEMO" clean -qfd
+  # REQ-020: the staged snapshot has no .git, so actionlint must be told where its config is.
+  printf '#!/bin/sh\necho "actionlint args: $*"\nexit 1\n' >"$fakes/actionlint"
+  mkdir -p "$DEMO/.github" && printf 'self-hosted-runner:\n  labels: [compass]\n' >"$DEMO/.github/actionlint.yaml"
+  printf '# staged edit\n' >>"$DEMO/.github/workflows/xaden.yml"
+  git -C "$DEMO" add .github
+  assert "staged check hands actionlint its config file" bash -c "cd '$DEMO' && PATH='$fakes:$PATH' '$DEMO_TOOLS/check.sh' --staged 2>&1 | grep -q 'actionlint args: -config-file .github/actionlint.yaml'"
+  git -C "$DEMO" reset -q --hard && git -C "$DEMO" clean -qfd
 
   assert "AGENTS.md says how to handle tips" grep -q 'install nothing without approval' "$TPL/docs/rules/checks.md"
   assert "setup points to the optional tools" bash -c "'$DEMO_TOOLS/setup.sh' --tools-only 2>&1 | grep -q 'docs/optional-tools.md'"

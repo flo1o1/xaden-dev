@@ -20,7 +20,16 @@ run_workflow_check() {
 stack_check() {
   collect_files "$1" "$WORKFLOW_PATTERN"
   if [ ${#TARGETS[@]} -gt 0 ]; then
-    if has_command actionlint; then run_workflow_check actionlint actionlint "${TARGETS[@]}"; fi
+    if has_command actionlint; then
+      # actionlint finds its config only inside a git repository; the staged snapshot has none (REQ-020).
+      local config=.github/actionlint.yaml
+      [ -f "$config" ] || config=.github/actionlint.yml
+      if [ -f "$config" ]; then
+        run_workflow_check actionlint actionlint -config-file "$config" "${TARGETS[@]}"
+      else
+        run_workflow_check actionlint actionlint "${TARGETS[@]}"
+      fi
+    fi
     if has_command zizmor; then
       if [ "${JUDGE_BY_MODE:-0}" = "1" ]; then # annotations name file and line, so the gate can judge them
         run_workflow_check zizmor zizmor --offline --format github "${TARGETS[@]}"
