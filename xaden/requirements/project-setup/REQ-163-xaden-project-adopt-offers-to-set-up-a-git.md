@@ -3,8 +3,8 @@ id: REQ-163
 type: job
 epic: project-setup
 priority: should
-status: approved
-updated: 2026-11-02
+status: done
+updated: 2026-11-09
 paths: scripts/adopt.sh
 ---
 
