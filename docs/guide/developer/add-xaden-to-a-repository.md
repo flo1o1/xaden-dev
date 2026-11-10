@@ -54,6 +54,10 @@ Without a terminal (a script, a CI job) `xaden project adopt` stops after the pl
 
 Your `README.md`, `docs/`, `scripts/`, `CHANGELOG.md` and build files are never changed.
 
+## Keep project rules in AGENTS.md
+
+Xaden adds a short marked block to `AGENTS.md` for its own rules. Any text you wrote there stays untouched, and the block is removed on `xaden project remove`. The block starts with `<!-- xaden:begin -->` and ends with `<!-- xaden:end -->`. When `AGENTS.md` is created by Xaden (in an empty repository, for example), the block is the entire file. If your team added project rules to the file before adoption, Xaden keeps them and adds its block. If you added rules after adoption, `xaden project adopt` refuses to overwrite them (REQ-173).
+
 ## The commit convention decides how hard the `Refs:` rule is
 
 `xaden/xaden.conf` holds `commit-convention`, `conventional` or `other`. With `conventional`, the commit hook and CI reject a `feat` commit without `Refs: REQ-nnn`, a `fix` without a requirement ID or `none`, and any unknown ID. With `other` they only warn, so a team with its own commit format (a ticket number in the subject, for example) can adopt without a fight.
