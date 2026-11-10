@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ## [Unreleased]
 
+### Security
+- The check of changed check settings no longer comes from the pull request (REQ-160, first of two changes). `xaden project adopt` writes `.github/workflows/xaden-settings.yml`, which runs on `pull_request_target`: the base branch supplies the workflow and the pinned Xaden, the pull request is read as git data and never run, and a scope that cannot be determined fails the run. Make the job `settings` a required status check. `xaden project pin` offers the file to older projects as `xaden-settings.yml-dist`. The label rules (labeler other than the author, newer than the last push) follow in a second change.
+
 ### Added
 - The git rules (`docs/rules/git.md`) say to open a draft pull request from the first testable commit when several branches run at once, and to change a resource that exists once per machine (a local container stack, a fixed port) only through a lock that names its owner, checked before the change (REQ-170, issue 122).
 - `xaden project adopt` in a folder without a Git repository asks `Set up a Git repository in <folder> now?`; yes runs `git init -b main` and the adoption goes on, and `--init` does it without the question, also without a terminal. Xaden runs `git init` only (no commit, no remote), never in the home folder or `/`, and `--scan` and `--plan` set up nothing (REQ-163).

@@ -36,4 +36,4 @@ lists them, and `INDEX-full.md` holds the full table.
 
 | ID | Type | Priority | Status | Title |
 |----|------|----------|--------|-------|
-| REQ-160 | quality | should | draft | The pull request gate does not trust its own checker or its own label |
+| REQ-160 | quality | should | approved | The pull request gate does not trust its own checker or its own label |
