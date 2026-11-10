@@ -14,6 +14,9 @@ lists them, and `INDEX-full.md` holds the full table.
 
 39 done, 5 dropped.
 
+| ID | Type | Priority | Status | Title |
+|----|------|----------|--------|-------|
+| REQ-173 | job | should | approved | Project rules have one shared home outside the Xaden block |
 
 ## Quality gates (`quality-gates`)
 

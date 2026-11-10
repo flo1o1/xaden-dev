@@ -93,6 +93,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-163 | job | should | done | xaden project adopt offers to set up a Git repository when there is none |
 | REQ-165 | job | should | done | `xaden project setup --help` shows help and changes nothing |
 | REQ-168 | job | should | done | `xaden project pin` and `xaden aidd pin` put their worktree in `worktrees/` |
+| REQ-173 | job | should | approved | Project rules have one shared home outside the Xaden block |
 
 ## Quality gates (`quality-gates`)
 
