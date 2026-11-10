@@ -292,9 +292,8 @@ rewrite_file() {
 # A fragment has one Keep a Changelog heading and bullet entries; README.md is documentation, never consumed.
 changelog_fragments() (
   local directory="${1:-.}/changelog.d" file
-  [ ! -L "$directory" ] || die "changelog fragment directory must not be a symlink: $directory"
-  [ ! -e "$directory" ] || [ -d "$directory" ] || die "changelog fragments need a directory: $directory"
   [ -d "$directory" ] || return 0
+  [ ! -L "$directory" ] || die "changelog fragment directory must not be a symlink: $directory"
   export LC_ALL=C
   for file in "$directory"/*; do
     [ "${file##*/}" != README.md ] || continue
