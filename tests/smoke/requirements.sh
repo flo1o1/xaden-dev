@@ -194,7 +194,6 @@ test_req_new_across_branches() {
   demo_variant number-first 's/x/x/' >/dev/null
   first="$WORKDIR/variants/number-first"
   second="$WORKDIR/variants/number-second"
-  export GIT_AUTHOR_NAME=smoke GIT_AUTHOR_EMAIL=smoke@example.invalid GIT_COMMITTER_NAME=smoke GIT_COMMITTER_EMAIL=smoke@example.invalid
   git init -q --bare "$remote"
   git -C "$first" init -q
   git -C "$first" add -A && git -C "$first" commit -q -m base
@@ -211,7 +210,6 @@ test_req_new_across_branches() {
   git -C "$first" remote set-url origin "$WORKDIR/req169-missing.git"
   out="$(PROJECT_ROOT="$first" "$req" new billing job 'Void a payment' 2>&1)"
   assert "REQ-169 req.sh new still works when the remote is unreachable and says so" bash -c "printf '%s' '$out' | grep -q 'could not check the remote' && printf '%s' '$out' | grep -q 'REQ-00[0-9]-void-a-payment.md'"
-  unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
 }
 
 # REQ-172 generated indexes stay local; the requirement files are the mergeable source of truth.
@@ -316,3 +314,5 @@ test_traceability
 test_context_budget_index
 test_scoped_lookup
 test_req_new_across_branches
+assert "REQ-025 requirement tests preserve the shared Git author identity" git -C "$DEMO" var GIT_AUTHOR_IDENT
+assert "REQ-025 requirement tests preserve the shared Git committer identity" git -C "$DEMO" var GIT_COMMITTER_IDENT

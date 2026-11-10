@@ -14,6 +14,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 - `xaden req new` fetches `origin` and numbers above the requirements on every remote branch, names a branch that already holds a higher number, and falls back to the working tree with a notice when the remote cannot be reached; two worktrees no longer draw the same `REQ-nnn` once the first branch is pushed (REQ-169, issue 114).
 
 ### Fixed
+- The cross-branch requirement smoke test preserves the shared Git author and committer identities, so subsequent smoke areas can commit fixtures without depending on the user's Git configuration (REQ-025).
 - Changelog fragment path validation uses an explicit conditional, avoiding ShellCheck SC2015 under the pinned Linux version without weakening filename, file-type or symlink checks (REQ-171).
 - The adoption and pin guides name `AGENTS.md` outside the Xaden block as the shared home for project rules, explain generated `xaden/RULES.md` and document preservation during pinning, repeated adoption and removal; regression tests cover those guarantees (REQ-173).
 - Newly created and adopted projects keep generated requirement indexes local; `xaden context` and `xaden check` regenerate ignored, untracked indexes, while tracked legacy indexes still fail when stale. Existing projects can opt in without changing their requirement files (REQ-172).
