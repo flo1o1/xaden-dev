@@ -3,7 +3,7 @@ id: REQ-171
 type: job
 epic: release-and-docs
 priority: should
-status: approved
+status: done
 updated: 2026-11-10
 paths: template/scripts/release.sh, template/scripts/verify-commits.sh, template/docs/rules/git.md, template/prompts/, scripts/release-scaffold.sh, tests/smoke/release-and-docs.sh, docs/guide/
 ---

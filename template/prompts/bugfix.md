@@ -25,7 +25,7 @@ Fix the root cause, prove it with a regression test.
 4. Make the smallest change that turns the test green. Refactor afterwards, and only the code
    the fix touched (CC-09).
 5. Run `scripts/check.sh`.
-6. Commit `fix(<scope>): <summary>` with trailer `Refs: REQ-nnn` (or `Refs: none`); add a `CHANGELOG.md` → Unreleased "Fixed" bullet.
+6. Commit `fix(<scope>): <summary>` with trailer `Refs: REQ-nnn` (or `Refs: none`); add a `CHANGELOG.md` → Unreleased "Fixed" bullet (a `### Fixed` fragment in `changelog.d/` instead when the folder exists, see `docs/rules/git.md`).
 7. If the bug was a security flaw, say so and run [[security-review]].
 
 ## Done when

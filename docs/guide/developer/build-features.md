@@ -86,6 +86,19 @@ two index removals. Remove any static `@xaden/requirements/INDEX.md` import from
 the assistant run `xaden context` before it reads the generated index. No requirement ID or requirement
 file changes in this migration. Index symlinks are refused rather than written through.
 
+### Keep changelog entries out of parallel merges
+
+By default every `feat` and `fix` adds a bullet under `Unreleased` in `CHANGELOG.md`, so parallel branches conflict on the same lines (REQ-171). To avoid that, create a `changelog.d/` folder in the project root; nothing else changes for a project without it. From then on a change adds a file instead and never edits `CHANGELOG.md`:
+
+```text
+changelog.d/REQ-171-docs.md
+```
+
+- The name is unique per change, a plain `<name>.md` (letters, digits, `.`, `_`, `-`); naming it after the `Refs:` ID keeps two branches from clashing. Symlinks and other file types are refused.
+- The first line is one heading, `### Added`, `### Changed`, `### Deprecated`, `### Removed`, `### Fixed` or `### Security`, followed by `- ` bullets (indented lines continue a bullet).
+- `xaden check` reports a malformed fragment by path. `changelog.d/README.md` is documentation and is never consumed.
+- Existing bullets under `Unreleased` stay; the release adds the fragments to them (see [Release a version](release-a-version.md)).
+
 ### Find the requirements for the files you change
 
 In a large project the assistant need not read every requirement (REQ-127). Add an optional `paths:` line to the front matter of a requirement, with files, folders or globs separated by commas:

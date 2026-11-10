@@ -17,7 +17,12 @@ Moved from `AGENTS.md` (REQ-126), rule IDs and wording unchanged. `AGENTS.md` sa
 - `Refs:` must be a git trailer: in the last paragraph of the message, next to other trailers.
   Merge/Revert/fixup!/squash! messages skip only the format check; IDs are always verified,
   and CI re-checks every commit a push or pull request introduces.
-- Add a user-visible bullet to `CHANGELOG.md` → `Unreleased` for every `feat`/`fix`.
+- Add a user-visible bullet to `CHANGELOG.md` → `Unreleased` for every `feat`/`fix`. Exception (REQ-171): a project with a `changelog.d/` folder
+  writes one fragment instead and never edits `CHANGELOG.md`, so parallel branches cannot conflict. A fragment is `changelog.d/<unique-name>.md`
+  (name it by the `Refs:` ID, for example `REQ-171-docs.md`): first line one heading `### Added|Changed|Deprecated|Removed|Fixed|Security`, then
+  `- ` bullets. `scripts/release.sh` moves fragments and existing `Unreleased` bullets under the new version once and deletes only the fragments it
+  used; `scripts/check.sh` fails on a malformed one and a release stops before changing anything. `changelog.d/README.md` is never consumed.
+  Without the folder nothing changes; create it to opt in.
 - A change starts with an approved requirement, not with a branch (REQ-082). Draft the requirement
   in the chat and wait for the user's OK; until then create no branch, worktree, commit or file in
   the tree. A rejected draft leaves nothing behind.

@@ -43,7 +43,7 @@ Implement one capability, test-first, tracked in requirements.
    [[security-review]] prompt on the changed files.
 8. Update `docs/user-guide.md` (usage) and, if config/ports/dependencies/deployment changed,
    `docs/admin-guide.md` — see [[documentation]].
-9. Set requirement status to `done`, add a `CHANGELOG.md` → Unreleased bullet, commit
+9. Set requirement status to `done`, add a `CHANGELOG.md` → Unreleased bullet (a `changelog.d/<REQ-nnn>-<slug>.md` fragment instead when the folder exists, see `docs/rules/git.md`), commit
    `feat(<scope>): <summary>` with the trailer `Refs: REQ-nnn` (the hook rejects unknown IDs).
 
 ## Done when

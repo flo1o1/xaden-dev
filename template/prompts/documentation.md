@@ -39,7 +39,7 @@ to the code: installation, system requirements, configuration, usage, security, 
 9. Update `**Applies to version:**` only through `scripts/release.sh` (it stamps it).
 10. Run `scripts/check-docs.sh` (add `--release` to find leftover TODOs). It checks structure
     only; report which documented commands you ran and which are "untested". Add a
-    `CHANGELOG.md` → Unreleased bullet only for user-visible doc changes.
+    `CHANGELOG.md` → Unreleased bullet (or a `changelog.d/` fragment, see `docs/rules/git.md`) only for user-visible doc changes.
 11. Commit `docs: <summary>`.
 
 ## Done when

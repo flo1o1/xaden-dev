@@ -15,6 +15,8 @@ xaden project release minor
 
 - `xaden project release minor`: checks everything in strict mode, stamps `VERSION` and the changelog section, commits and tags locally. Use `major` for a breaking change, `minor` for a backwards-compatible feature and `patch` for a bug fix. `xaden project release minor --pre alpha` makes the pre-release `0.1.0-alpha`; `pre` makes the next (`alpha.2`), `pre --pre beta` changes the id, `final` drops the suffix. Each pre-release stamps its own changelog section. `xaden check --release` is the gate before a release: the full check plus unfilled TODO markers in `SECURITY.md` and the threat model.
 
+If the project has a `changelog.d/` folder (see [Build features](build-features.md)), the release puts every fragment and the bullets already under `Unreleased` into the new version exactly once and deletes only the fragments it used; `changelog.d/README.md` stays. A malformed fragment stops the release before any file changes. Without the folder the release works as before.
+
 It refuses to continue while a check fails, a required tool is missing, or a requirement, `SECURITY.md` or `xaden/threat-model.md` still contains an unfilled `TODO` marker. A failed step restores the files, so a failed release leaves nothing half-done.
 
 Push when you want:
