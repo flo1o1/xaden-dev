@@ -4,6 +4,7 @@
 # Maintainer files stay out of release archives (REQ-094): `git archive`, the GitHub release page and the
 # signed zip skip them. scripts/check-release-archive.sh lists what an archive may hold.
 /.claude export-ignore
+/changelog.d export-ignore
 /.githooks export-ignore
 /.github export-ignore
 /.editorconfig export-ignore

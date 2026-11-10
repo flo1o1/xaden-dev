@@ -453,6 +453,7 @@ test_release_archive() {
 os.makedirs(sys.argv[1] + "/template/bulk")
 for n in range(30000):
     open("%s/template/bulk/file-%05d.txt" % (sys.argv[1], n), "w").close()' "$root" && git -C "$root" add template/bulk
+  assert "REQ-171 the scaffold's own changelog fragments stay out of the archive" test "$(git -C "$SCAFFOLD_ROOT" check-attr export-ignore -- changelog.d | sed 's/.*: //')" = set
   assert "REQ-152 the archive check passes on a tree with a very long file list" "$SCAFFOLD_ROOT/scripts/check-release-archive.sh" "$root"
   git -C "$root" rm -rq --cached template/bulk && rm -rf "$root/template/bulk"
   mkdir -p "$root/tests" && printf 'x\n' >"$root/tests/new.sh" && git -C "$root" add tests/new.sh
