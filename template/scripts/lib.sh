@@ -308,8 +308,9 @@ changelog_fragments() (
   for file in "$directory"/*; do
     [ "${file##*/}" != README.md ] || continue
     [ -e "$file" ] || [ -L "$file" ] || continue
-    printf '%s\n' "${file##*/}" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]*\.md$' && [ -f "$file" ] && [ ! -L "$file" ] ||
+    if ! printf '%s\n' "${file##*/}" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]*\.md$' || [ ! -f "$file" ] || [ -L "$file" ]; then
       die "invalid changelog fragment path: $file (use a plain <unique-name>.md file)"
+    fi
     awk '
       NR == 1 { if ($0 !~ /^### (Added|Changed|Deprecated|Removed|Fixed|Security)$/) exit 1; next }
       /^- [^[:space:]]/ { entries++; next }
