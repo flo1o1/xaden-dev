@@ -189,7 +189,8 @@ apply_core() {
   local dir=$1 expect
   expect="$(expected_kinds)"
   mkdir -p "$dir/xaden/requirements" "$dir/xaden/personas" "$dir/xaden/security-reviews" "$dir/xaden/baselines"
-  cp "$SCAFFOLD_ROOT/template/xaden/requirements.gitignore" "$dir/xaden/requirements/.gitignore"
+  [ -f "$SCAFFOLD_ROOT/template/xaden/requirements.gitignore" ] && \
+    cp "$SCAFFOLD_ROOT/template/xaden/requirements.gitignore" "$dir/xaden/requirements/.gitignore"
   : >"$dir/xaden/personas/.gitkeep"
   : >"$dir/xaden/security-reviews/.gitkeep"
   : >"$dir/xaden/baselines/.gitkeep"
