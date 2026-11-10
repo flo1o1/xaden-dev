@@ -149,6 +149,7 @@ Read one requirement with `scripts/req.sh show REQ-nnn` (`--brief` for the goal 
 | REQ-117 | job | should | done | Xaden calls itself AI-Driven Development, not vibe coding |
 | REQ-166 | job | should | done | I can release a pre-release version |
 | REQ-167 | job | should | done | `xaden check --release` is the release gate the release prompt names |
+| REQ-171 | job | should | approved | Parallel changes keep separate changelog fragments until release |
 
 ## Requirements (`requirements`)
 

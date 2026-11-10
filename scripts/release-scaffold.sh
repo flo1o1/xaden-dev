@@ -15,21 +15,26 @@ stamp_release() {
 }
 
 main() {
-  local run_check=0 part next
+  local run_check=0 part next fragments fragment
+  local release_files=(VERSION CHANGELOG.md xaden/xaden.conf)
   if [ "${1:-}" = "--check" ]; then run_check=1; shift; fi
   part=${1:-}
   [ -n "$part" ] || die "usage: scripts/release-scaffold.sh [--check] <major|minor|patch>"
   [ -z "$(git status --porcelain)" ] || die "working tree not clean; commit or stash first"
   next="$(bump_version "$(tr -d '[:space:]' <VERSION)" "$part")"
   ensure_tag_absent "v$next"
+  fragments="$(changelog_fragments .)"
+  while IFS= read -r fragment; do
+    [ -z "$fragment" ] || release_files+=("$fragment")
+  done <<<"$fragments"
 
   if [ "$run_check" = "1" ]; then
     STRICT=1 "$ROOT/scripts/check-scaffold.sh"
   else
     info "full check skipped: CI checks the release pull request (run with --check to check first)"
   fi
-  stamp_release_or_restore stamp_release "$next" VERSION CHANGELOG.md xaden/xaden.conf
-  commit_release_or_restore "chore(release): scaffold v$next" VERSION CHANGELOG.md xaden/xaden.conf
+  stamp_release_or_restore stamp_release "$next" "${release_files[@]}"
+  commit_release_or_restore "chore(release): scaffold v$next" "${release_files[@]}"
   tag_release_or_report "v$next"
   info "released scaffold v$next (not pushed; see AGENTS.md \"Landing a change on main\")"
 }
