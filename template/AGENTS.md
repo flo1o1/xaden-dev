@@ -13,7 +13,7 @@ Rules for any AI assistant (Claude Code, ChatGPT, Codex, Cursor, Aider, Cline, C
 ## 1. Session start
 
 1. Run `scripts/context-status.sh`. First reply starts with `CONTEXT CHECK <fingerprint>`. Consistency aid, not proof of reading.
-2. Read `docs/requirements/INDEX.md` (skip if loaded via `CLAUDE.md`). Run `scripts/req.sh for <files>` + `scripts/req.sh show REQ-nnn --brief`. Read folder's own `AGENTS.md` if exists.
+2. Read `docs/requirements/INDEX.md` (source of truth for *what* to build; skip it when your tool already loaded it, e.g. through `CLAUDE.md`). Run `scripts/req.sh for <files you plan to change>` and read what it lists (`scripts/req.sh show REQ-nnn --brief`). In a folder with its own `AGENTS.md`, read that too.
 3. Read `Unreleased` in `CHANGELOG.md`.
 4. Ambiguous request or conflicts requirement? **Ask, do not guess**.
 
