@@ -103,6 +103,34 @@ render_index() {
   done < <(epic_dirs "$dir")
 }
 
+# write_requirement_indexes <requirements-dir>: generates both indexes without following index symlinks (REQ-172).
+write_requirement_indexes() (
+  local directory=$1 index temporary
+  for index in "$INDEX_FILE" "$INDEX_FULL_FILE"; do
+    [ ! -L "$directory/$index" ] || die "requirement index must not be a symbolic link: $directory/$index"
+    [ ! -e "$directory/$index" ] || [ -f "$directory/$index" ] || die "requirement index must be a plain file: $directory/$index"
+  done
+  temporary="$(mktemp -d "$directory/.indexes.XXXXXX")" || return 1
+  trap 'rm -rf "$temporary"' EXIT
+  render_index "$directory" >"$temporary/$INDEX_FILE" || return 1
+  render_index "$directory" full >"$temporary/$INDEX_FULL_FILE" || return 1
+  mv "$temporary/$INDEX_FILE" "$directory/$INDEX_FILE" || return 1
+  mv "$temporary/$INDEX_FULL_FILE" "$directory/$INDEX_FULL_FILE"
+)
+
+# refresh_local_requirement_indexes <requirements-dir>: only ignored, untracked indexes opt in to regeneration.
+# Tracked legacy indexes keep stale-index validation even when ignore entries have been added (REQ-172).
+refresh_local_requirement_indexes() {
+  local directory=$1 index tracked
+  git -C "$directory" rev-parse --show-toplevel >/dev/null 2>&1 || return 0
+  tracked="$(git -C "$directory" ls-files -- "$INDEX_FILE" "$INDEX_FULL_FILE")" || return 1
+  [ -z "$tracked" ] || return 0
+  for index in "$INDEX_FILE" "$INDEX_FULL_FILE"; do
+    git -C "$directory" check-ignore -q -- "$index" || return 0
+  done
+  write_requirement_indexes "$directory"
+}
+
 # SLUG_LENGTH: longest file-name slug; longer ones are cut at a word boundary.
 SLUG_LENGTH=50
 

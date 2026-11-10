@@ -1,0 +1,66 @@
+name: xaden-settings
+
+# Judges the check settings of a pull request from the base branch (REQ-160). `pull_request_target` runs the workflow file of
+# the base branch, so a pull request cannot edit or delete this check, and the Xaden that judges is the one pinned on the base
+# branch, so it cannot choose its own checker. Nothing of the pull request runs here: it is fetched as git objects and read
+# with `git show`. Make the job `settings` a required status check of the default branch, next to `xaden`.
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] the base branch's workflow is the point; it checks out and runs nothing of the pull request
+    types: [opened, synchronize, reopened, labeled, unlabeled] # a label accepts changed check settings (REQ-137)
+
+permissions:
+  contents: read
+
+jobs:
+  settings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the base branch, with its history; for pull_request_target this is never the pull request
+          persist-credentials: false
+      - name: Fetch the pull request as data (it is not checked out)
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN_READ: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          header="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN_READ" | base64 | tr -d '\n')"
+          git -c "http.https://github.com/.extraheader=$header" fetch --no-tags origin "refs/pull/${PR_NUMBER}/head:refs/xaden/pr-head"
+      - name: Install the Xaden pinned on the base branch and check the settings
+        env:
+          EVENT_NAME: pull_request
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: refs/xaden/pr-head
+          SETTINGS_ACCEPTED: ${{ contains(github.event.pull_request.labels.*.name, 'xaden-settings-accepted') }}
+          PROJECT_ROOT: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          # the pin of the base branch (this checkout is the base branch), validated before it is used
+          XADEN_VERSION="$(sed -n 's/^[[:space:]]*version[[:space:]]*=[[:space:]]*//p' xaden/xaden.conf | head -n 1 | tr -d '[:space:]')"
+          XADEN_CHECKSUM="$(sed -n 's/^[[:space:]]*checksum[[:space:]]*=[[:space:]]*//p' xaden/xaden.conf | head -n 1 | tr -d '[:space:]')"
+          printf '%s' "$XADEN_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "ERROR: xaden/xaden.conf of the base branch has no valid version" >&2; exit 1; }
+          printf '%s' "$XADEN_CHECKSUM" | grep -Eq '^(mode1:)?[0-9a-f]{64}$' || { echo "ERROR: xaden/xaden.conf of the base branch has no valid checksum" >&2; exit 1; }
+          curl -fsSL "https://github.com/flo1o1/xaden-dev/archive/refs/tags/v${XADEN_VERSION}.tar.gz" | tar -xz -C "$RUNNER_TEMP"
+          tree="$RUNNER_TEMP/xaden-dev-${XADEN_VERSION}"
+          cd "$tree"
+          if [ -n "$(find . ! -type f ! -type d | head -n 1)" ]; then
+            echo "ERROR: Xaden ${XADEN_VERSION} holds a link or special file; its checksum would not cover it" >&2
+            exit 1
+          fi
+          # A checksum written "mode1:<hex>" also covers which files are executable (REQ-147); a bare hex value does not.
+          with_mode=0
+          case "$XADEN_CHECKSUM" in mode1:*) with_mode=1 ;; esac
+          actual="$(find . -type f | sed 's|^\./||' | LC_ALL=C sort |
+            while IFS= read -r file; do
+              mode=""
+              if [ "$with_mode" = 1 ]; then if [ -x "$file" ]; then mode=" x"; else mode=" -"; fi; fi
+              printf '%s%s  %s\n' "$(sha256sum <"$file" | awk '{ print $1 }')" "$mode" "$file"
+            done | sha256sum | awk '{ print $1 }')"
+          if [ "$with_mode" = 1 ]; then actual="mode1:$actual"; fi
+          if [ "$actual" != "$XADEN_CHECKSUM" ]; then
+            echo "ERROR: Xaden ${XADEN_VERSION} does not match the checksum in xaden/xaden.conf" >&2
+            exit 1
+          fi
+          cd "$GITHUB_WORKSPACE"
+          "$tree/template/scripts/check-settings.sh"

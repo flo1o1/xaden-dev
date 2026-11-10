@@ -189,6 +189,15 @@ enter_staged_snapshot() {
   done
   export PROJECT_ROOT="$SNAPSHOT"
   cd "$SNAPSHOT" || die "cannot enter staged snapshot $SNAPSHOT"
+  # REQ-172: use the real index for tracking and the snapshot for ignore rules and requirement content.
+  if [ -d "$SNAPSHOT/$TEAM_DIR_NAME/requirements" ]; then
+    (
+      # shellcheck source=SCRIPTDIR/requirements-lib.sh
+      source "$TOOLS_DIR/scripts/requirements-lib.sh"
+      GIT_DIR="$(git -C "$GIT_REPO" rev-parse --absolute-git-dir)" GIT_WORK_TREE="$SNAPSHOT" \
+        refresh_local_requirement_indexes "$SNAPSHOT/$TEAM_DIR_NAME/requirements"
+    )
+  fi
 }
 
 # list_project_files: NUL-separated paths of the project's files (git-tracked files, or every
@@ -288,13 +297,90 @@ rewrite_file() {
   return "$status"
 }
 
-# stamp_changelog <file> <version>: turns "Unreleased" content into a dated release section.
-# Dies without changing anything when the file has no "## [Unreleased]" section.
+# changelog_fragments <root>: validates and lists fragment paths; no folder keeps the legacy workflow (REQ-171).
+# A fragment has one Keep a Changelog heading and bullet entries; README.md is documentation, never consumed.
+changelog_fragments() (
+  local directory="${1:-.}/changelog.d" file
+  [ ! -L "$directory" ] || die "changelog fragment directory must not be a symlink: $directory"
+  [ ! -e "$directory" ] || [ -d "$directory" ] || die "changelog fragments need a directory: $directory"
+  [ -d "$directory" ] || return 0
+  export LC_ALL=C
+  for file in "$directory"/*; do
+    [ "${file##*/}" != README.md ] || continue
+    [ -e "$file" ] || [ -L "$file" ] || continue
+    if ! printf '%s\n' "${file##*/}" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]*\.md$' || [ ! -f "$file" ] || [ -L "$file" ]; then
+      die "invalid changelog fragment path: $file (use a plain <unique-name>.md file)"
+    fi
+    awk '
+      NR == 1 { if ($0 !~ /^### (Added|Changed|Deprecated|Removed|Fixed|Security)$/) exit 1; next }
+      /^- [^[:space:]]/ { entries++; next }
+      /^[[:space:]]*$/ { next }
+      /^  / { if (entries) next }
+      { exit 1 }
+      END { if (!entries) exit 1 }' "$file" ||
+      die "invalid changelog fragment: $file (one ### Added|Changed|Deprecated|Removed|Fixed|Security heading, then bullet entries)"
+    printf '%s\n' "$file"
+  done
+)
+
+# check_changelog_fragments <root>: validates without printing paths or exiting the calling check.
+check_changelog_fragments() ( changelog_fragments "$1" >/dev/null )
+
+# render_changelog_fragments <paths>: groups validated fragments by heading, preserving their text.
+render_changelog_fragments() {
+  local paths=$1 heading file found
+  for heading in Added Changed Deprecated Removed Fixed Security; do
+    found=0
+    while IFS= read -r file; do
+      [ -n "$file" ] || continue
+      [ "$(head -n 1 "$file")" = "### $heading" ] || continue
+      if [ "$found" = 0 ]; then printf '\n### %s\n' "$heading"; found=1; fi
+      awk 'NR > 1 { print }' "$file"
+      printf '\n'
+    done <<<"$paths"
+  done
+}
+
+# stamp_changelog <file> <version>: stamps Unreleased plus fragments, then consumes only validated files.
+# Release callers include the fragments in their rollback and commit file lists (REQ-024, REQ-171).
 stamp_changelog() {
+  local fragments rendered status=0 file
   grep -q '^## \[Unreleased\]' "$1" || die "$1 has no [Unreleased] section; nothing was changed"
-  rewrite_file "$1" awk -v v="$2" -v d="$(date +%F)" '
-    /^## \[Unreleased\]/ { print; print ""; print "## [" v "] - " d; next }
-    { print }'
+  fragments="$(changelog_fragments "$(dirname "$1")")" || return 1
+  rendered="$(mktemp)"
+  render_changelog_fragments "$fragments" >"$rendered" || status=$?
+  if [ "$status" = 0 ]; then
+    # shellcheck disable=SC2016
+    rewrite_file "$1" awk -v v="$2" -v d="$(date +%F)" -v fragments="$rendered" '
+      function remaining( i, heading) {
+        for (i = 1; i <= 6; i++) {
+          heading = "### " categories[i]
+          if (additions[heading] != "") print "\n" heading "\n" additions[heading]
+        }
+      }
+      BEGIN {
+        split("Added Changed Deprecated Removed Fixed Security", categories, " ")
+        while ((getline line < fragments) > 0) {
+          if (line ~ /^### /) heading = line
+          else if (heading != "") additions[heading] = additions[heading] line "\n"
+        }
+        close(fragments)
+      }
+      /^## \[Unreleased\]/ { print; print ""; print "## [" v "] - " d; active = 1; next }
+      active && /^## / { remaining(); active = 0 }
+      active && /^### / {
+        print
+        if (additions[$0] != "") { printf "%s", additions[$0]; delete additions[$0] }
+        next
+      }
+      { print }
+      END { if (active) remaining() }' || status=$?
+  fi
+  rm -f "$rendered"
+  [ "$status" = 0 ] || return "$status"
+  while IFS= read -r file; do
+    [ -z "$file" ] || rm -- "$file" || return 1
+  done <<<"$fragments"
 }
 
 # --- branch rule (REQ-060): changes reach main through pull requests -------------------

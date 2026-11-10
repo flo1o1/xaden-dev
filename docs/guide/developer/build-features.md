@@ -65,6 +65,27 @@ The assistant loads `AGENTS.md` and the requirements index in every session, so 
 - `xaden req list --epic <epic> --status <status>` filters the list, and `xaden req show REQ-nnn --brief` prints the goal and the acceptance criteria only.
 - A hook or check that enforces a moved rule names the file that holds it in its message.
 
+### Keep generated indexes out of parallel merges
+
+Newly created and adopted projects ignore `xaden/requirements/INDEX.md` and `INDEX-full.md` (REQ-172).
+The requirement files are the source of truth. Run `xaden context` before reading the index after a
+fresh clone; it generates both local indexes. `xaden check` also refreshes missing or stale local
+indexes and still validates every requirement. Commit the requirement files, not the generated tables.
+
+Existing projects keep the legacy workflow until the team opts in. Adding ignore entries alone does
+not change validation while either index remains tracked. To migrate, from the repository root:
+
+```bash
+printf '\n/INDEX.md\n/INDEX-full.md\n' >> xaden/requirements/.gitignore
+git rm --cached -- xaden/requirements/INDEX.md xaden/requirements/INDEX-full.md
+xaden context
+```
+
+`git rm --cached` removes only Git tracking; both local files remain. Commit the ignore file and the
+two index removals. Remove any static `@xaden/requirements/INDEX.md` import from `CLAUDE.md`, and have
+the assistant run `xaden context` before it reads the generated index. No requirement ID or requirement
+file changes in this migration. Index symlinks are refused rather than written through.
+
 ### Find the requirements for the files you change
 
 In a large project the assistant need not read every requirement (REQ-127). Add an optional `paths:` line to the front matter of a requirement, with files, folders or globs separated by commas:

@@ -195,8 +195,12 @@ apply_core() {
   render_conf "$expect" >"$dir/xaden/xaden.conf"
   readme_text >"$dir/xaden/README.md"
   render_rules >"$dir/xaden/RULES.md"
-  render_index "$dir/xaden/requirements" >"$dir/xaden/requirements/INDEX.md"
-  render_index "$dir/xaden/requirements" full >"$dir/xaden/requirements/INDEX-full.md"
+  local ignore="$dir/xaden/requirements/.gitignore" index
+  [ ! -L "$ignore" ] || die "requirements ignore file must not be a symbolic link: $ignore"
+  for index in /INDEX.md /INDEX-full.md; do
+    if ! grep -qxF "$index" "$ignore" 2>/dev/null; then printf '\n%s\n' "$index" >>"$ignore"; fi
+  done
+  write_requirement_indexes "$dir/xaden/requirements"
   if [ -f "$dir/AGENTS.md" ]; then note_footprint "$dir" block AGENTS.md; else note_footprint "$dir" created-block AGENTS.md; fi
   set_block "$dir/AGENTS.md" "$BLOCK_BEGIN" "$BLOCK_END" "$(agents_block)"
   case ",$ADOPT_ASSISTANTS," in
@@ -273,6 +277,9 @@ apply_ci() {
     -e "s/@DEFAULT_BRANCH@/$ADOPT_DEFAULT_BRANCH/g" "$SCAFFOLD_ROOT/scripts/adopt/ci.yml" >"$dir/$file"
   cat "$SCAFFOLD_ROOT/scripts/adopt/ci-commit-step.yml" >>"$dir/$file" # REQ-107: the step `xaden project pin` adds to older workflows
   note_footprint "$dir" file "$file"
+  # REQ-160: the check of the settings runs from the base branch, so a pull request cannot edit or skip it
+  cp "$SCAFFOLD_ROOT/scripts/adopt/settings-gate.yml" "$dir/.github/workflows/xaden-settings.yml"
+  note_footprint "$dir" file ".github/workflows/xaden-settings.yml"
 }
 
 # apply_codeowners <dir> (REQ-141): a candidate CODEOWNERS file, never over the project's own; the team merges it.

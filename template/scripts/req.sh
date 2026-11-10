@@ -140,8 +140,7 @@ new_requirement() {
 
 # write_index: regenerates INDEX.md and INDEX-full.md from the requirement files.
 write_index() {
-  render_index "$DIR" >"$DIR/$INDEX_FILE"
-  render_index "$DIR" full >"$DIR/$INDEX_FULL_FILE"
+  write_requirement_indexes "$DIR"
 }
 
 [ -d "$DIR" ] || die "${DIR#"$ROOT"/} not found"

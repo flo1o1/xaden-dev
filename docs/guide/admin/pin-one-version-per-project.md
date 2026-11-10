@@ -50,6 +50,11 @@ xaden project pin 0.3.0
 - `xaden project pin --check`: asks, then looks for a newer release on github.com. This is the only way Xaden looks for one.
 - `xaden project pin 0.3.0`: works on a branch for a pull request. It bumps the version and checksum in `xaden.conf`, regenerates `xaden/RULES.md`, updates the workflow, and shows the diff and the changelog entries between the two versions.
 
+`xaden project pin` leaves the project's `AGENTS.md` unchanged (REQ-173). Keep shared project rules
+outside its Xaden markers; put longer rules in project-owned documents linked from there. Only
+`xaden/RULES.md` is regenerated from the pinned version and must not be edited by hand. See
+[Keep project rules in AGENTS.md](../developer/add-xaden-to-a-repository.md#keep-project-rules-in-agentsmd).
+
 `xaden core upgrade` is a different command: it updates Xaden on your machine and never moves a project. A file you edited, such as a command file in `.claude/commands/`, is never overwritten: the new text is written next to it as `<file>-dist`.
 
 Your team reviews the pull request, so everyone moves at once. If the new version is not installed on your machine, Xaden asks before it

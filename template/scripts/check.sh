@@ -42,6 +42,7 @@ check_project_files() {
   run_tool "documentation structure" "$SCRIPTS/check-docs.sh" ${release_args[@]+"${release_args[@]}"}
   run_tool "requirement traceability" "$SCRIPTS/check-traceability.sh"
   run_tool "deferred work rows complete" "$SCRIPTS/check-deferred-work.sh"
+  run_tool "changelog fragments" check_changelog_fragments "$ROOT"
   # Date-dependent: full run only, so a commit's hook result does not change with the day.
   if [ "$MODE" = "full" ]; then run_tool "security exceptions not expired" "$SCRIPTS/check-security-exceptions.sh"; fi
 }

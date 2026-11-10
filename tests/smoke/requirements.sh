@@ -11,6 +11,15 @@ demo_check() { env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/check-r
 # demo_req <args...>: req.sh on the adopted demo project.
 demo_req() { env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/req.sh" "$@"; }
 
+# check_staged_requirements <root>: validates the index snapshot, not unstaged requirement edits (REQ-172).
+check_staged_requirements() {
+  bash -euo pipefail -c '
+    source "$2/template/scripts/lib.sh"
+    enter_staged_snapshot "$1"
+    "$2/template/scripts/check-requirements.sh"
+  ' _ "$1" "$SCAFFOLD_ROOT"
+}
+
 # demo_rules_text: a file holding the rules an assistant of the adopted demo project reads: xaden/RULES.md and every
 # rules topic as `xaden doc rules-<topic>` prints it.
 demo_rules_text() {
@@ -185,7 +194,6 @@ test_req_new_across_branches() {
   demo_variant number-first 's/x/x/' >/dev/null
   first="$WORKDIR/variants/number-first"
   second="$WORKDIR/variants/number-second"
-  export GIT_AUTHOR_NAME=smoke GIT_AUTHOR_EMAIL=smoke@example.invalid GIT_COMMITTER_NAME=smoke GIT_COMMITTER_EMAIL=smoke@example.invalid
   git init -q --bare "$remote"
   git -C "$first" init -q
   git -C "$first" add -A && git -C "$first" commit -q -m base
@@ -202,12 +210,109 @@ test_req_new_across_branches() {
   git -C "$first" remote set-url origin "$WORKDIR/req169-missing.git"
   out="$(PROJECT_ROOT="$first" "$req" new billing job 'Void a payment' 2>&1)"
   assert "REQ-169 req.sh new still works when the remote is unreachable and says so" bash -c "printf '%s' '$out' | grep -q 'could not check the remote' && printf '%s' '$out' | grep -q 'REQ-00[0-9]-void-a-payment.md'"
-  unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL
 }
 
+# REQ-172 generated indexes stay local; the requirement files are the mergeable source of truth.
+test_local_requirement_indexes() {
+  local root="$WORKDIR/req172-project" fresh="$WORKDIR/req172-clone" legacy="$WORKDIR/variants/req172-legacy"
+  local req="$SCAFFOLD_ROOT/template/scripts/req.sh" check="$SCAFFOLD_ROOT/template/scripts/check-requirements.sh"
+  local context="$SCAFFOLD_ROOT/template/scripts/context-status.sh" id branch
+  assert "REQ-172 new projects ignore both generated indexes" bash -c "grep -qx '/INDEX.md' '$DEMO/xaden/requirements/.gitignore' \
+    && grep -qx '/INDEX-full.md' '$DEMO/xaden/requirements/.gitignore'"
+  assert "REQ-172 adoption does not track generated indexes" test -z "$(git -C "$DEMO" ls-files -- xaden/requirements/INDEX.md xaden/requirements/INDEX-full.md)"
+  mkdir -p "$root/xaden"
+  cp -R "$DEMO/xaden/requirements" "$root/xaden/"
+  cp "$DEMO/xaden/xaden.conf" "$DEMO/xaden/RULES.md" "$root/xaden/"
+  git -C "$root" init -q -b main
+  git -C "$root" config user.name smoke
+  git -C "$root" config user.email smoke@example.invalid
+  git -C "$root" add -A && git -C "$root" commit -q -m base
+  for id in 002 003; do
+    branch="feat/req-$id"
+    git -C "$root" checkout -q -b "$branch" main
+    (
+      # shellcheck source=SCRIPTDIR/../../template/scripts/requirements-lib.sh
+      source "$SCAFFOLD_ROOT/template/scripts/requirements-lib.sh"
+      write_requirement "$root/xaden/requirements/first-epic/REQ-$id-parallel.md" "REQ-$id" job first-epic should draft 2026-11-10 \
+        "Parallel job $id" "When I work in parallel, I want my own requirement, so I can merge it." \
+        "Given parallel branches, when I merge, then no index decision is needed."
+    )
+    # shellcheck disable=SC2031
+    PROJECT_ROOT="$root" "$req" index >/dev/null
+    # shellcheck disable=SC2031
+    git -C "$root" add -A && git -C "$root" commit -q -m "$branch"
+  done
+  # shellcheck disable=SC2031
+  assert "REQ-172 parallel branches merge without index conflicts" git -C "$root" merge --no-edit feat/req-002
+  # shellcheck disable=SC2031
+  git clone -q "$root" "$fresh"
+  assert "REQ-172 fresh clones contain no generated indexes" test ! -e "$fresh/xaden/requirements/INDEX.md" -a ! -e "$fresh/xaden/requirements/INDEX-full.md"
+  assert "REQ-172 checks generate absent local indexes before context" env PROJECT_ROOT="$fresh" "$check"
+  assert "REQ-172 generated index includes both merged requirements" bash -c "grep -q '| REQ-002 |' '$fresh/xaden/requirements/INDEX.md' \
+    && grep -q '| REQ-003 |' '$fresh/xaden/requirements/INDEX-full.md'"
+  rm "$fresh/xaden/requirements/INDEX.md" "$fresh/xaden/requirements/INDEX-full.md"
+  assert "REQ-172 direct context regenerates the index before the assistant reads it" env PROJECT_ROOT="$fresh" "$context"
+  assert "REQ-172 context generated both index files" test -f "$fresh/xaden/requirements/INDEX.md" -a -f "$fresh/xaden/requirements/INDEX-full.md"
+  assert "REQ-172 generated indexes leave a clone clean" test -z "$(git -C "$fresh" status --porcelain)"
+  printf 'stale\n' >>"$fresh/xaden/requirements/INDEX-full.md"
+  assert "REQ-172 checks refresh stale untracked local indexes" env PROJECT_ROOT="$fresh" "$check"
+  edit_file "$(req_file "$fresh" REQ-002)" 's/^type: job/type: invalid/'
+  assert_fails_with "REQ-172 local generation does not bypass requirement validation" 'type must be one of' env PROJECT_ROOT="$fresh" "$check"
+  demo_variant req172-legacy 's/x/x/' >/dev/null
+  git -C "$legacy" init -q -b main
+  git -C "$legacy" config user.name smoke
+  git -C "$legacy" config user.email smoke@example.invalid
+  git -C "$legacy" add -A
+  git -C "$legacy" add -f xaden/requirements/INDEX.md xaden/requirements/INDEX-full.md
+  git -C "$legacy" commit -q -m legacy
+  edit_file "$(req_file "$legacy" REQ-001)" 's/^# .*/# Renamed legacy job/'
+  assert_fails_with "REQ-172 ignored but still tracked indexes retain stale validation" 'stale' env PROJECT_ROOT="$legacy" "$check"
+  git -C "$legacy" rm -q --cached xaden/requirements/INDEX.md xaden/requirements/INDEX-full.md
+  assert "REQ-172 native Git migration preserves the local files" test -f "$legacy/xaden/requirements/INDEX.md" -a -f "$legacy/xaden/requirements/INDEX-full.md"
+  assert "REQ-172 migrated indexes regenerate without changing requirements" env PROJECT_ROOT="$legacy" "$check"
+  assert "REQ-172 migration stages only the two generated index removals" test "$(git -C "$legacy" diff --cached --name-only | wc -l | tr -d ' ')" = 2
+  printf 'do not touch\n' >"$WORKDIR/req172-sentinel"
+  rm "$legacy/xaden/requirements/INDEX.md"
+  ln -s "$WORKDIR/req172-sentinel" "$legacy/xaden/requirements/INDEX.md"
+  assert_fails_with "REQ-172 automatic generation refuses index symlinks" 'symbolic link' env PROJECT_ROOT="$legacy" "$check"
+  assert "REQ-172 automatic generation preserves symlink targets" grep -qx 'do not touch' "$WORKDIR/req172-sentinel"
+  assert_fails_with "REQ-172 explicit index generation refuses index symlinks" 'symbolic link' env PROJECT_ROOT="$legacy" "$req" index
+  assert "REQ-172 explicit generation preserves symlink targets" grep -qx 'do not touch' "$WORKDIR/req172-sentinel"
+
+  local template="$WORKDIR/req172-template/docs/requirements"
+  mkdir -p "${template%/requirements}"
+  cp -R "$DEMO/xaden/requirements" "$template"
+  git -C "$WORKDIR/req172-template" init -q -b main
+  git -C "$WORKDIR/req172-template" add docs/requirements/.gitignore
+  rm "$template/INDEX.md" "$template/INDEX-full.md"
+  assert "REQ-172 template requirement directories regenerate ignored indexes" env PROJECT_ROOT="$DEMO" "$check" "$template"
+  assert "REQ-172 template directories generate both indexes" test -f "$template/INDEX.md" -a -f "$template/INDEX-full.md"
+  git -C "$WORKDIR/req172-template" add -f docs/requirements/INDEX.md
+  printf 'stale\n' >>"$template/INDEX.md"
+  assert_fails_with "REQ-172 one tracked index retains legacy validation" 'stale' env PROJECT_ROOT="$DEMO" "$check" "$template"
+  assert "REQ-172 scaffold does not statically import a generated index" test "$(grep -c '^@xaden/requirements/INDEX' "$SCAFFOLD_ROOT/CLAUDE.md")" = 0
+
+  local staged_project="$WORKDIR/req172-project"
+  edit_file "$(req_file "$staged_project" REQ-002)" 's/^# .*/# Staged title/'
+  git -C "$staged_project" add xaden/requirements/first-epic/REQ-002-parallel.md
+  edit_file "$(req_file "$staged_project" REQ-002)" 's/^# .*/# Unstaged title/'
+  assert "REQ-172 staged checks generate indexes from staged requirements only" check_staged_requirements "$staged_project"
+  printf '' >"$staged_project/xaden/requirements/.gitignore"
+  assert "REQ-172 staged checks use staged ignore rules, not unstaged edits" check_staged_requirements "$staged_project"
+  git -C "$staged_project" add xaden/requirements/.gitignore
+  printf '/INDEX.md\n/INDEX-full.md\n' >"$staged_project/xaden/requirements/.gitignore"
+  assert_fails_with "REQ-172 unstaged ignored indexes cannot bypass staged validation" 'stale' check_staged_requirements "$staged_project"
+  git -C "$staged_project" add xaden/requirements/.gitignore
+  git -C "$staged_project" add -f xaden/requirements/INDEX.md
+  assert_fails_with "REQ-172 staged checks still reject a stale tracked index" 'stale' check_staged_requirements "$staged_project"
+}
+
+test_local_requirement_indexes
 test_job_stories
 test_requirement_files
 test_traceability
 test_context_budget_index
 test_scoped_lookup
 test_req_new_across_branches
+assert "REQ-025 requirement tests preserve the shared Git author identity" git -C "$DEMO" var GIT_AUTHOR_IDENT
+assert "REQ-025 requirement tests preserve the shared Git committer identity" git -C "$DEMO" var GIT_COMMITTER_IDENT

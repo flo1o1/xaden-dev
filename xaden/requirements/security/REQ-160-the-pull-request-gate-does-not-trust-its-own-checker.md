@@ -3,8 +3,8 @@ id: REQ-160
 type: quality
 epic: security
 priority: should
-status: draft
-updated: 2026-10-22
+status: approved
+updated: 2026-11-07
 ---
 
 # The pull request gate does not trust its own checker or its own label

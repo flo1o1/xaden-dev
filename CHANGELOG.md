@@ -4,12 +4,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ## [Unreleased]
 
+### Security
+- The check of changed check settings no longer comes from the pull request (REQ-160, first of two changes). `xaden project adopt` writes `.github/workflows/xaden-settings.yml`, which runs on `pull_request_target`: the base branch supplies the workflow and the pinned Xaden, the pull request is read as git data and never run, and a scope that cannot be determined fails the run. Make the job `settings` a required status check. `xaden project pin` offers the file to older projects as `xaden-settings.yml-dist`. The label rules (labeler other than the author, newer than the last push) follow in a second change.
+
 ### Added
+- `template/AGENTS.md` is compressed from 9910 to 8609 bytes (-13%): articles and filler removed, all rule IDs, commands and test-relevant wording unchanged (REQ-126).
 - The git rules (`docs/rules/git.md`) say to open a draft pull request from the first testable commit when several branches run at once, and to change a resource that exists once per machine (a local container stack, a fixed port) only through a lock that names its owner, checked before the change (REQ-170, issue 122).
 - `xaden project adopt` in a folder without a Git repository asks `Set up a Git repository in <folder> now?`; yes runs `git init -b main` and the adoption goes on, and `--init` does it without the question, also without a terminal. Xaden runs `git init` only (no commit, no remote), never in the home folder or `/`, and `--scan` and `--plan` set up nothing (REQ-163).
 - `xaden req new` fetches `origin` and numbers above the requirements on every remote branch, names a branch that already holds a higher number, and falls back to the working tree with a notice when the remote cannot be reached; two worktrees no longer draw the same `REQ-nnn` once the first branch is pushed (REQ-169, issue 114).
 
 ### Fixed
+- The cross-branch requirement smoke test preserves the shared Git author and committer identities, so subsequent smoke areas can commit fixtures without depending on the user's Git configuration (REQ-025).
+- Changelog fragment path validation uses an explicit conditional, avoiding ShellCheck SC2015 under the pinned Linux version without weakening filename, file-type or symlink checks (REQ-171).
+- The adoption and pin guides name `AGENTS.md` outside the Xaden block as the shared home for project rules, explain generated `xaden/RULES.md` and document preservation during pinning, repeated adoption and removal; regression tests cover those guarantees (REQ-173).
+- Newly created and adopted projects keep generated requirement indexes local; `xaden context` and `xaden check` regenerate ignored, untracked indexes, while tracked legacy indexes still fail when stale. Existing projects can opt in without changing their requirement files (REQ-172).
 - `xaden project setup` no longer fails with `awk: newline in string` on macOS when a hook or `AGENTS.md` already holds the Xaden block; an older block is replaced and the lines around it stay (REQ-069, issue 117).
 - The staged check ignored `.github/actionlint.yaml`, because the snapshot has no `.git` and `actionlint` only finds its config inside a repository; custom runner labels were reported as unknown. The config file is now passed with `-config-file` (REQ-020, #123).
 - `xaden project pin` and `xaden aidd pin` create their worktree in the project's `worktrees/` folder when it exists (`worktrees/upgrade-xaden-<version>`, `worktrees/pin-aidd-<release>`); without the folder the path beside the project stays (REQ-168, issue 124).

@@ -54,6 +54,23 @@ Without a terminal (a script, a CI job) `xaden project adopt` stops after the pl
 
 Your `README.md`, `docs/`, `scripts/`, `CHANGELOG.md` and build files are never changed.
 
+## Keep project rules in AGENTS.md
+
+Put shared project rules in `AGENTS.md`, outside the `<!-- xaden:begin -->` and `<!-- xaden:end -->`
+markers (REQ-173). All assistants can read that file. Link longer project-owned documents from there,
+for example your architecture or contribution guide, rather than duplicating their content.
+Keep `CLAUDE.md` for Claude-specific instructions and its `@AGENTS.md` import, not another copy of
+shared rules.
+
+Xaden owns only the marked block in `AGENTS.md`. `xaden/RULES.md` is generated from the pinned Xaden
+version: do not edit it. `xaden project pin` regenerates `xaden/RULES.md` and leaves your project's
+`AGENTS.md` unchanged. Running adoption again in an already adopted repository is refused without
+rewriting your rules.
+
+On removal, only the managed block is removed from `AGENTS.md`; project rules outside it remain.
+A `created-block AGENTS.md` entry in `xaden/footprint.txt` records that Xaden first created the file,
+not ownership of the whole file forever. If the team added text outside the block, the file stays.
+
 ## The commit convention decides how hard the `Refs:` rule is
 
 `xaden/xaden.conf` holds `commit-convention`, `conventional` or `other`. With `conventional`, the commit hook and CI reject a `feat` commit without `Refs: REQ-nnn`, a `fix` without a requirement ID or `none`, and any unknown ID. With `other` they only warn, so a team with its own commit format (a ticket number in the subject, for example) can adopt without a fight.

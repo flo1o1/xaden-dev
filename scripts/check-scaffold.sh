@@ -61,6 +61,7 @@ fi
 info "check mode: $MODE"
 run_tool "scaffold requirements" "$TEMPLATE_SCRIPTS/check-requirements.sh" --release "$ROOT/xaden/requirements" # REQ-049: no TODO: left
 run_tool "version pin" check_version_pin # REQ-134
+run_tool "changelog fragments" check_changelog_fragments "$ROOT" # REQ-171
 run_tool "scaffold traceability" env PROJECT_ROOT="$ROOT" "$TEMPLATE_SCRIPTS/check-traceability.sh"
 run_tool "site pages" "$ROOT/scripts/check-site-pages.sh" "$ROOT" # REQ-064
 run_tool "third-party credits" "$ROOT/scripts/check-third-party.sh" "$ROOT" # REQ-113
