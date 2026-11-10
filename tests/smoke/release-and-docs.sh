@@ -2,6 +2,45 @@
 # Smoke test area "release-and-docs" (docs/requirements/release-and-docs). Sourced by tests/smoke.sh, which
 # defines the helpers and creates the demo project first.
 
+# REQ-171: fragments are committed separately, assembled once and restored on failure.
+test_changelog_fragments() {
+  local copy="$WORKDIR/fragment-release" script head changelog
+  mkdir -p "$copy/scripts" "$copy/changelog.d"
+  cp "$SCAFFOLD_ROOT/template/scripts/"{release,lib,layout,gate}.sh "$copy/scripts/"
+  for script in check check-requirements check-docs; do
+    printf '#!/bin/sh\nexit 0\n' >"$copy/scripts/$script.sh"
+    chmod +x "$copy/scripts/$script.sh"
+  done
+  printf '0.1.0\n' >"$copy/VERSION"
+  printf '# Changelog\n\n## [Unreleased]\n\n### Fixed\n- Legacy entry.\n\n## [0.1.0]\n\n- Old entry.\n' >"$copy/CHANGELOG.md"
+  changelog="$(cat "$copy/CHANGELOG.md")"
+  printf '# Fragments\n' >"$copy/changelog.d/README.md"
+  printf '### Added\n- First fragment.\n' >"$copy/changelog.d/REQ-171-first.md"
+  printf '### Fixed\n- Second fragment.\n' >"$copy/changelog.d/REQ-171-second.md"
+  git -C "$copy" init -q -b main && git -C "$copy" add . && git -C "$copy" commit -q -m 'chore: init'
+  assert "REQ-171 fragments leave the shared changelog untouched until release" test "$(cat "$copy/CHANGELOG.md")" = "$changelog"
+  assert "REQ-171 project release assembles fragments" "$copy/scripts/release.sh" patch
+  for script in 'Legacy entry.' 'First fragment.' 'Second fragment.' 'Old entry.'; do
+    assert "REQ-171 release keeps $script exactly once" test "$(grep -cF -- "- $script" "$copy/CHANGELOG.md")" = 1
+  done
+  assert "REQ-171 fragments join an existing category" test "$(grep -c '^### Fixed$' "$copy/CHANGELOG.md")" = 1
+  assert "REQ-171 release consumes only fragments" test ! -e "$copy/changelog.d/REQ-171-first.md" -a ! -e "$copy/changelog.d/REQ-171-second.md" -a -f "$copy/changelog.d/README.md"
+  printf '### Unknown\n- Bad fragment.\n' >"$copy/changelog.d/REQ-171-invalid.md"
+  git -C "$copy" add changelog.d && git -C "$copy" commit -q -m 'chore: invalid fixture'
+  head="$(git -C "$copy" rev-parse HEAD)"
+  assert_fails_with "REQ-171 invalid fragments stop release before writes" 'changelog fragment' "$copy/scripts/release.sh" patch
+  assert "REQ-171 invalid input leaves tree and HEAD unchanged" test "$(git -C "$copy" rev-parse HEAD)$(git -C "$copy" status --porcelain)" = "$head"
+  printf '### Security\n- Keep this fragment.\n' >"$copy/changelog.d/REQ-171-invalid.md"
+  git -C "$copy" add changelog.d && git -C "$copy" commit -q -m 'chore: valid fixture'
+  printf '#!/bin/sh\nexit 1\n' >"$copy/.git/hooks/pre-commit" && chmod +x "$copy/.git/hooks/pre-commit"
+  head="$(git -C "$copy" rev-parse HEAD)"
+  assert_fails "REQ-171 failing commit restores consumed fragments" "$copy/scripts/release.sh" patch
+  assert "REQ-171 failed commit restores original release files and fragment" test "$(git -C "$copy" rev-parse HEAD)$(git -C "$copy" status --porcelain)" = "$head"
+  assert "REQ-171 failed commit preserves fragment content" grep -q 'Keep this fragment' "$copy/changelog.d/REQ-171-invalid.md"
+  ln -s "$copy/CHANGELOG.md" "$copy/changelog.d/REQ-171-link.md"
+  assert_fails_with "REQ-171 fragments never follow a symlink" 'changelog fragment' bash -c "source '$copy/scripts/lib.sh'; changelog_fragments '$copy'"
+}
+
 # REQ-007 semantic versioning
 test_bump_version() {
   assert "bump patch" test "$(bump_version 1.2.3 patch)" = "1.2.4"
@@ -420,6 +459,7 @@ for n in range(30000):
   assert_fails_with "the archive check names a file that would ship" "tests/new.sh" "$SCAFFOLD_ROOT/scripts/check-release-archive.sh" "$root"
 }
 
+test_changelog_fragments
 test_bump_version
 test_guide_links
 test_site_pages

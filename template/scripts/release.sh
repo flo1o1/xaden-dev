@@ -22,7 +22,7 @@ stamp_release() {
 }
 
 main() {
-  local part=${1:-} pre_id="" usage current next
+  local part=${1:-} pre_id="" usage current next fragments fragment
   local release_files=(VERSION CHANGELOG.md)
   if [ ! -f VERSION ] || [ ! -f CHANGELOG.md ]; then
     die "xaden project release stamps VERSION and CHANGELOG.md; this repository has no such pair. Create them (VERSION: 0.0.0, CHANGELOG.md with a '## [Unreleased]' section) or release with your own process"
@@ -38,6 +38,10 @@ main() {
   current="$(tr -d '[:space:]' <VERSION)"
   next="$(bump_version "$current" "$part" "$pre_id")"
   ensure_tag_absent "v$next" # all validation happens before the first change (REQ-024)
+  fragments="$(changelog_fragments .)"
+  while IFS= read -r fragment; do
+    [ -z "$fragment" ] || release_files+=("$fragment")
+  done <<<"$fragments"
 
   "$SCRIPTS/check.sh" --strict # every required tool must run (REQ-019)
   "$SCRIPTS/check-requirements.sh" --release || die "replace template placeholders in the requirements first"
