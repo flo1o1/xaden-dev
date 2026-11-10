@@ -3,7 +3,7 @@ id: REQ-173
 type: job
 epic: project-setup
 priority: should
-status: approved
+status: done
 updated: 2026-11-10
 paths: docs/guide/developer/add-xaden-to-a-repository.md, docs/guide/admin/pin-one-version-per-project.md, tests/smoke/adoption-setup.sh, tests/smoke/adoption-versions.sh
 ---

@@ -13,6 +13,10 @@ test_versions_and_downloads() {
   export XADEN_RELEASES_URL="file://$releases" XADEN_HOME="$home"
   worktree="$(adopted_copy versions)"
   repo="${worktree%-adopt-xaden}"
+  printf '\n## Project rules\n\nUse ISO 8601 dates.\n' >>"$worktree/AGENTS.md"
+  git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -am "docs: project rules"
+  local project_rules
+  project_rules="$(cksum <"$worktree/AGENTS.md")"
 
   x_in "$worktree" core doctor
   assert "doctor reports installed and pinned version" grep -q "installed $current, project pinned $current" "$XOUT"
@@ -61,6 +65,7 @@ test_versions_and_downloads() {
   assert "upgrade bumps the version" grep -q '^version = 9.9.9$' "$upgraded/xaden/xaden.conf"
   assert "upgrade bumps the checksum" test "$(grep '^checksum' "$upgraded/xaden/xaden.conf")" != "$(grep '^checksum' "$worktree/xaden/xaden.conf")"
   assert "upgrade regenerates RULES.md for the new version" grep -q 'Generated from Xaden 9.9.9' "$upgraded/xaden/RULES.md"
+  assert "REQ-173 pin leaves AGENTS.md and the team's rules unchanged" test "$(cksum <"$upgraded/AGENTS.md")" = "$project_rules"
   assert "upgrade shows the changelog entries" grep -q 'Something new in 9.9.9' "$XOUT"
   assert "upgrade shows the diff" grep -q 'xaden/xaden.conf' "$XOUT"
   assert "upgrade adds a command for a new prompt (REQ-080)" grep -q 'xaden prompt newthing' "$upgraded/.claude/commands/xaden-newthing.md"

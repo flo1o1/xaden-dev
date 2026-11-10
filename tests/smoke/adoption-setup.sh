@@ -111,6 +111,7 @@ test_scan_and_plan() {
 # REQ-066 REQ-070 REQ-073 adopting: own branch and worktree, nothing of the team's changes, small footprint
 test_adopt_and_remove() {
   local repo="$WORKDIR/repos/adopt-shop" worktree changed
+  assert "REQ-173 the guide names the shared home for project rules" grep -qF '## Keep project rules in AGENTS.md' "$SCAFFOLD_ROOT/docs/guide/developer/add-xaden-to-a-repository.md"
   make_repo "$repo" shop
   x_in "$repo" project adopt --yes --assistants claude
   worktree="$repo-adopt-xaden"
@@ -149,10 +150,12 @@ test_adopt_and_remove() {
   assert "git hooks of the clone are chained, not replaced" grep -q 'xaden hook pre-commit' "$repo/.git/hooks/pre-commit"
   assert "core.hooksPath is not set" test -z "$(git -C "$repo" config --get core.hooksPath || true)"
   assert "violations that exist are recorded" test -f "$worktree/xaden/baselines/shellcheck.txt"
-  assert "adopting twice is refused" bash -c 'cd "$1" && ! "$2" adopt --yes' _ "$worktree" "$XADEN"
-
   printf '%s\n' 'text added by the team' >>"$worktree/AGENTS.md"
   git -C "$worktree" -c core.hooksPath=/dev/null commit -q -n -am "docs: team text"
+  local project_rules
+  project_rules="$(cksum <"$worktree/AGENTS.md")"
+  x_in "$worktree" project adopt --yes
+  assert "REQ-173 adopting twice is refused without rewriting project rules" test "$XRC" -ne 0 -a "$(cksum <"$worktree/AGENTS.md")" = "$project_rules"
   x_in "$worktree" project remove --yes
   assert "remove succeeds" test "$XRC" -eq 0
   assert "remove deletes the xaden folder" test ! -e "$worktree/xaden"
@@ -190,6 +193,12 @@ test_adopt_and_remove() {
   x_in "$empty" project adopt --yes --skip-ci
   assert "an empty repository gets the same layout" test -f "$empty/xaden/xaden.conf" -a -f "$empty/xaden/RULES.md" -a -f "$empty/AGENTS.md"
   assert "an empty repository gets a commit on the adoption branch" test "$(git -C "$empty" branch --show-current)" = "chore/adopt-xaden"
+  assert "REQ-173 created-block records who first created AGENTS.md" grep -qx 'created-block AGENTS.md' "$empty/xaden/footprint.txt"
+  printf '\n## Project rules\n\nUse ISO 8601 dates.\n' >>"$empty/AGENTS.md"
+  git -C "$empty" -c core.hooksPath=/dev/null commit -q -n -am "docs: project rules"
+  x_in "$empty" project remove --yes
+  assert "REQ-173 removal keeps rules added to a created-block file" test "$XRC" -eq 0 -a -f "$empty/AGENTS.md"
+  assert "REQ-173 only the managed block is removed" bash -c 'grep -q "Use ISO 8601 dates" "$1" && ! grep -q "xaden:begin" "$1"' _ "$empty/AGENTS.md"
 }
 
 # REQ-080 Claude Code users get one slash command for each default prompt, and nobody else does
