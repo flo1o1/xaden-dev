@@ -11,6 +11,15 @@ demo_check() { env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/check-r
 # demo_req <args...>: req.sh on the adopted demo project.
 demo_req() { env PROJECT_ROOT="$DEMO" "$SCAFFOLD_ROOT/template/scripts/req.sh" "$@"; }
 
+# check_staged_requirements <root>: validates the index snapshot, not unstaged requirement edits (REQ-172).
+check_staged_requirements() {
+  bash -euo pipefail -c '
+    source "$2/template/scripts/lib.sh"
+    enter_staged_snapshot "$1"
+    "$2/template/scripts/check-requirements.sh"
+  ' _ "$1" "$SCAFFOLD_ROOT"
+}
+
 # demo_rules_text: a file holding the rules an assistant of the adopted demo project reads: xaden/RULES.md and every
 # rules topic as `xaden doc rules-<topic>` prints it.
 demo_rules_text() {
@@ -269,6 +278,35 @@ test_local_requirement_indexes() {
   ln -s "$WORKDIR/req172-sentinel" "$legacy/xaden/requirements/INDEX.md"
   assert_fails_with "REQ-172 automatic generation refuses index symlinks" 'symbolic link' env PROJECT_ROOT="$legacy" "$check"
   assert "REQ-172 automatic generation preserves symlink targets" grep -qx 'do not touch' "$WORKDIR/req172-sentinel"
+  assert_fails_with "REQ-172 explicit index generation refuses index symlinks" 'symbolic link' env PROJECT_ROOT="$legacy" "$req" index
+  assert "REQ-172 explicit generation preserves symlink targets" grep -qx 'do not touch' "$WORKDIR/req172-sentinel"
+
+  local template="$WORKDIR/req172-template/docs/requirements"
+  mkdir -p "${template%/requirements}"
+  cp -R "$DEMO/xaden/requirements" "$template"
+  git -C "$WORKDIR/req172-template" init -q -b main
+  git -C "$WORKDIR/req172-template" add docs/requirements/.gitignore
+  rm "$template/INDEX.md" "$template/INDEX-full.md"
+  assert "REQ-172 template requirement directories regenerate ignored indexes" env PROJECT_ROOT="$DEMO" "$check" "$template"
+  assert "REQ-172 template directories generate both indexes" test -f "$template/INDEX.md" -a -f "$template/INDEX-full.md"
+  git -C "$WORKDIR/req172-template" add -f docs/requirements/INDEX.md
+  printf 'stale\n' >>"$template/INDEX.md"
+  assert_fails_with "REQ-172 one tracked index retains legacy validation" 'stale' env PROJECT_ROOT="$DEMO" "$check" "$template"
+  assert "REQ-172 scaffold does not statically import a generated index" test "$(grep -c '^@xaden/requirements/INDEX' "$SCAFFOLD_ROOT/CLAUDE.md")" = 0
+
+  local staged_project="$WORKDIR/req172-project"
+  edit_file "$(req_file "$staged_project" REQ-002)" 's/^# .*/# Staged title/'
+  git -C "$staged_project" add xaden/requirements/first-epic/REQ-002-parallel.md
+  edit_file "$(req_file "$staged_project" REQ-002)" 's/^# .*/# Unstaged title/'
+  assert "REQ-172 staged checks generate indexes from staged requirements only" check_staged_requirements "$staged_project"
+  printf '' >"$staged_project/xaden/requirements/.gitignore"
+  assert "REQ-172 staged checks use staged ignore rules, not unstaged edits" check_staged_requirements "$staged_project"
+  git -C "$staged_project" add xaden/requirements/.gitignore
+  printf '/INDEX.md\n/INDEX-full.md\n' >"$staged_project/xaden/requirements/.gitignore"
+  assert_fails_with "REQ-172 unstaged ignored indexes cannot bypass staged validation" 'stale' check_staged_requirements "$staged_project"
+  git -C "$staged_project" add xaden/requirements/.gitignore
+  git -C "$staged_project" add -f xaden/requirements/INDEX.md
+  assert_fails_with "REQ-172 staged checks still reject a stale tracked index" 'stale' check_staged_requirements "$staged_project"
 }
 
 test_local_requirement_indexes

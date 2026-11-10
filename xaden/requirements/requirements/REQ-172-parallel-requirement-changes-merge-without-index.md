@@ -3,7 +3,7 @@ id: REQ-172
 type: job
 epic: requirements
 priority: should
-status: in-progress
+status: done
 updated: 2026-11-10
 paths: template/scripts/requirements-lib.sh, template/scripts/req.sh, template/scripts/check-requirements.sh, template/scripts/context-status.sh, scripts/adopt-lib.sh, tests/smoke/requirements.sh, docs/guide/developer/build-features.md
 ---

@@ -14,8 +14,11 @@ ROOT="${PROJECT_ROOT:-$(cd "$SCRIPTS/.." && pwd)}"
 source "$SCRIPTS/lib.sh"
 # shellcheck source=SCRIPTDIR/update-check-lib.sh
 source "$SCRIPTS/update-check-lib.sh"
+# shellcheck source=SCRIPTDIR/requirements-lib.sh
+source "$SCRIPTS/requirements-lib.sh"
 # Where the CC-nn rules are defined (RULES_FILE) and the clean-code guide (CLEAN_CODE_FILE).
 layout_init "$ROOT"
+refresh_local_requirement_indexes "$REQ_DIR"
 
 # rule_and_requirement_files: the rule files (REQ-126: the files of docs/rules/ too) plus every
 # Markdown file of the requirements, in a fixed order so the fingerprint is the same on every machine.

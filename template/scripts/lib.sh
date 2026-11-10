@@ -189,6 +189,15 @@ enter_staged_snapshot() {
   done
   export PROJECT_ROOT="$SNAPSHOT"
   cd "$SNAPSHOT" || die "cannot enter staged snapshot $SNAPSHOT"
+  # REQ-172: use the real index for tracking and the snapshot for ignore rules and requirement content.
+  if [ -d "$SNAPSHOT/$TEAM_DIR_NAME/requirements" ]; then
+    (
+      # shellcheck source=SCRIPTDIR/requirements-lib.sh
+      source "$TOOLS_DIR/scripts/requirements-lib.sh"
+      GIT_DIR="$(git -C "$GIT_REPO" rev-parse --absolute-git-dir)" GIT_WORK_TREE="$SNAPSHOT" \
+        refresh_local_requirement_indexes "$SNAPSHOT/$TEAM_DIR_NAME/requirements"
+    )
+  fi
 }
 
 # list_project_files: NUL-separated paths of the project's files (git-tracked files, or every

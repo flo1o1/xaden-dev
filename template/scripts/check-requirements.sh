@@ -137,6 +137,7 @@ check_release_blockers() {
 
 # check_index: INDEX.md and INDEX-full.md must equal what req.sh index would write.
 check_index() {
+  refresh_local_requirement_indexes "$DIR"
   # compared as text, not through a pipe: cmp stops at the first difference and would break the pipe
   if [ "$(render_index "$DIR")" != "$(cat "$DIR/$INDEX_FILE" 2>/dev/null)" ] ||
     [ "$(render_index "$DIR" full)" != "$(cat "$DIR/$INDEX_FULL_FILE" 2>/dev/null)" ]; then

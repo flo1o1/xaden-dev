@@ -14,6 +14,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 - `xaden req new` fetches `origin` and numbers above the requirements on every remote branch, names a branch that already holds a higher number, and falls back to the working tree with a notice when the remote cannot be reached; two worktrees no longer draw the same `REQ-nnn` once the first branch is pushed (REQ-169, issue 114).
 
 ### Fixed
+- Newly created and adopted projects keep generated requirement indexes local; `xaden context` and `xaden check` regenerate ignored, untracked indexes, while tracked legacy indexes still fail when stale. Existing projects can opt in without changing their requirement files (REQ-172).
 - `xaden project setup` no longer fails with `awk: newline in string` on macOS when a hook or `AGENTS.md` already holds the Xaden block; an older block is replaced and the lines around it stay (REQ-069, issue 117).
 - The staged check ignored `.github/actionlint.yaml`, because the snapshot has no `.git` and `actionlint` only finds its config inside a repository; custom runner labels were reported as unknown. The config file is now passed with `-config-file` (REQ-020, #123).
 - `xaden project pin` and `xaden aidd pin` create their worktree in the project's `worktrees/` folder when it exists (`worktrees/upgrade-xaden-<version>`, `worktrees/pin-aidd-<release>`); without the folder the path beside the project stays (REQ-168, issue 124).

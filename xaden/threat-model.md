@@ -53,6 +53,7 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
   from npm through `npx` and the plugins of a pinned release from GitHub. Before it runs, npm's `dist.integrity`
   of the pinned CLI version and the commit the release tag points at are read and checked against the pin
   (`aidd-integrity`, `aidd-commit`; REQ-153); the CLI resolves the release tag again itself.
+- Generated requirement indexes and `xaden/requirements/.gitignore` (REQ-172): `context` and the requirements check regenerate both indexes only when Git ignores them and neither is tracked. Explicit `req index` uses the same writer. Index symlinks are refused; staged checks derive local indexes from staged requirement files and staged ignore rules.
 - `inbox/`: files dropped by the user, untrusted by definition.
 
 ## Trust boundaries
