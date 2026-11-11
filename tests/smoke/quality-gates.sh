@@ -508,6 +508,38 @@ test_area_selection() {
   assert "REQ-114 a run on main runs all areas" grep -q 'EVENT_NAME" = pull_request' "$ci"
 }
 
+# REQ-160 the label accepts changed settings only from someone other than the author, after the last push
+test_label_accepted() {
+  local script="$TPL/scripts/label-accepted.sh" timeline="$WORKDIR/timeline.json"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "skip test_label_accepted: jq is not installed"
+    return 0
+  fi
+  # head commits at 1000000000 (2001-09-09T01:46:40Z); the label events are fixtures
+  ev() { printf '{"event":"%s","label":{"name":"%s"},"actor":{"login":"%s"},"created_at":"%s"}' "$1" "$2" "$3" "$4"; }
+  printf '[%s]' "$(ev labeled xaden-settings-accepted Reviewer 2001-09-10T00:00:00Z)" >"$timeline"
+  assert "REQ-160 a label from another person after the push counts" test "$("$script" "$timeline" Author 1000000000)" = true
+  assert "REQ-160 the person's name compares without case" test "$("$script" "$timeline" REVIEWER 1000000000)" = false
+  assert "REQ-160 a label from the author does not count" test "$("$script" "$timeline" Reviewer 1000000000)" = false
+  assert "REQ-160 a label from before the last push does not count" test "$("$script" "$timeline" Author 1000999999)" = false
+    printf '[%s,%s]' "$(ev labeled xaden-settings-accepted Reviewer 2001-09-10T00:00:00Z)" "$(ev head_ref_force_pushed "" Author 2001-09-11T00:00:00Z | sed 's/"label":{"name":""}/"label":null/')" >"$timeline"
+  assert "REQ-160 a force push after the label does not count" test "$("$script" "$timeline" Author 1000000000)" = false
+  printf '[%s,%s]' "$(ev labeled xaden-settings-accepted Reviewer 2001-09-10T00:00:00Z)" "$(ev unlabeled xaden-settings-accepted Reviewer 2001-09-10T01:00:00Z)" >"$timeline"
+  assert "REQ-160 a removed label does not count" test "$("$script" "$timeline" Author 1000000000)" = false
+  printf '[%s,%s]' "$(ev labeled xaden-settings-accepted Author 2001-09-10T00:00:00Z)" "$(ev labeled xaden-settings-accepted Reviewer 2001-09-10T02:00:00Z)" >"$timeline"
+  assert "REQ-160 the latest labeling decides" test "$("$script" "$timeline" Author 1000000000)" = true
+  printf '[%s]' "$(ev labeled other-label Reviewer 2001-09-10T00:00:00Z)" >"$timeline"
+  assert "REQ-160 another label does not count" test "$("$script" "$timeline" Author 1000000000)" = false
+  printf '[%s]\n[%s]' "$(ev labeled other Author 2001-09-10T00:00:00Z)" "$(ev labeled xaden-settings-accepted Reviewer 2001-09-10T00:00:00Z)" >"$timeline"
+  assert "REQ-160 paginated output (several arrays) is read" test "$("$script" "$timeline" Author 1000000000)" = true
+  printf 'not json' >"$timeline"
+  assert "REQ-160 unreadable JSON is not accepted" test "$("$script" "$timeline" Author 1000000000)" = false
+  assert "REQ-160 a missing file is not accepted" test "$("$script" "$WORKDIR/none.json" Author 1000000000)" = false
+  assert "REQ-160 a bad author name is not accepted" test "$("$script" "$timeline" 'a b;c' 1000000000)" = false
+  assert "REQ-160 a bad commit time is not accepted" test "$("$script" "$timeline" Author soon)" = false
+  assert "REQ-160 missing arguments are not accepted" test "$("$script" 2>/dev/null)" = false
+}
+
 test_quiet_output
 # shellcheck disable=SC2016 # the bash -c script reads its file as $1
 test_generated_project
@@ -523,3 +555,4 @@ test_maintainer_hooks
 test_nested_run_guard
 test_smoke_area_list
 test_area_selection
+test_label_accepted

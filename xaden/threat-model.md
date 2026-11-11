@@ -35,7 +35,7 @@ may meet secrets in the working tree (`.env`, `inbox/`), which they must not cop
 - Files the scripts read: `template/` (exported to projects), requirement files, commit message
   files, `xaden/personas/*.md` (`persona.sh`), `CHANGELOG.md`, `VERSION`, `xaden/security-exceptions.md`, `SECURITY.md`
   and a project's `package.json` / `pyproject.toml` (which decide which tools run).
-- `scripts/get-xaden.sh` (`curl | bash`, the release key embedded in the script) and `template/scripts/check-settings.sh` (CI; the merge base is its trust boundary, the label `xaden-settings-accepted` its approval).
+- `scripts/get-xaden.sh` (`curl | bash`, the release key embedded in the script) and `template/scripts/check-settings.sh` (CI; the merge base is its trust boundary, the label `xaden-settings-accepted` its approval, counted only from someone other than the author after the last push, REQ-160).
 - Files of an adopted repository: `xaden/xaden.conf` (version, checksum, mode and the commands `check.<name>`
   that `xaden check` runs), `xaden/footprint.txt` (paths `xaden project remove` deletes), `xaden/baselines/`,
   `xaden/prompts/`, the existing `AGENTS.md`, `CLAUDE.md`, hook files and workflows.

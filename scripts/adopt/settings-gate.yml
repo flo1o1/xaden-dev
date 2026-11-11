@@ -8,8 +8,11 @@ on:
   pull_request_target: # zizmor: ignore[dangerous-triggers] the base branch's workflow is the point; it checks out and runs nothing of the pull request
     types: [opened, synchronize, reopened, labeled, unlabeled] # a label accepts changed check settings (REQ-137)
 
+# The label rule (REQ-160) reads the timeline of the pull request with this token: read rights only, no other secret.
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
 
 jobs:
   settings:
@@ -32,7 +35,9 @@ jobs:
           EVENT_NAME: pull_request
           BASE_REF: ${{ github.base_ref }}
           HEAD_REF: refs/xaden/pr-head
-          SETTINGS_ACCEPTED: ${{ contains(github.event.pull_request.labels.*.name, 'xaden-settings-accepted') }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          GH_TOKEN: ${{ github.token }}
           PROJECT_ROOT: ${{ github.workspace }}
         run: |
           set -euo pipefail
@@ -63,4 +68,15 @@ jobs:
             exit 1
           fi
           cd "$GITHUB_WORKSPACE"
+          # The label counts only when someone other than the author added it after the last push (REQ-160). Whatever cannot be
+          # determined (an older Xaden without the script, an API error) leaves it at false: the run fails closed.
+          SETTINGS_ACCEPTED=false
+          if [ -x "$tree/template/scripts/label-accepted.sh" ] \
+            && gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/timeline" >"$RUNNER_TEMP/timeline.json" \
+            && head_epoch="$(git show -s --format=%ct "$HEAD_REF")"; then
+            SETTINGS_ACCEPTED="$("$tree/template/scripts/label-accepted.sh" "$RUNNER_TEMP/timeline.json" "$PR_AUTHOR" "$head_epoch")"
+          else
+            echo "WARNING: the label rule could not be evaluated (needs Xaden with label-accepted.sh and a readable timeline); the label does not count" >&2
+          fi
+          export SETTINGS_ACCEPTED
           "$tree/template/scripts/check-settings.sh"
