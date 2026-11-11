@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-11
+
 ### Security
 - The check of changed check settings no longer comes from the pull request (REQ-160). `xaden project adopt` writes `.github/workflows/xaden-settings.yml`, which runs on `pull_request_target`: the base branch supplies the workflow and the pinned Xaden, the pull request is read as git data and never run, and a scope that cannot be determined fails the run. Make the job `settings` a required status check. `xaden project pin` offers the file to older projects as `xaden-settings.yml-dist`. The label `xaden-settings-accepted` counts only when someone other than the pull request's author added it after the last push (`template/scripts/label-accepted.sh`, read from the timeline with a read-only token); a label that cannot be evaluated does not count. `xaden project pin` offers the changed workflow.
 
