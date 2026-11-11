@@ -97,5 +97,6 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
           BEFORE_SHA: ${{ github.event.before }}
+          # quick result only: the label counts here by presence; the job `settings` of xaden-settings.yml applies the label rules (REQ-160)
           SETTINGS_ACCEPTED: ${{ contains(github.event.pull_request.labels.*.name, 'xaden-settings-accepted') }}
         run: xaden.sh check --strict

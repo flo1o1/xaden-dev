@@ -2,7 +2,8 @@
 # Fails when a pull request changes how the project is checked, unless the team accepted it (REQ-137).
 # The settings of the merge base are the reference: mode, missing-tools, the pin of the optional AIDD add-on (aidd-*), hook-checks, expect, check.*, findings-status.*,
 # require-signature, version, checksum, the baselines and the Xaden workflow. A pull request must not judge itself.
-# SETTINGS_ACCEPTED=true (the workflow sets it from the label xaden-settings-accepted) accepts the changes.
+# SETTINGS_ACCEPTED=true accepts the changes. The workflow xaden-settings.yml sets it with scripts/label-accepted.sh only when someone
+# other than the pull request's author added the label xaden-settings-accepted after the last push (REQ-160); unknown means not accepted.
 # Outside a pull request, or in a repository that was not adopted at the merge base, nothing is compared.
 # HEAD_REF=<ref> (REQ-160) is the trusted run: the checkout is the base branch, the pull request is a ref that was fetched as
 # data, and nothing of it is executed or checked out. Both sides are read with git, and a scope that cannot be determined
@@ -96,5 +97,5 @@ if [ "${SETTINGS_ACCEPTED:-}" = "true" ]; then
   info "accepted by the label xaden-settings-accepted; the commands above run as changed"
   exit 0
 fi
-warn "no mapped command ran. A person who may merge reads the lines above and adds the label xaden-settings-accepted to accept them."
+warn "no mapped command ran. A person other than the author reads the lines above and adds the label xaden-settings-accepted after the last push to accept them; a label added earlier, or by the author, does not count."
 exit 1
