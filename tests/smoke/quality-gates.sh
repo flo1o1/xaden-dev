@@ -521,11 +521,16 @@ test_label_accepted() {
   assert "REQ-160 a label from another person after the push counts" test "$("$script" "$timeline" Author 1000000000)" = true
   assert "REQ-160 the person's name compares without case" test "$("$script" "$timeline" REVIEWER 1000000000)" = false
   assert "REQ-160 a label from the author does not count" test "$("$script" "$timeline" Reviewer 1000000000)" = false
+  assert "REQ-174 settings-review solo counts a label from the author" test "$("$script" "$timeline" Reviewer 1000000000 xaden-settings-accepted solo)" = true
+  assert "REQ-174 settings-review team keeps the author out" test "$("$script" "$timeline" Reviewer 1000000000 xaden-settings-accepted team)" = false
+  assert "REQ-174 an unknown settings-review value means team" test "$("$script" "$timeline" Reviewer 1000000000 xaden-settings-accepted SOLO)" = false
+  assert "REQ-174 solo still needs a label after the last push" test "$("$script" "$timeline" Reviewer 1000999999 xaden-settings-accepted solo)" = false
   assert "REQ-160 a label from before the last push does not count" test "$("$script" "$timeline" Author 1000999999)" = false
     printf '[%s,%s]' "$(ev labeled xaden-settings-accepted Reviewer 2001-09-10T00:00:00Z)" "$(ev head_ref_force_pushed "" Author 2001-09-11T00:00:00Z | sed 's/"label":{"name":""}/"label":null/')" >"$timeline"
   assert "REQ-160 a force push after the label does not count" test "$("$script" "$timeline" Author 1000000000)" = false
   printf '[%s,%s]' "$(ev labeled xaden-settings-accepted Reviewer 2001-09-10T00:00:00Z)" "$(ev unlabeled xaden-settings-accepted Reviewer 2001-09-10T01:00:00Z)" >"$timeline"
   assert "REQ-160 a removed label does not count" test "$("$script" "$timeline" Author 1000000000)" = false
+  assert "REQ-174 solo: a removed label does not count" test "$("$script" "$timeline" Author 1000000000 xaden-settings-accepted solo)" = false
   printf '[%s,%s]' "$(ev labeled xaden-settings-accepted Author 2001-09-10T00:00:00Z)" "$(ev labeled xaden-settings-accepted Reviewer 2001-09-10T02:00:00Z)" >"$timeline"
   assert "REQ-160 the latest labeling decides" test "$("$script" "$timeline" Author 1000000000)" = true
   printf '[%s]' "$(ev labeled other-label Reviewer 2001-09-10T00:00:00Z)" >"$timeline"

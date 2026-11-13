@@ -245,6 +245,9 @@ test_scope_of_changed_files() {
   assert "REQ-160 the trusted run names the line" grep -q 'now: check.lint = echo pwned' "$XOUT"
   trusted_run SETTINGS_ACCEPTED=true
   assert "REQ-160 the label accepts it in the trusted run" test "$XRC" -eq 0
+  pull_request "chore: go solo" "printf 'settings-review = solo\\n' >>xaden/xaden.conf"
+  trusted_run
+  assert "REQ-174 a pull request that sets settings-review is reported and fails" grep -q 'now: settings-review = solo' "$XOUT"
   pull_request "chore: old release" "sed -i.bak 's/^version = .*/version = 0.0.1/' xaden/xaden.conf && rm -f xaden/xaden.conf.bak"
   trusted_run
   assert "REQ-160 a pull request that pins an older Xaden is judged by the base" grep -q 'now: version = 0.0.1' "$XOUT"
