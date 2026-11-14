@@ -70,11 +70,14 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           # The label counts only when someone other than the author added it after the last push (REQ-160). Whatever cannot be
           # determined (an older Xaden without the script, an API error) leaves it at false: the run fails closed.
+          # settings-review = solo in the base branch lets the author add the label (REQ-174); any other value is team.
+          review="$(sed -n 's/^[[:space:]]*settings-review[[:space:]]*=[[:space:]]*//p' xaden/xaden.conf | head -n 1 | tr -d '[:space:]')"
+          [ "$review" = "solo" ] || review=team
           SETTINGS_ACCEPTED=false
           if [ -x "$tree/template/scripts/label-accepted.sh" ] \
             && gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/timeline" >"$RUNNER_TEMP/timeline.json" \
             && head_epoch="$(git show -s --format=%ct "$HEAD_REF")"; then
-            SETTINGS_ACCEPTED="$("$tree/template/scripts/label-accepted.sh" "$RUNNER_TEMP/timeline.json" "$PR_AUTHOR" "$head_epoch")"
+            SETTINGS_ACCEPTED="$("$tree/template/scripts/label-accepted.sh" "$RUNNER_TEMP/timeline.json" "$PR_AUTHOR" "$head_epoch" xaden-settings-accepted "$review")"
           else
             echo "WARNING: the label rule could not be evaluated (needs Xaden with label-accepted.sh and a readable timeline); the label does not count" >&2
           fi

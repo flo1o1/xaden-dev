@@ -3,7 +3,8 @@
 # The settings of the merge base are the reference: mode, missing-tools, the pin of the optional AIDD add-on (aidd-*), hook-checks, expect, check.*, findings-status.*,
 # require-signature, version, checksum, the baselines and the Xaden workflow. A pull request must not judge itself.
 # SETTINGS_ACCEPTED=true accepts the changes. The workflow xaden-settings.yml sets it with scripts/label-accepted.sh only when someone
-# other than the pull request's author added the label xaden-settings-accepted after the last push (REQ-160); unknown means not accepted.
+# other than the pull request's author added the label xaden-settings-accepted after the last push (REQ-160), or the author when the
+# base branch says settings-review = solo (REQ-174); unknown means not accepted.
 # Outside a pull request, or in a repository that was not adopted at the merge base, nothing is compared.
 # HEAD_REF=<ref> (REQ-160) is the trusted run: the checkout is the base branch, the pull request is a ref that was fetched as
 # data, and nothing of it is executed or checked out. Both sides are read with git, and a scope that cannot be determined
@@ -19,7 +20,7 @@ ROOT="${PROJECT_ROOT:-$(cd "$SCRIPTS/.." && pwd)}"
 source "$SCRIPTS/lib.sh"
 layout_init "$ROOT"
 
-CONTROLLED_KEYS='^(mode|missing-tools|hook-checks|expect|check\.[a-z0-9-]+|findings-status\.[a-z0-9-]+|require-signature|version|checksum|aidd-[a-z]+)[[:space:]]*='
+CONTROLLED_KEYS='^(mode|missing-tools|hook-checks|expect|check\.[a-z0-9-]+|findings-status\.[a-z0-9-]+|require-signature|settings-review|version|checksum|aidd-[a-z]+)[[:space:]]*='
 WORKFLOW_PATHS=".github/workflows/xaden.yml .github/workflows/xaden-settings.yml"
 BASELINE_FILE_PATTERN='^[a-z0-9-]+\.txt$' # a name from a pull request reaches the log: only plain names do
 
@@ -97,5 +98,5 @@ if [ "${SETTINGS_ACCEPTED:-}" = "true" ]; then
   info "accepted by the label xaden-settings-accepted; the commands above run as changed"
   exit 0
 fi
-warn "no mapped command ran. A person other than the author reads the lines above and adds the label xaden-settings-accepted after the last push to accept them; a label added earlier, or by the author, does not count."
+warn "no mapped command ran. A person other than the author (settings-review = solo: the author too) reads the lines above and adds the label xaden-settings-accepted after the last push to accept them; a label added earlier does not count."
 exit 1

@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 
 ## [Unreleased]
 
+### Added
+- `settings-review = solo` in `xaden/xaden.conf` lets the author of a pull request add the label `xaden-settings-accepted` when the project has no second maintainer; the label still counts only after the last push and the workflow reads the value from the base branch (REQ-174, issue 146). Projects that adopted earlier get the workflow change from `xaden project pin`.
+
 ## [0.9.0] - 2026-11-11
 
 ### Security
